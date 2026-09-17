@@ -1,3 +1,6 @@
+# Environment variables — Ne jamais committer ce fichier !
+.env
+
 # Miscellaneous
 *.class
 *.log

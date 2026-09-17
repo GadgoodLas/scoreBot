@@ -1,121 +1,128 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get_it/get_it.dart';
+import 'package:score_bot/data/repositories/match_repository.dart';
+import 'package:score_bot/data/services/audio_service.dart';
+import 'package:score_bot/data/services/gemini_service.dart';
+import 'package:score_bot/data/services/storage_service.dart';
+import 'package:score_bot/ui/core/theme/app_theme.dart';
+import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
+import 'package:score_bot/ui/features/live/views/live_view.dart';
+import 'package:score_bot/ui/features/live/views/live_watch_view.dart';
+import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
+import 'package:score_bot/ui/features/setup/views/setup_view.dart';
+import 'package:score_bot/ui/features/summary/views/summary_view.dart';
+import 'package:score_bot/domain/models/match.dart';
 
-void main() {
-  runApp(const MyApp());
+final GetIt sl = GetIt.instance;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Chargement des variables d'environnement
+  await dotenv.load(fileName: '.env');
+
+  // Initialisation du stockage local
+  final storageService = StorageService();
+  await storageService.init();
+
+  // Injection de dépendances
+  sl.registerSingleton<StorageService>(storageService);
+  sl.registerSingleton<AudioService>(AudioService());
+  sl.registerSingleton<GeminiService>(GeminiService());
+  sl.registerSingleton<MatchRepository>(
+    MatchRepository(
+      audioService: sl<AudioService>(),
+      geminiService: sl<GeminiService>(),
+      storageService: sl<StorageService>(),
+    ),
+  );
+
+  runApp(const ScoreBotApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ScoreBotApp extends StatelessWidget {
+  const ScoreBotApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'ScoreBot',
+      theme: AppTheme.dark,
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      onGenerateRoute: _generateRoute,
     );
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  Route<dynamic>? _generateRoute(RouteSettings settings) {
+    return switch (settings.name) {
+      '/' => MaterialPageRoute(
+          builder: (_) => SetupView(
+            viewModel: SetupViewModel(
+              matchRepository: sl<MatchRepository>(),
+            ),
+          ),
+        ),
+      '/live' => MaterialPageRoute(
+          builder: (_) {
+            final match = settings.arguments as GameMatch;
+            final vm = LiveViewModel(
+              matchRepository: sl<MatchRepository>(),
+              initialMatch: match,
+            );
+            // Détecte si on tourne sur une montre (petite fenêtre)
+            return _WatchOrPhoneView(viewModel: vm);
+          },
+        ),
+      '/summary' => MaterialPageRoute(
+          builder: (_) {
+            final match = settings.arguments as GameMatch;
+            return SummaryView(
+              viewModel: SummaryViewModel(
+                matchRepository: sl<MatchRepository>(),
+                match: match,
+              ),
+            );
+          },
+        ),
+      _ => MaterialPageRoute(
+          builder: (_) => const _NotFoundView(),
+        ),
+    };
   }
+}
+
+/// Détecte automatiquement si l'app tourne sur une petite surface (montre)
+/// et affiche la vue adaptée.
+class _WatchOrPhoneView extends StatelessWidget {
+  const _WatchOrPhoneView({required this.viewModel});
+  final LiveViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final width = MediaQuery.sizeOf(context).width;
+    // Les montres Wear OS ont généralement < 250dp de largeur
+    final isWatch = width < 250;
+
+    return isWatch
+        ? LiveWatchView(viewModel: viewModel)
+        : LiveView(viewModel: viewModel);
+  }
+}
+
+class _NotFoundView extends StatelessWidget {
+  const _NotFoundView();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      backgroundColor: AppTheme.background,
+      body: const Center(
+        child: Text(
+          '404 — Page introuvable',
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
