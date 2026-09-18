@@ -401,11 +401,12 @@ class _MicButton extends StatelessWidget {
         viewModel.match.status != GameMatchStatus.live;
 
     final hintText = switch (viewModel.voiceState) {
-      VoiceState.recording => '🔴 Enregistrement... Cliquez pour envoyer',
+      VoiceState.recording =>
+        '🔴 Enregistrement (${viewModel.recordingSeconds}s)... Cliquez pour envoyer',
       VoiceState.processing => '⚙️ Analyse par Gemini...',
       VoiceState.success => '✅ Événement pris en compte',
-      VoiceState.error => '❌ Réessayez',
-      VoiceState.idle => '🎙️ Cliquez pour dicter un événement',
+      VoiceState.error => '❌ Réessayez ou utilisez le clavier ⌨️',
+      VoiceState.idle => '🎙️ Cliquez pour dicter (ou ⌨️ pour saisir)',
     };
 
     return Padding(
@@ -413,45 +414,60 @@ class _MicButton extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: isDisabled ? null : () => viewModel.toggleListening(),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: isRecording ? 84 : 70,
-              height: isRecording ? 84 : 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDisabled
-                    ? AppTheme.surface
-                    : isRecording
-                        ? Colors.redAccent
-                        : AppTheme.primary,
-                boxShadow: isRecording
-                    ? [
-                        BoxShadow(
-                          color: Colors.redAccent.withValues(alpha: 0.5),
-                          blurRadius: 20,
-                          spreadRadius: 4,
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: AppTheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(width: 48), // Pour centrer le micro
+              GestureDetector(
+                onTap: isDisabled ? null : () => viewModel.toggleListening(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: isRecording ? 84 : 70,
+                  height: isRecording ? 84 : 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDisabled
+                        ? AppTheme.surface
+                        : isRecording
+                            ? Colors.redAccent
+                            : AppTheme.primary,
+                    boxShadow: isRecording
+                        ? [
+                            BoxShadow(
+                              color: Colors.redAccent.withValues(alpha: 0.5),
+                              blurRadius: 20,
+                              spreadRadius: 4,
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: AppTheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                  ),
+                  child: Icon(
+                    isProcessing
+                        ? Icons.hourglass_top
+                        : isRecording
+                            ? Icons.stop
+                            : Icons.mic,
+                    color: isDisabled ? AppTheme.textSecondary : Colors.black,
+                    size: 32,
+                  ),
+                ),
               ),
-              child: Icon(
-                isProcessing
-                    ? Icons.hourglass_top
-                    : isRecording
-                        ? Icons.stop
-                        : Icons.mic,
-                color: isDisabled ? AppTheme.textSecondary : Colors.black,
-                size: 32,
+              const SizedBox(width: 12),
+              // Bouton saisie texte (fallback pratique)
+              IconButton(
+                icon: const Icon(Icons.keyboard, color: AppTheme.textSecondary),
+                tooltip: 'Saisir du texte',
+                onPressed: isDisabled
+                    ? null
+                    : () => _showTextInputDialog(context),
               ),
-            ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -465,6 +481,51 @@ class _MicButton extends StatelessWidget {
               fontSize: 12,
               fontWeight: isRecording ? FontWeight.bold : FontWeight.normal,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTextInputDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text(
+          '⌨️ Saisir un événement',
+          style: TextStyle(color: AppTheme.textPrimary, fontSize: 18),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: AppTheme.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'Ex: "But équipe rouge par Cédric"',
+            hintStyle: TextStyle(color: AppTheme.textSecondary),
+          ),
+          onSubmitted: (val) {
+            if (val.trim().isNotEmpty) {
+              Navigator.of(ctx).pop();
+              viewModel.sendTextCommand(val);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isNotEmpty) {
+                Navigator.of(ctx).pop();
+                viewModel.sendTextCommand(text);
+              }
+            },
+            child: const Text('Envoyer'),
           ),
         ],
       ),

@@ -85,20 +85,37 @@ class LiveViewModel extends ChangeNotifier {
   GameEvent? _lastEvent;
   GameEvent? get lastEvent => _lastEvent;
 
+  int _recordingSeconds = 0;
+  int get recordingSeconds => _recordingSeconds;
+  Timer? _recordingTimer;
+
+  bool _isTransitioning = false;
+
   /// Démarre l'enregistrement vocal.
   Future<void> startListening() async {
-    if (_voiceState != VoiceState.idle) return;
+    if (_isTransitioning || _voiceState != VoiceState.idle) return;
     if (_match.status != GameMatchStatus.live) return;
 
+    _isTransitioning = true;
     _voiceState = VoiceState.recording;
     _lastError = null;
     _lastTranscription = null;
+    _recordingSeconds = 0;
     notifyListeners();
 
     try {
       await _repository.startVoiceCommand();
+      _isTransitioning = false;
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        _recordingSeconds++;
+        notifyListeners();
+      });
       HapticFeedback.lightImpact();
     } catch (e) {
+      _isTransitioning = false;
+      _recordingTimer?.cancel();
+      _recordingTimer = null;
       _voiceState = VoiceState.error;
       _lastError = e is AudioException ? e.message : 'Erreur micro : $e';
       notifyListeners();
@@ -114,6 +131,7 @@ class LiveViewModel extends ChangeNotifier {
 
   /// Bascule entre démarrage et arrêt (idéal pour Web/Desktop).
   Future<void> toggleListening() async {
+    if (_isTransitioning) return;
     if (_voiceState == VoiceState.idle) {
       await startListening();
     } else if (_voiceState == VoiceState.recording) {
@@ -123,38 +141,104 @@ class LiveViewModel extends ChangeNotifier {
 
   /// Arrête l'enregistrement et traite la commande.
   Future<void> stopListening() async {
-    if (_voiceState != VoiceState.recording) return;
+    if (_isTransitioning || _voiceState != VoiceState.recording) return;
 
+    _isTransitioning = true;
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
     _voiceState = VoiceState.processing;
     notifyListeners();
 
     // Vibration haptique sur fin enregistrement
     HapticFeedback.mediumImpact();
 
-    final result = await _repository.stopAndProcessVoiceCommand(_match);
+    try {
+      final result = await _repository.stopAndProcessVoiceCommand(_match);
 
-    _lastTranscription = result.transcription;
+      _lastTranscription = result.transcription;
+
+      if (result.isSuccess) {
+        _lastEvent = result.event!;
+        _lastError = null;
+        _voiceState = VoiceState.success;
+
+        // Traitement spécial pour les corrections
+        if (result.event is CorrectionEvent) {
+          await _handleCorrection(result.event as CorrectionEvent);
+        } else {
+          _events.add(result.event!);
+          // Recalcul du score si c'est un but
+          if (result.event is GoalEvent) {
+            _match = await _repository.recalculateScore(_match);
+          }
+        }
+
+        // Vibration succès
+        HapticFeedback.heavyImpact();
+
+        // Retour à idle après 3 secondes
+        Timer(const Duration(seconds: 3), () {
+          if (_voiceState == VoiceState.success) {
+            _voiceState = VoiceState.idle;
+            _lastEvent = null;
+            notifyListeners();
+          }
+        });
+      } else {
+        _lastError = result.errorMessage;
+        _voiceState = VoiceState.error;
+
+        // Retour à idle après 4 secondes
+        Timer(const Duration(seconds: 4), () {
+          if (_voiceState == VoiceState.error) {
+            _voiceState = VoiceState.idle;
+            _lastError = null;
+            notifyListeners();
+          }
+        });
+      }
+    } catch (e) {
+      _lastError = 'Erreur : $e';
+      _voiceState = VoiceState.error;
+      Timer(const Duration(seconds: 4), () {
+        if (_voiceState == VoiceState.error) {
+          _voiceState = VoiceState.idle;
+          _lastError = null;
+          notifyListeners();
+        }
+      });
+    } finally {
+      _isTransitioning = false;
+      notifyListeners();
+    }
+  }
+
+  /// Traite une commande saisie textuellement.
+  Future<void> sendTextCommand(String text) async {
+    if (text.trim().isEmpty) return;
+    if (_voiceState == VoiceState.processing) return;
+
+    _voiceState = VoiceState.processing;
+    _lastError = null;
+    _lastTranscription = text.trim();
+    notifyListeners();
+
+    final result = await _repository.processTextCommand(text.trim(), _match);
 
     if (result.isSuccess) {
       _lastEvent = result.event!;
       _lastError = null;
       _voiceState = VoiceState.success;
 
-      // Traitement spécial pour les corrections
       if (result.event is CorrectionEvent) {
         await _handleCorrection(result.event as CorrectionEvent);
       } else {
         _events.add(result.event!);
-        // Recalcul du score si c'est un but
         if (result.event is GoalEvent) {
           _match = await _repository.recalculateScore(_match);
         }
       }
 
-      // Vibration succès
-      HapticFeedback.heavyImpact();
-
-      // Retour à idle après 3 secondes
       Timer(const Duration(seconds: 3), () {
         if (_voiceState == VoiceState.success) {
           _voiceState = VoiceState.idle;
@@ -166,7 +250,6 @@ class LiveViewModel extends ChangeNotifier {
       _lastError = result.errorMessage;
       _voiceState = VoiceState.error;
 
-      // Retour à idle après 4 secondes
       Timer(const Duration(seconds: 4), () {
         if (_voiceState == VoiceState.error) {
           _voiceState = VoiceState.idle;

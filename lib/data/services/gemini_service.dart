@@ -10,6 +10,7 @@ class ParsedVoiceCommand {
   const ParsedVoiceCommand({
     required this.type,
     required this.teamName,
+    this.transcription = '',
     this.playerName,
     this.secondaryPlayerName,
     this.minute,
@@ -19,6 +20,7 @@ class ParsedVoiceCommand {
     this.points,
   });
 
+  final String transcription;
   final GameEventType type;
   final String teamName; // Nom de l'équipe (tel que détecté)
   final String? playerName;
@@ -37,6 +39,7 @@ class ParsedVoiceCommand {
     );
 
     return ParsedVoiceCommand(
+      transcription: json['transcription'] as String? ?? '',
       type: type,
       teamName: json['team'] as String? ?? '',
       playerName: json['player'] as String?,
@@ -51,113 +54,168 @@ class ParsedVoiceCommand {
 
   @override
   String toString() =>
-      'ParsedVoiceCommand(type: $type, team: $teamName, player: $playerName)';
+      'ParsedVoiceCommand(transcription: "$transcription", type: $type, team: $teamName, player: $playerName)';
 }
 
 /// Service d'intégration avec la Gemini API.
-/// Gère la transcription audio et le parsing NLP des commandes vocales.
+/// Traite l'audio directement en une seule passe multimodale intelligente.
 class GeminiService {
   GeminiService() : _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
   final String _apiKey;
 
-  static const _transcribeModel = 'gemini-3.5-transcribe';
-  static const _nlpModel = 'gemini-3.8-flash';
+  // Modèles avec fallback automatique (gemini-3.6-flash et gemini-3.5-flash)
+  static const List<String> _models = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+  ];
   static const _baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
-  /// Transcrit un fichier audio en texte.
-  ///
-  /// [audioBytes] : Données audio brutes (WAV, M4A, OGG).
-  /// [mimeType] : Type MIME du fichier audio (ex: 'audio/wav').
-  Future<String> transcribeAudio(
-    Uint8List audioBytes, {
-    String mimeType = 'audio/wav',
+  /// Traite directement un fichier audio et extrait l'événement structuré.
+  Future<ParsedVoiceCommand> processAudioCommand({
+    required Uint8List audioBytes,
+    required String mimeType,
+    required GameMatch match,
   }) async {
-    final base64Audio = base64Encode(audioBytes);
-
-    final response = await http.post(
-      Uri.parse('$_baseUrl/models/$_transcribeModel:generateContent?key=$_apiKey'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {
-                'inlineData': {
-                  'mimeType': mimeType,
-                  'data': base64Audio,
-                }
-              },
-              {
-                'text':
-                    'Transcris exactement ce qui est dit en français. '
-                    'Retourne uniquement la transcription, sans ponctuation superflue.',
-              },
-            ],
-          },
-        ],
-        'generationConfig': {
-          'temperature': 0.1,
-        },
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw GeminiException(
-        'Erreur transcription audio: ${response.statusCode} — ${response.body}',
+    if (_apiKey.isEmpty || _apiKey.contains('your_gemini_api_key')) {
+      throw const GeminiException(
+        'Clé API Gemini manquante. Veuillez renseigner GEMINI_API_KEY dans le fichier .env',
       );
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final text = _extractText(data);
-    return text.trim();
-  }
-
-  /// Parse une commande vocale transcrite en événement structuré.
-  ///
-  /// [transcription] : Texte transcrit (ex: "But pour l'équipe rouge par Cedric")
-  /// [match] : Contexte du match en cours pour aider le NLP.
-  Future<ParsedVoiceCommand> parseVoiceCommand(
-    String transcription,
-    GameMatch match,
-  ) async {
+    final base64Audio = base64Encode(audioBytes);
     final systemPrompt = _buildSystemPrompt(match);
     final responseSchema = _buildResponseSchema();
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/models/$_nlpModel:generateContent?key=$_apiKey'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'system_instruction': {
-          'parts': [
-            {'text': systemPrompt},
-          ],
-        },
-        'contents': [
-          {
-            'parts': [
-              {'text': transcription},
-            ],
-          },
-        ],
-        'generationConfig': {
-          'temperature': 0.1,
-          'responseMimeType': 'application/json',
-          'responseSchema': responseSchema,
-        },
-      }),
-    );
+    Exception? lastException;
 
-    if (response.statusCode != 200) {
-      throw GeminiException(
-        'Erreur NLP parsing: ${response.statusCode} — ${response.body}',
+    for (final model in _models) {
+      try {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/models/$model:generateContent?key=$_apiKey'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'system_instruction': {
+              'parts': [
+                {'text': systemPrompt},
+              ],
+            },
+            'contents': [
+              {
+                'parts': [
+                  {
+                    'inlineData': {
+                      'mimeType': mimeType,
+                      'data': base64Audio,
+                    }
+                  },
+                  {
+                    'text':
+                        'Écoute attentivement cet enregistrement audio en français. '
+                        'Transcris exactement ce qui est dit dans le champ "transcription", '
+                        'puis analyse l\'événement de match pour remplir les champs structurés JSON.',
+                  },
+                ],
+              },
+            ],
+            'generationConfig': {
+              'temperature': 0.1,
+              'responseMimeType': 'application/json',
+              'responseSchema': responseSchema,
+            },
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final jsonText = _extractText(data);
+          final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
+          return ParsedVoiceCommand.fromJson(parsed);
+        } else if (response.statusCode == 404) {
+          // Essayer le modèle suivant
+          lastException = GeminiException('Modèle $model indisponible (404)');
+          continue;
+        } else {
+          final errorBody = response.body;
+          throw GeminiException(
+            'Erreur API ($model: ${response.statusCode}) : $errorBody',
+          );
+        }
+      } catch (e) {
+        if (e is GeminiException && !e.message.contains('404')) {
+          rethrow;
+        }
+        lastException = e is Exception ? e : Exception(e.toString());
+      }
+    }
+
+    throw lastException ?? const GeminiException('Échec du traitement IA');
+  }
+
+  /// Parse une commande textuelle directe (pour le fallback ou test sans micro).
+  Future<ParsedVoiceCommand> parseTextCommand({
+    required String text,
+    required GameMatch match,
+  }) async {
+    if (_apiKey.isEmpty || _apiKey.contains('your_gemini_api_key')) {
+      throw const GeminiException(
+        'Clé API Gemini manquante. Veuillez renseigner GEMINI_API_KEY dans le fichier .env',
       );
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final jsonText = _extractText(data);
-    final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
-    return ParsedVoiceCommand.fromJson(parsed);
+    final systemPrompt = _buildSystemPrompt(match);
+    final responseSchema = _buildResponseSchema();
+
+    for (final model in _models) {
+      try {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/models/$model:generateContent?key=$_apiKey'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'system_instruction': {
+              'parts': [
+                {'text': systemPrompt},
+              ],
+            },
+            'contents': [
+              {
+                'parts': [
+                  {
+                    'text':
+                        'Analyse cette commande : "$text". '
+                        'Remplis "transcription" avec ce texte et remplis les champs structurés JSON.',
+                  },
+                ],
+              },
+            ],
+            'generationConfig': {
+              'temperature': 0.1,
+              'responseMimeType': 'application/json',
+              'responseSchema': responseSchema,
+            },
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final jsonText = _extractText(data);
+          final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
+          return ParsedVoiceCommand.fromJson(parsed);
+        } else if (response.statusCode == 404) {
+          continue;
+        } else {
+          throw GeminiException(
+            'Erreur API ($model: ${response.statusCode}) : ${response.body}',
+          );
+        }
+      } catch (e) {
+        if (e is GeminiException && !e.message.contains('404')) {
+          rethrow;
+        }
+      }
+    }
+
+    throw const GeminiException('Échec de l\'analyse texte');
   }
 
   /// Construit le prompt système avec le contexte du match.
@@ -170,36 +228,39 @@ class GeminiService {
         .join(', ');
 
     return '''
-Tu es un assistant de scoring sportif intelligent. 
-Tu dois analyser les commandes vocales d'un utilisateur et les transformer en événements structurés JSON.
+Tu es un assistant arbitre/scoreur sportif intelligent en direct pour un match.
+Tu reçois des commandes vocales ou textuelles d'un joueur ou arbitre et tu dois extraire l'événement de jeu sous forme de JSON strict.
 
-## Contexte du match
+## Contexte du match en cours
 - Sport : ${match.sport.label}
-- Équipe A : "${match.teamA.name}"${teamAPlayers.isNotEmpty ? ' (joueurs: $teamAPlayers)' : ''}
-- Équipe B : "${match.teamB.name}"${teamBPlayers.isNotEmpty ? ' (joueurs: $teamBPlayers)' : ''}
-- Minute actuelle : ${match.currentMinute}
+- Équipe A : "${match.teamA.name}" (couleur: ${match.teamA.color ?? 'non spécifiée'})${teamAPlayers.isNotEmpty ? ', joueurs: $teamAPlayers' : ''}
+- Équipe B : "${match.teamB.name}" (couleur: ${match.teamB.color ?? 'non spécifiée'})${teamBPlayers.isNotEmpty ? ', joueurs: $teamBPlayers' : ''}
+- Minute actuelle du match : ${match.currentMinute}'
 
-## Types d'événements disponibles
-${match.sport.availableEvents.map((e) => '- ${e.name}: ${e.label}').join('\n')}
+## Types d'événements autorisés pour ce sport (${match.sport.label})
+${match.sport.availableEvents.map((e) => '- "${e.name}": ${e.label}').join('\n')}
+- "correction": Pour annuler le dernier événement ou corriger une erreur
+- "unknown": Si aucune parole claire ou aucun événement sportif n'est reconnu
 
-## Règles
-1. Identifie quel type d'événement est décrit dans la commande vocale.
-2. Détermine l'équipe concernée en faisant correspondre les noms (même partiellement, ex: "rouge" → "${match.teamA.name}").
-3. Extrais les noms des joueurs mentionnés.
-4. Pour un "but assisté par X", X va dans "secondary_player".
-5. Pour une correction/annulation, utilise type="correction" et action="undo_last".
-6. Si la commande est incompréhensible, utilise type="unknown".
-7. Réponds UNIQUEMENT avec le JSON demandé, aucun texte autour.
+## Règles de parsing
+1. "transcription" : Contient la transcription exacte du texte prononcé en français.
+2. "type" : Le type d'événement parmi la liste autorisée. Si rien n'a été dit ou si c'est inaudible, mets "unknown".
+3. "team" : Le nom ou la couleur de l'équipe concernée (ex: "${match.teamA.name}" ou "${match.teamA.color ?? 'A'}").
+4. "player" : Nom du joueur principal (buteur, fautif, joueur recevant un carton...).
+5. "secondary_player" : Nom du passeur décisif ("assisté par X") ou joueur entrant lors d'un changement.
+6. "is_penalty" : true si la voix mentionne un penalty ou coup franc direct transformé.
+7. "points" : Pour basket (2 ou 3 points), rugby (5 pour essai, 2 pour transformation), hand/foot (1 par défaut).
+8. "correction_action" : "undo_last" si l'utilisateur demande d'annuler ou supprimer le dernier but/événement.
 
 ## Exemples
-Commande: "But pour l'équipe rouge par Cedric assisté par Nabil"
-→ type=goal, team="rouge", player="Cedric", secondary_player="Nabil"
+Audio: "But pour l'équipe rouge par Cedric assisté par Nabil"
+→ transcription="But pour l'équipe rouge par Cedric assisté par Nabil", type="goal", team="rouge", player="Cedric", secondary_player="Nabil", points=1
 
-Commande: "Carton jaune pour le joueur numéro 10 de l'équipe bleue"  
-→ type=yellow_card, team="bleue", player="#10"
+Audio: "Carton jaune pour le joueur numéro 10 de l'équipe bleue"  
+→ transcription="Carton jaune pour le joueur numéro 10 de l'équipe bleue", type="yellowCard", team="bleue", player="#10"
 
-Commande: "Annule le dernier but"
-→ type=correction, correction_action="undo_last"
+Audio: "Annule le dernier but"
+→ transcription="Annule le dernier but", type="correction", team="${match.teamA.name}", correction_action="undo_last"
 ''';
   }
 
@@ -208,6 +269,10 @@ Commande: "Annule le dernier but"
     return {
       'type': 'OBJECT',
       'properties': {
+        'transcription': {
+          'type': 'STRING',
+          'description': 'Transcription textuelle exacte de la voix en français',
+        },
         'type': {
           'type': 'STRING',
           'enum': GameEventType.values.map((e) => e.name).toList(),
@@ -215,7 +280,7 @@ Commande: "Annule le dernier but"
         },
         'team': {
           'type': 'STRING',
-          'description': 'Nom ou identifiant de l\'équipe concernée',
+          'description': 'Nom ou couleur de l\'équipe concernée',
         },
         'player': {
           'type': 'STRING',
@@ -235,7 +300,7 @@ Commande: "Annule le dernier but"
         },
         'points': {
           'type': 'INTEGER',
-          'description': 'Nombre de points (basket: 2 ou 3, rugby: 5 pour essai...)',
+          'description': 'Nombre de points marqués',
         },
         'correction_action': {
           'type': 'STRING',
@@ -243,10 +308,10 @@ Commande: "Annule le dernier but"
         },
         'notes': {
           'type': 'STRING',
-          'description': 'Informations libres non structurées',
+          'description': 'Informations supplémentaires éventuelles',
         },
       },
-      'required': ['type', 'team'],
+      'required': ['transcription', 'type', 'team'],
     };
   }
 
@@ -255,12 +320,12 @@ Commande: "Annule le dernier but"
     final candidates =
         data['candidates'] as List<dynamic>? ?? [];
     if (candidates.isEmpty) {
-      throw GeminiException('Aucun candidat dans la réponse Gemini');
+      throw const GeminiException('Aucune réponse générée par l\'IA');
     }
     final content = candidates[0]['content'] as Map<String, dynamic>? ?? {};
     final parts = content['parts'] as List<dynamic>? ?? [];
     if (parts.isEmpty) {
-      throw GeminiException('Aucune partie dans la réponse Gemini');
+      throw const GeminiException('Réponse vide de l\'IA');
     }
     return parts[0]['text'] as String? ?? '';
   }

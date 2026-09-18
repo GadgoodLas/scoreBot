@@ -99,7 +99,7 @@ class MatchRepository {
   /// Démarre l'enregistrement d'une commande vocale.
   Future<void> startVoiceCommand() => _audio.startRecording();
 
-  /// Arrête l'enregistrement, transcrit via Gemini, parse l'intention,
+  /// Arrête l'enregistrement, traite l'audio via Gemini en une seule passe,
   /// crée et persiste l'événement de match.
   ///
   /// Retourne un [VoiceCommandResult] avec l'événement créé ou l'erreur.
@@ -108,32 +108,30 @@ class MatchRepository {
       // 1. Arrêter l'enregistrement et récupérer l'audio
       final audioBytes = await _audio.stopRecording();
 
-      // 2. Transcrire l'audio via Gemini
-      final transcription = await _gemini.transcribeAudio(
-        audioBytes,
+      // 2. Traiter directement l'audio avec Gemini en une seule passe
+      final parsed = await _gemini.processAudioCommand(
+        audioBytes: audioBytes,
         mimeType: _audio.mimeType,
+        match: match,
       );
-      if (transcription.isEmpty) {
-        return const VoiceCommandResult(
-          transcription: '',
-          errorMessage: 'Aucune parole détectée. Réessayez.',
-        );
-      }
 
-      // 3. Parser la commande NLP
-      final parsed = await _gemini.parseVoiceCommand(transcription, match);
+      final transcription = parsed.transcription.isNotEmpty
+          ? parsed.transcription
+          : 'Commande vocale';
 
       if (parsed.type == GameEventType.unknown) {
         return VoiceCommandResult(
           transcription: transcription,
-          errorMessage: 'Commande non reconnue : "$transcription"',
+          errorMessage: parsed.transcription.isNotEmpty
+              ? 'Événement non reconnu : "${parsed.transcription}"'
+              : 'Aucune parole claire détectée. Réessayez.',
         );
       }
 
-      // 4. Résoudre l'équipe (correspondance par nom)
+      // 3. Résoudre l'équipe (correspondance par nom ou couleur)
       final resolvedTeam = _resolveTeam(parsed.teamName, match);
 
-      // 5. Créer l'événement de domaine
+      // 4. Créer l'événement de domaine
       final minute = parsed.minute ?? match.currentMinute;
       final eventId = _uuid.v4();
       final now = DateTime.now();
@@ -146,7 +144,7 @@ class MatchRepository {
         timestamp: now,
       );
 
-      // 6. Persister l'événement
+      // 5. Persister l'événement
       await _storage.saveEvent(match.id, event);
 
       return VoiceCommandResult(
@@ -156,17 +154,67 @@ class MatchRepository {
     } on AudioException catch (e) {
       return VoiceCommandResult(
         transcription: '',
-        errorMessage: 'Erreur audio : ${e.message}',
+        errorMessage: e.message,
       );
     } on GeminiException catch (e) {
       return VoiceCommandResult(
         transcription: '',
-        errorMessage: 'Erreur IA : ${e.message}',
+        errorMessage: e.message,
       );
     } catch (e) {
       return VoiceCommandResult(
         transcription: '',
         errorMessage: 'Erreur inattendue : $e',
+      );
+    }
+  }
+
+  /// Traite une commande saisie sous forme de texte (fallback pratique).
+  Future<VoiceCommandResult> processTextCommand(
+    String text,
+    GameMatch match,
+  ) async {
+    try {
+      final parsed = await _gemini.parseTextCommand(
+        text: text,
+        match: match,
+      );
+
+      if (parsed.type == GameEventType.unknown) {
+        return VoiceCommandResult(
+          transcription: text,
+          errorMessage: 'Commande non reconnue : "$text"',
+        );
+      }
+
+      final resolvedTeam = _resolveTeam(parsed.teamName, match);
+      final minute = parsed.minute ?? match.currentMinute;
+      final eventId = _uuid.v4();
+      final now = DateTime.now();
+
+      final event = _buildEvent(
+        id: eventId,
+        parsed: parsed,
+        teamId: resolvedTeam?.id ?? match.teamA.id,
+        minute: minute,
+        timestamp: now,
+      );
+
+      await _storage.saveEvent(match.id, event);
+
+      return VoiceCommandResult(
+        transcription: text,
+        event: event,
+      );
+    } on GeminiException catch (e) {
+      return VoiceCommandResult(
+        transcription: text,
+        errorMessage: e.message,
+      );
+    } catch (e) {
+      return VoiceCommandResult(
+        transcription: text,
+        errorMessage: 'Erreur : $e',
       );
     }
   }
