@@ -11,19 +11,23 @@ class VoiceCommandResult {
   const VoiceCommandResult({
     required this.transcription,
     this.event,
+    this.matchControl,
     this.errorMessage,
   });
 
   /// Texte transcrit par Gemini.
   final String transcription;
 
-  /// Événement créé (null si parsing échoué ou commande inconnue).
+  /// Événement créé (null si parsing échoué ou commande de contrôle match).
   final GameEvent? event;
+
+  /// Contrôle match demandé ('pause', 'resume', 'halftime', 'end_match').
+  final String? matchControl;
 
   /// Message d'erreur si quelque chose s'est mal passé.
   final String? errorMessage;
 
-  bool get isSuccess => event != null;
+  bool get isSuccess => event != null || matchControl != null;
 }
 
 /// Repository central de ScoreBot.
@@ -77,6 +81,20 @@ class MatchRepository {
     return updated;
   }
 
+  /// Reprend le match.
+  Future<GameMatch> resumeMatch(GameMatch match) async {
+    final updated = match.copyWith(status: GameMatchStatus.live);
+    await _storage.saveMatch(updated);
+    return updated;
+  }
+
+  /// Met le match en pause.
+  Future<GameMatch> pauseMatch(GameMatch match) async {
+    final updated = match.copyWith(status: GameMatchStatus.paused);
+    await _storage.saveMatch(updated);
+    return updated;
+  }
+
   /// Passe le match en mi-temps.
   Future<GameMatch> startHalftime(GameMatch match) async {
     final updated = match.copyWith(status: GameMatchStatus.halftime);
@@ -100,7 +118,7 @@ class MatchRepository {
   Future<void> startVoiceCommand() => _audio.startRecording();
 
   /// Arrête l'enregistrement, traite l'audio via Gemini en une seule passe,
-  /// crée et persiste l'événement de match.
+  /// crée et persiste l'événement de match ou exécute l'action de contrôle.
   ///
   /// Retourne un [VoiceCommandResult] avec l'événement créé ou l'erreur.
   Future<VoiceCommandResult> stopAndProcessVoiceCommand(GameMatch match) async {
@@ -119,6 +137,14 @@ class MatchRepository {
           ? parsed.transcription
           : 'Commande vocale';
 
+      // 3. Gestion d'un contrôle de match vocal (pause, reprise, mi-temps, fin)
+      if (parsed.matchControl != null) {
+        return VoiceCommandResult(
+          transcription: transcription,
+          matchControl: parsed.matchControl,
+        );
+      }
+
       if (parsed.type == GameEventType.unknown) {
         return VoiceCommandResult(
           transcription: transcription,
@@ -128,10 +154,15 @@ class MatchRepository {
         );
       }
 
-      // 3. Résoudre l'équipe (correspondance par nom ou couleur)
-      final resolvedTeam = _resolveTeam(parsed.teamName, match);
+      // 4. Résoudre l'équipe (correspondance par nom, joueur ou couleur)
+      final resolvedTeam = _resolveTeam(
+        parsed.teamName,
+        match,
+        playerName: parsed.playerName,
+        secondaryPlayerName: parsed.secondaryPlayerName,
+      );
 
-      // 4. Créer l'événement de domaine
+      // 5. Créer l'événement de domaine
       final minute = parsed.minute ?? match.currentMinute;
       final eventId = _uuid.v4();
       final now = DateTime.now();
@@ -142,9 +173,10 @@ class MatchRepository {
         teamId: resolvedTeam?.id ?? match.teamA.id,
         minute: minute,
         timestamp: now,
+        match: match,
       );
 
-      // 5. Persister l'événement
+      // 6. Persister l'événement
       await _storage.saveEvent(match.id, event);
 
       return VoiceCommandResult(
@@ -180,14 +212,28 @@ class MatchRepository {
         match: match,
       );
 
+      final transcription = parsed.transcription.isNotEmpty ? parsed.transcription : text;
+
+      if (parsed.matchControl != null) {
+        return VoiceCommandResult(
+          transcription: transcription,
+          matchControl: parsed.matchControl,
+        );
+      }
+
       if (parsed.type == GameEventType.unknown) {
         return VoiceCommandResult(
-          transcription: text,
+          transcription: transcription,
           errorMessage: 'Commande non reconnue : "$text"',
         );
       }
 
-      final resolvedTeam = _resolveTeam(parsed.teamName, match);
+      final resolvedTeam = _resolveTeam(
+        parsed.teamName,
+        match,
+        playerName: parsed.playerName,
+        secondaryPlayerName: parsed.secondaryPlayerName,
+      );
       final minute = parsed.minute ?? match.currentMinute;
       final eventId = _uuid.v4();
       final now = DateTime.now();
@@ -198,12 +244,13 @@ class MatchRepository {
         teamId: resolvedTeam?.id ?? match.teamA.id,
         minute: minute,
         timestamp: now,
+        match: match,
       );
 
       await _storage.saveEvent(match.id, event);
 
       return VoiceCommandResult(
-        transcription: text,
+        transcription: transcription,
         event: event,
       );
     } on GeminiException catch (e) {
@@ -245,6 +292,34 @@ class MatchRepository {
 
   // ─────────────── SCORE ───────────────
 
+  /// Ajoute 1 point (ou n points) au score d'une équipe via un GoalEvent.
+  Future<GameMatch> addPoint(GameMatch match, String teamId, {int points = 1}) async {
+    final event = GoalEvent(
+      id: _uuid.v4(),
+      teamId: teamId,
+      minute: match.currentMinute,
+      timestamp: DateTime.now(),
+      points: points,
+    );
+    await _storage.saveEvent(match.id, event);
+    return recalculateScore(match);
+  }
+
+  /// Retire 1 point (ou le dernier but) d'une équipe.
+  Future<GameMatch> removePoint(GameMatch match, String teamId) async {
+    final events = _storage.getEventsForMatch(match.id);
+    // Trouve le dernier événement de score de cette équipe
+    final lastGoalIndex = events.lastIndexWhere(
+      (e) => e is GoalEvent && e.teamId == teamId,
+    );
+
+    if (lastGoalIndex != -1) {
+      final goalToRemove = events[lastGoalIndex];
+      await _storage.deleteEvent(match.id, goalToRemove.id);
+    }
+    return recalculateScore(match);
+  }
+
   /// Recalcule et met à jour le score d'un match à partir de ses événements.
   Future<GameMatch> recalculateScore(GameMatch match) async {
     final events = _storage.getEventsForMatch(match.id);
@@ -272,28 +347,112 @@ class MatchRepository {
   /// Liste tous les matchs sauvegardés.
   List<GameMatch> listMatches() => _storage.listMatches();
 
-  // ─────────────── PRIVATE HELPERS ───────────────
+  /// Résout l'équipe à partir d'un nom partiel, d'une couleur, d'un mot-clé ou d'un joueur.
+  Team? _resolveTeam(
+    String teamName,
+    GameMatch match, {
+    String? playerName,
+    String? secondaryPlayerName,
+  }) {
+    // 1. Recherche via les joueurs du match si précisés
+    final playerQuery = playerName?.toLowerCase().trim() ?? '';
+    final secPlayerQuery = secondaryPlayerName?.toLowerCase().trim() ?? '';
 
-  /// Résout l'équipe à partir d'un nom partiel ou d'une couleur.
-  Team? _resolveTeam(String teamName, GameMatch match) {
+    if (playerQuery.isNotEmpty || secPlayerQuery.isNotEmpty) {
+      for (final p in match.teamB.players) {
+        final pName = p.name.toLowerCase();
+        if ((playerQuery.isNotEmpty && pName.contains(playerQuery)) ||
+            (secPlayerQuery.isNotEmpty && pName.contains(secPlayerQuery))) {
+          return match.teamB;
+        }
+      }
+      for (final p in match.teamA.players) {
+        final pName = p.name.toLowerCase();
+        if ((playerQuery.isNotEmpty && pName.contains(playerQuery)) ||
+            (secPlayerQuery.isNotEmpty && pName.contains(secPlayerQuery))) {
+          return match.teamA;
+        }
+      }
+    }
+
     if (teamName.isEmpty) return match.teamA;
 
     final normalized = teamName.toLowerCase().trim();
 
-    // Correspondance exacte ou partielle sur le nom ou la couleur
-    for (final team in [match.teamA, match.teamB]) {
-      if (team.name.toLowerCase().contains(normalized) ||
-          normalized.contains(team.name.toLowerCase())) {
-        return team;
-      }
-      if (team.color != null &&
-          (team.color!.toLowerCase().contains(normalized) ||
-              normalized.contains(team.color!.toLowerCase()))) {
-        return team;
+    // 2. Correspondance exacte ou partielle avec le nom officiel de l'équipe
+    if (match.teamB.name.toLowerCase().contains(normalized) ||
+        normalized.contains(match.teamB.name.toLowerCase())) {
+      return match.teamB;
+    }
+    if (match.teamA.name.toLowerCase().contains(normalized) ||
+        normalized.contains(match.teamA.name.toLowerCase())) {
+      return match.teamA;
+    }
+
+    // 3. Correspondance par couleur
+    if (match.teamB.color != null &&
+        (match.teamB.color!.toLowerCase().contains(normalized) ||
+            normalized.contains(match.teamB.color!.toLowerCase()))) {
+      return match.teamB;
+    }
+    if (match.teamA.color != null &&
+        (match.teamA.color!.toLowerCase().contains(normalized) ||
+            normalized.contains(match.teamA.color!.toLowerCase()))) {
+      return match.teamA;
+    }
+
+    // 4. Mots-clés relatifs (Équipe 2, Bleu, Extérieur, Eux...)
+    const teamBKeywords = [
+      'b',
+      '2',
+      'deux',
+      'deuxième',
+      'deuxieme',
+      'bleu',
+      'bleue',
+      'bleus',
+      'bleues',
+      'extérieur',
+      'exterieur',
+      'visiteur',
+      'visiteurs',
+      'eux',
+      'les autres',
+      'droite',
+    ];
+    for (final kw in teamBKeywords) {
+      if (normalized == kw ||
+          normalized.contains('équipe $kw') ||
+          normalized.contains('equipe $kw')) {
+        return match.teamB;
       }
     }
 
-    return match.teamA; // Fallback sur l'équipe A
+    // 5. Mots-clés relatifs (Équipe 1, Rouge, Domicile, Nous...)
+    const teamAKeywords = [
+      'a',
+      '1',
+      'un',
+      'première',
+      'premiere',
+      'premier',
+      'rouge',
+      'rouges',
+      'domicile',
+      'nous',
+      'les nôtres',
+      'les notres',
+      'gauche',
+    ];
+    for (final kw in teamAKeywords) {
+      if (normalized == kw ||
+          normalized.contains('équipe $kw') ||
+          normalized.contains('equipe $kw')) {
+        return match.teamA;
+      }
+    }
+
+    return match.teamA; // Fallback par défaut sur l'équipe A
   }
 
   /// Crée un [GameEvent] concret à partir d'une commande parsée.
@@ -303,15 +462,19 @@ class MatchRepository {
     required String teamId,
     required int minute,
     required DateTime timestamp,
+    required GameMatch match,
   }) {
+    final normScorer = _normalizePlayerName(parsed.playerName, teamId, match);
+    final normAssist = _normalizePlayerName(parsed.secondaryPlayerName, teamId, match);
+
     return switch (parsed.type) {
       GameEventType.goal => GoalEvent(
           id: id,
           teamId: teamId,
           minute: minute,
           timestamp: timestamp,
-          scorerName: parsed.playerName,
-          assistName: parsed.secondaryPlayerName,
+          scorerName: normScorer,
+          assistName: normAssist,
           isPenalty: parsed.isPenalty,
           points: parsed.points ?? 1,
         ),
@@ -321,14 +484,14 @@ class MatchRepository {
           teamId: teamId,
           minute: minute,
           timestamp: timestamp,
-          playerName: parsed.playerName,
+          playerName: normScorer,
         ),
       GameEventType.foul => FoulEvent(
           id: id,
           teamId: teamId,
           minute: minute,
           timestamp: timestamp,
-          playerName: parsed.playerName,
+          playerName: normScorer,
         ),
       GameEventType.timeout => TimeoutEvent(
           id: id,
@@ -341,8 +504,8 @@ class MatchRepository {
           teamId: teamId,
           minute: minute,
           timestamp: timestamp,
-          playerOutName: parsed.playerName,
-          playerInName: parsed.secondaryPlayerName,
+          playerOutName: normScorer,
+          playerInName: normAssist,
         ),
       GameEventType.correction => CorrectionEvent(
           id: id,
@@ -360,5 +523,35 @@ class MatchRepository {
           notes: parsed.notes,
         ),
     };
+  }
+
+  /// Normalise le nom d'un joueur en le rattachant au nom exact enregistré dans le match si trouvé.
+  String? _normalizePlayerName(String? name, String teamId, GameMatch match) {
+    if (name == null || name.trim().isEmpty) return null;
+    final clean = name.trim().toLowerCase();
+
+    // Recherche d'abord dans l'équipe concernée
+    final team = match.teamById(teamId);
+    if (team != null) {
+      for (final p in team.players) {
+        if (p.name.toLowerCase() == clean ||
+            p.name.toLowerCase().contains(clean) ||
+            clean.contains(p.name.toLowerCase())) {
+          return p.name;
+        }
+      }
+    }
+
+    // Recherche dans l'autre équipe
+    final otherTeam = teamId == match.teamA.id ? match.teamB : match.teamA;
+    for (final p in otherTeam.players) {
+      if (p.name.toLowerCase() == clean ||
+          p.name.toLowerCase().contains(clean) ||
+          clean.contains(p.name.toLowerCase())) {
+        return p.name;
+      }
+    }
+
+    return name.trim();
   }
 }

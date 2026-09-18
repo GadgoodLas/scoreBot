@@ -99,27 +99,32 @@ class _MatchHeader extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      match.teamA.name,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                child: GestureDetector(
+                  onTap: () => viewModel.incrementScoreA(),
+                  onDoubleTap: () => viewModel.decrementScoreA(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    children: [
+                      Text(
+                        match.teamA.name,
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${viewModel.scoreA}',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 56,
-                        fontWeight: FontWeight.bold,
-                        fontFeatures: [FontFeature.tabularFigures()],
+                      Text(
+                        '${viewModel.scoreA}',
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 56,
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const Text(
@@ -130,27 +135,32 @@ class _MatchHeader extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      match.teamB.name,
-                      style: const TextStyle(
-                        color: Colors.blueAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                child: GestureDetector(
+                  onTap: () => viewModel.incrementScoreB(),
+                  onDoubleTap: () => viewModel.decrementScoreB(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    children: [
+                      Text(
+                        match.teamB.name,
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${viewModel.scoreB}',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 56,
-                        fontWeight: FontWeight.bold,
-                        fontFeatures: [FontFeature.tabularFigures()],
+                      Text(
+                        '${viewModel.scoreB}',
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 56,
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],

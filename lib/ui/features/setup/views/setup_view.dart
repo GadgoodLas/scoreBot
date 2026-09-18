@@ -61,8 +61,8 @@ class _SetupViewState extends State<SetupView> {
                 _SportSelector(viewModel: widget.viewModel),
                 const SizedBox(height: 28),
 
-                // ─── Équipes ───
-                _SectionTitle(title: 'Équipes'),
+                // ─── Équipes & Joueurs ───
+                _SectionTitle(title: 'Équipes & Joueurs'),
                 const SizedBox(height: 12),
                 _TeamInput(
                   label: 'Équipe A',
@@ -70,12 +70,28 @@ class _SetupViewState extends State<SetupView> {
                   color: Colors.redAccent,
                   onChanged: widget.viewModel.setTeamAName,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                _PlayersSection(
+                  teamName: widget.viewModel.teamAName,
+                  color: Colors.redAccent,
+                  players: widget.viewModel.teamAPlayers,
+                  onAddPlayer: widget.viewModel.addPlayerToTeamA,
+                  onRemovePlayer: widget.viewModel.removePlayerFromTeamA,
+                ),
+                const SizedBox(height: 20),
                 _TeamInput(
                   label: 'Équipe B',
                   controller: _teamBController,
                   color: Colors.blueAccent,
                   onChanged: widget.viewModel.setTeamBName,
+                ),
+                const SizedBox(height: 8),
+                _PlayersSection(
+                  teamName: widget.viewModel.teamBName,
+                  color: Colors.blueAccent,
+                  players: widget.viewModel.teamBPlayers,
+                  onAddPlayer: widget.viewModel.addPlayerToTeamB,
+                  onRemovePlayer: widget.viewModel.removePlayerFromTeamB,
                 ),
                 const SizedBox(height: 28),
 
@@ -286,4 +302,118 @@ class _DurationSlider extends StatelessWidget {
     );
   }
 }
+
+class _PlayersSection extends StatefulWidget {
+  const _PlayersSection({
+    required this.teamName,
+    required this.color,
+    required this.players,
+    required this.onAddPlayer,
+    required this.onRemovePlayer,
+  });
+
+  final String teamName;
+  final Color color;
+  final List<String> players;
+  final void Function(String) onAddPlayer;
+  final void Function(int) onRemovePlayer;
+
+  @override
+  State<_PlayersSection> createState() => _PlayersSectionState();
+}
+
+class _PlayersSectionState extends State<_PlayersSection> {
+  final _controller = TextEditingController();
+
+  void _submit() {
+    final text = _controller.text.trim();
+    if (text.isNotEmpty) {
+      widget.onAddPlayer(text);
+      _controller.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  onSubmitted: (_) => _submit(),
+                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Ajouter joueur(s) (ex: Stéphane, Nabil...)',
+                    hintStyle: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: AppTheme.divider),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.person_add, color: widget.color, size: 20),
+                onPressed: _submit,
+                tooltip: 'Ajouter',
+              ),
+            ],
+          ),
+          if (widget.players.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: List.generate(widget.players.length, (index) {
+                final player = widget.players[index];
+                return InputChip(
+                  label: Text(
+                    player,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  backgroundColor: widget.color.withValues(alpha: 0.15),
+                  side: BorderSide(color: widget.color.withValues(alpha: 0.4)),
+                  onDeleted: () => widget.onRemovePlayer(index),
+                  deleteIconColor: Colors.white70,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                );
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 

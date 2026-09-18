@@ -18,6 +18,7 @@ class ParsedVoiceCommand {
     this.correctionAction,
     this.isPenalty = false,
     this.points,
+    this.matchControl,
   });
 
   final String transcription;
@@ -30,6 +31,7 @@ class ParsedVoiceCommand {
   final String? correctionAction; // 'undo_last' etc.
   final bool isPenalty;
   final int? points;
+  final String? matchControl; // 'pause', 'resume', 'halftime', 'end_match'
 
   factory ParsedVoiceCommand.fromJson(Map<String, dynamic> json) {
     final typeStr = json['type'] as String? ?? 'unknown';
@@ -49,12 +51,13 @@ class ParsedVoiceCommand {
       correctionAction: json['correction_action'] as String?,
       isPenalty: json['is_penalty'] as bool? ?? false,
       points: json['points'] as int?,
+      matchControl: json['match_control'] as String?,
     );
   }
 
   @override
   String toString() =>
-      'ParsedVoiceCommand(transcription: "$transcription", type: $type, team: $teamName, player: $playerName)';
+      'ParsedVoiceCommand(transcription: "$transcription", type: $type, team: $teamName, player: $playerName, control: $matchControl)';
 }
 
 /// Service d'intégration avec la Gemini API.
@@ -64,10 +67,14 @@ class GeminiService {
 
   final String _apiKey;
 
-  // Modèles avec fallback automatique (gemini-3.6-flash et gemini-3.5-flash)
+  // Modèles avec fallback automatique en cascade (par ordre de rapidité et stabilité)
   static const List<String> _models = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-3.8-flash',
     'gemini-3.6-flash',
     'gemini-3.5-flash',
+    'gemini-1.5-flash',
   ];
   static const _baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -87,69 +94,38 @@ class GeminiService {
     final systemPrompt = _buildSystemPrompt(match);
     final responseSchema = _buildResponseSchema();
 
-    Exception? lastException;
-
-    for (final model in _models) {
-      try {
-        final response = await http.post(
-          Uri.parse('$_baseUrl/models/$model:generateContent?key=$_apiKey'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'system_instruction': {
-              'parts': [
-                {'text': systemPrompt},
-              ],
+    final body = jsonEncode({
+      'system_instruction': {
+        'parts': [
+          {'text': systemPrompt},
+        ],
+      },
+      'contents': [
+        {
+          'parts': [
+            {
+              'inlineData': {
+                'mimeType': mimeType,
+                'data': base64Audio,
+              }
             },
-            'contents': [
-              {
-                'parts': [
-                  {
-                    'inlineData': {
-                      'mimeType': mimeType,
-                      'data': base64Audio,
-                    }
-                  },
-                  {
-                    'text':
-                        'Écoute attentivement cet enregistrement audio en français. '
-                        'Transcris exactement ce qui est dit dans le champ "transcription", '
-                        'puis analyse l\'événement de match pour remplir les champs structurés JSON.',
-                  },
-                ],
-              },
-            ],
-            'generationConfig': {
-              'temperature': 0.1,
-              'responseMimeType': 'application/json',
-              'responseSchema': responseSchema,
+            {
+              'text':
+                  'Écoute attentivement cet enregistrement audio en français. '
+                  'Transcris exactement ce qui est dit dans le champ "transcription", '
+                  'puis analyse l\'événement de match pour remplir les champs structurés JSON.',
             },
-          }),
-        );
+          ],
+        },
+      ],
+      'generationConfig': {
+        'temperature': 0.1,
+        'responseMimeType': 'application/json',
+        'responseSchema': responseSchema,
+      },
+    });
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final jsonText = _extractText(data);
-          final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
-          return ParsedVoiceCommand.fromJson(parsed);
-        } else if (response.statusCode == 404) {
-          // Essayer le modèle suivant
-          lastException = GeminiException('Modèle $model indisponible (404)');
-          continue;
-        } else {
-          final errorBody = response.body;
-          throw GeminiException(
-            'Erreur API ($model: ${response.statusCode}) : $errorBody',
-          );
-        }
-      } catch (e) {
-        if (e is GeminiException && !e.message.contains('404')) {
-          rethrow;
-        }
-        lastException = e is Exception ? e : Exception(e.toString());
-      }
-    }
-
-    throw lastException ?? const GeminiException('Échec du traitement IA');
+    return _executeWithFallback(body);
   }
 
   /// Parse une commande textuelle directe (pour le fallback ou test sans micro).
@@ -166,56 +142,101 @@ class GeminiService {
     final systemPrompt = _buildSystemPrompt(match);
     final responseSchema = _buildResponseSchema();
 
-    for (final model in _models) {
-      try {
-        final response = await http.post(
-          Uri.parse('$_baseUrl/models/$model:generateContent?key=$_apiKey'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'system_instruction': {
-              'parts': [
-                {'text': systemPrompt},
-              ],
+    final body = jsonEncode({
+      'system_instruction': {
+        'parts': [
+          {'text': systemPrompt},
+        ],
+      },
+      'contents': [
+        {
+          'parts': [
+            {
+              'text':
+                  'Analyse cette commande : "$text". '
+                  'Remplis "transcription" avec ce texte et remplis les champs structurés JSON.',
             },
-            'contents': [
-              {
-                'parts': [
-                  {
-                    'text':
-                        'Analyse cette commande : "$text". '
-                        'Remplis "transcription" avec ce texte et remplis les champs structurés JSON.',
-                  },
-                ],
-              },
-            ],
-            'generationConfig': {
-              'temperature': 0.1,
-              'responseMimeType': 'application/json',
-              'responseSchema': responseSchema,
-            },
-          }),
-        );
+          ],
+        },
+      ],
+      'generationConfig': {
+        'temperature': 0.1,
+        'responseMimeType': 'application/json',
+        'responseSchema': responseSchema,
+      },
+    });
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final jsonText = _extractText(data);
-          final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
-          return ParsedVoiceCommand.fromJson(parsed);
-        } else if (response.statusCode == 404) {
-          continue;
-        } else {
+    return _executeWithFallback(body);
+  }
+
+  /// Exécute l'appel API avec retry exponentiel sur 429/503 et bascule de modèle.
+  Future<ParsedVoiceCommand> _executeWithFallback(String requestBody) async {
+    Exception? lastException;
+    bool hitRateLimit = false;
+
+    for (final model in _models) {
+      final uri = Uri.parse('$_baseUrl/models/$model:generateContent?key=$_apiKey');
+
+      // Jusqu'à 2 essais par modèle (retry après 800ms en cas de 429/503)
+      for (int attempt = 1; attempt <= 2; attempt++) {
+        try {
+          final response = await http.post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          ).timeout(const Duration(seconds: 12));
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body) as Map<String, dynamic>;
+            final jsonText = _extractText(data);
+            final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
+            return ParsedVoiceCommand.fromJson(parsed);
+          }
+
+          // Si 429 (Quota/Rate Limit) ou 503 (Serveur saturé)
+          if (response.statusCode == 429 || response.statusCode == 503) {
+            hitRateLimit = true;
+            if (attempt == 1) {
+              await Future.delayed(const Duration(milliseconds: 800));
+              continue; // Réessayer une 2e fois ce même modèle
+            }
+            // Passer au modèle suivant
+            lastException = GeminiException(
+              'Modèle $model surchargé (${response.statusCode})',
+            );
+            break;
+          }
+
+          // Si 404 (Modèle non disponible) ou 500/502/504 (Erreur temporaire)
+          if (response.statusCode == 404 || response.statusCode >= 500) {
+            lastException = GeminiException('Modèle $model indisponible (${response.statusCode})');
+            break; // Passer au modèle suivant
+          }
+
+          // Autre erreur client (ex: 400 mauvaise requête)
+          final errorBody = response.body;
           throw GeminiException(
-            'Erreur API ($model: ${response.statusCode}) : ${response.body}',
+            'Erreur API ($model: ${response.statusCode}) : $errorBody',
           );
-        }
-      } catch (e) {
-        if (e is GeminiException && !e.message.contains('404')) {
-          rethrow;
+        } catch (e) {
+          if (e is GeminiException && e.message.contains('Erreur API ($model: 400)')) {
+            rethrow;
+          }
+          lastException = e is Exception ? e : Exception(e.toString());
+          if (attempt == 1) {
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
         }
       }
     }
 
-    throw const GeminiException('Échec de l\'analyse texte');
+    if (hitRateLimit) {
+      throw const GeminiException(
+        '⚠️ Quota Gemini saturé (429/503). Veuillez patienter quelques secondes avant de reparler.',
+      );
+    }
+
+    throw lastException ?? const GeminiException('Échec du traitement IA');
   }
 
   /// Construit le prompt système avec le contexte du match.
@@ -228,39 +249,57 @@ class GeminiService {
         .join(', ');
 
     return '''
-Tu es un assistant arbitre/scoreur sportif intelligent en direct pour un match.
-Tu reçois des commandes vocales ou textuelles d'un joueur ou arbitre et tu dois extraire l'événement de jeu sous forme de JSON strict.
+Tu es un arbitre et scoreur sportif intelligent assistant en direct pendant un match.
+Tu reçois des commandes vocales ou textuelles courtes en français d'un joueur, arbitre ou coach (souvent depuis une montre Pixel Watch ou un smartphone au bord du terrain).
+Tu dois comprendre l'intention et extraire l'événement ou le contrôle du match sous forme de JSON strict.
 
 ## Contexte du match en cours
 - Sport : ${match.sport.label}
-- Équipe A : "${match.teamA.name}" (couleur: ${match.teamA.color ?? 'non spécifiée'})${teamAPlayers.isNotEmpty ? ', joueurs: $teamAPlayers' : ''}
-- Équipe B : "${match.teamB.name}" (couleur: ${match.teamB.color ?? 'non spécifiée'})${teamBPlayers.isNotEmpty ? ', joueurs: $teamBPlayers' : ''}
+- Équipe A (Équipe 1 / Domicile / Rouge / Nous) : "${match.teamA.name}" (couleur: ${match.teamA.color ?? 'rouge'})${teamAPlayers.isNotEmpty ? ', joueurs: $teamAPlayers' : ''}
+- Équipe B (Équipe 2 / Extérieur / Bleu / Eux) : "${match.teamB.name}" (couleur: ${match.teamB.color ?? 'bleu'})${teamBPlayers.isNotEmpty ? ', joueurs: $teamBPlayers' : ''}
 - Minute actuelle du match : ${match.currentMinute}'
 
-## Types d'événements autorisés pour ce sport (${match.sport.label})
+## Types d'événements autorisés (${match.sport.label})
 ${match.sport.availableEvents.map((e) => '- "${e.name}": ${e.label}').join('\n')}
-- "correction": Pour annuler le dernier événement ou corriger une erreur
-- "unknown": Si aucune parole claire ou aucun événement sportif n'est reconnu
+- "correction": Pour annuler le dernier événement ou corriger une erreur (ex: "annule", "pas but", "enlève le point")
+- "unknown": Si aucun son ou aucune parole compréhensible n'est détectée.
 
-## Règles de parsing
-1. "transcription" : Contient la transcription exacte du texte prononcé en français.
-2. "type" : Le type d'événement parmi la liste autorisée. Si rien n'a été dit ou si c'est inaudible, mets "unknown".
-3. "team" : Le nom ou la couleur de l'équipe concernée (ex: "${match.teamA.name}" ou "${match.teamA.color ?? 'A'}").
-4. "player" : Nom du joueur principal (buteur, fautif, joueur recevant un carton...).
-5. "secondary_player" : Nom du passeur décisif ("assisté par X") ou joueur entrant lors d'un changement.
-6. "is_penalty" : true si la voix mentionne un penalty ou coup franc direct transformé.
-7. "points" : Pour basket (2 ou 3 points), rugby (5 pour essai, 2 pour transformation), hand/foot (1 par défaut).
-8. "correction_action" : "undo_last" si l'utilisateur demande d'annuler ou supprimer le dernier but/événement.
+## Contrôles du match (match_control)
+Si la commande demande de gérer le chronomètre ou l'état du match :
+- "pause" : "pause", "mets en pause", "stop le chrono", "temps mort"
+- "resume" : "reprends", "play", "relance", "reprise"
+- "halftime" : "mi-temps", "c'est la mi-temps"
+- "end_match" : "fin du match", "match terminé", "coup de sifflet final"
 
-## Exemples
-Audio: "But pour l'équipe rouge par Cedric assisté par Nabil"
-→ transcription="But pour l'équipe rouge par Cedric assisté par Nabil", type="goal", team="rouge", player="Cedric", secondary_player="Nabil", points=1
+## Règles de compréhension
+1. "transcription" : Transcription exacte du français parlé. Sois fidèle même si c'est très court (ex: "But !", "1-0", "Pause").
+2. "type" : Type d'événement ("goal", "yellowCard", "redCard", "foul", "substitution", "timeout", "correction", "unknown").
+3. "team" : Résous l'équipe avec bon sens :
+   - "nous", "pour nous", "les nôtres", "équipe 1", "équipe A", "rouge" → "${match.teamA.name}"
+   - "eux", "les autres", "équipe 2", "équipe B", "bleu" → "${match.teamB.name}"
+   - Si un joueur est nommé, associe à son équipe si connue parmi les effectifs.
+   - Si l'équipe n'est pas précisée (ex: "But de Karim" ou juste "But !"), mets "${match.teamA.name}".
+4. "player" : Nom du joueur principal (buteur, fautif, carton...).
+   Ex: "but équipe A stéphane" → player="stéphane".
+5. "secondary_player" : Nom du passeur décisif ("assisté par X", "assist X", "passe de X") ou remplaçant entrant.
+   Ex: "assist nabil" ou "assisté par nabil" → secondary_player="nabil".
+6. "points" : Valeur des points (Foot/Hand=1, Basket=2 ou 3 si tir à 3 points, Rugby essai=5, transfo=2).
+7. "correction_action" : "undo_last" pour annuler le dernier événement.
 
-Audio: "Carton jaune pour le joueur numéro 10 de l'équipe bleue"  
-→ transcription="Carton jaune pour le joueur numéro 10 de l'équipe bleue", type="yellowCard", team="bleue", player="#10"
-
-Audio: "Annule le dernier but"
-→ transcription="Annule le dernier but", type="correction", team="${match.teamA.name}", correction_action="undo_last"
+## Exemples d'interprétation
+- "but équipe A stéphane assist nabil" → transcription="but équipe A stéphane assist nabil", type="goal", team="${match.teamA.name}", player="stéphane", secondary_player="nabil", points=1
+- "but pour les rouges par Stéphane assisté de Nabil" → transcription="but pour les rouges par Stéphane assisté de Nabil", type="goal", team="${match.teamA.name}", player="Stéphane", secondary_player="Nabil", points=1
+- "But de Thomas" → transcription="But de Thomas", type="goal", team="${match.teamA.name}", player="Thomas", points=1
+- "But !" → transcription="But !", type="goal", team="${match.teamA.name}", points=1
+- "1-0" ou "On a marqué" → transcription="1-0", type="goal", team="${match.teamA.name}", points=1
+- "But pour les bleus par Cédric" → transcription="But pour les bleus par Cédric", type="goal", team="${match.teamB.name}", player="Cédric", points=1
+- "Panier à trois points de Lucas" → transcription="Panier à trois points de Lucas", type="goal", team="${match.teamA.name}", player="Lucas", points=3
+- "Carton jaune pour le numéro 7" → transcription="Carton jaune pour le numéro 7", type="yellowCard", team="${match.teamA.name}", player="#7"
+- "Faute" → transcription="Faute", type="foul", team="${match.teamA.name}"
+- "Annule le but" ou "Pas but" → transcription="Annule le but", type="correction", team="${match.teamA.name}", correction_action="undo_last"
+- "Pause" ou "Mets sur pause" → transcription="Pause", type="unknown", team="${match.teamA.name}", match_control="pause"
+- "Mi-temps" → transcription="Mi-temps", type="unknown", team="${match.teamA.name}", match_control="halftime"
+- "Fin du match" → transcription="Fin du match", type="unknown", team="${match.teamA.name}", match_control="end_match"
 ''';
   }
 
@@ -305,6 +344,10 @@ Audio: "Annule le dernier but"
         'correction_action': {
           'type': 'STRING',
           'description': 'Action de correction: "undo_last"',
+        },
+        'match_control': {
+          'type': 'STRING',
+          'description': 'Contrôle match : "pause", "resume", "halftime", "end_match"',
         },
         'notes': {
           'type': 'STRING',

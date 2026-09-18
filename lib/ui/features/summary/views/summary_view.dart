@@ -60,7 +60,7 @@ class SummaryViewModel extends ChangeNotifier {
   List<MapEntry<String, int>> get topScorers {
     final map = <String, int>{};
     for (final e in _events.whereType<GoalEvent>()) {
-      if (e.scorerName != null) {
+      if (e.scorerName != null && e.scorerName!.trim().isNotEmpty) {
         map[e.scorerName!] = (map[e.scorerName!] ?? 0) + e.points;
       }
     }
@@ -72,12 +72,86 @@ class SummaryViewModel extends ChangeNotifier {
   List<MapEntry<String, int>> get topAssists {
     final map = <String, int>{};
     for (final e in _events.whereType<GoalEvent>()) {
-      if (e.assistName != null) {
+      if (e.assistName != null && e.assistName!.trim().isNotEmpty) {
         map[e.assistName!] = (map[e.assistName!] ?? 0) + 1;
       }
     }
     return map.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+  }
+
+  /// Statistiques détaillées de chaque joueur pour une équipe donnée.
+  List<PlayerMatchStats> playerStatsForTeam(String teamId) {
+    final team = _match.teamById(teamId);
+    final knownPlayerNames = <String>{};
+
+    if (team != null) {
+      for (final p in team.players) {
+        if (p.name.trim().isNotEmpty) {
+          knownPlayerNames.add(p.name.trim());
+        }
+      }
+    }
+
+    // Ajoute les joueurs mentionnés lors des événements pour cette équipe
+    for (final e in _events.where((e) => e.teamId == teamId)) {
+      if (e is GoalEvent) {
+        if (e.scorerName != null && e.scorerName!.trim().isNotEmpty) {
+          knownPlayerNames.add(e.scorerName!.trim());
+        }
+        if (e.assistName != null && e.assistName!.trim().isNotEmpty) {
+          knownPlayerNames.add(e.assistName!.trim());
+        }
+      } else if (e is CardEvent && e.playerName != null && e.playerName!.trim().isNotEmpty) {
+        knownPlayerNames.add(e.playerName!.trim());
+      } else if (e is FoulEvent && e.playerName != null && e.playerName!.trim().isNotEmpty) {
+        knownPlayerNames.add(e.playerName!.trim());
+      }
+    }
+
+    final stats = <PlayerMatchStats>[];
+    for (final name in knownPlayerNames) {
+      final norm = name.toLowerCase();
+      int goals = 0;
+      int assists = 0;
+      int yellows = 0;
+      int reds = 0;
+
+      for (final e in _events.where((e) => e.teamId == teamId)) {
+        if (e is GoalEvent) {
+          if (e.scorerName?.toLowerCase() == norm) {
+            goals += e.points;
+          }
+          if (e.assistName?.toLowerCase() == norm) {
+            assists += 1;
+          }
+        } else if (e is CardEvent) {
+          if (e.playerName?.toLowerCase() == norm) {
+            if (e.type == GameEventType.yellowCard) yellows++;
+            if (e.type == GameEventType.redCard) reds++;
+          }
+        }
+      }
+
+      stats.add(PlayerMatchStats(
+        playerName: name,
+        teamId: teamId,
+        goals: goals,
+        assists: assists,
+        yellowCards: yellows,
+        redCards: reds,
+      ));
+    }
+
+    stats.sort((a, b) {
+      final g = b.goals.compareTo(a.goals);
+      if (g != 0) return g;
+      final ast = b.assists.compareTo(a.assists);
+      if (ast != 0) return ast;
+      return a.playerName.compareTo(b.playerName);
+    });
+
+    return stats;
   }
 
   // ─────────────── Timeline ───────────────
@@ -100,13 +174,41 @@ class SummaryViewModel extends ChangeNotifier {
 
       final desc = switch (event) {
         GoalEvent(:final scorerName, :final assistName) =>
-          '${event.type.emoji} ${event.minute}\' $scorerName${assistName != null ? ' (assist: $assistName)' : ''} — $teamName',
+          '${event.type.emoji} ${event.minute}\' ${scorerName ?? "But"}${assistName != null ? ' (assist: $assistName)' : ''} — $teamName',
         CardEvent(:final playerName) =>
           '${event.type.emoji} ${event.minute}\' ${playerName ?? '?'} — $teamName',
         _ => '${event.type.emoji} ${event.minute}\' ${event.type.label} — $teamName',
       };
 
       buf.writeln(desc);
+    }
+
+    final statsA = playerStatsForTeam(_match.teamA.id);
+    if (statsA.isNotEmpty) {
+      buf.writeln('\n👥 Joueurs ${_match.teamA.name} :');
+      for (final p in statsA) {
+        final details = [
+          if (p.goals > 0) '${p.goals} ⚽',
+          if (p.assists > 0) '${p.assists} 🅰️',
+          if (p.yellowCards > 0) '${p.yellowCards} 🟨',
+          if (p.redCards > 0) '${p.redCards} 🟥',
+        ];
+        buf.writeln('- ${p.playerName}${details.isNotEmpty ? " (${details.join(', ')})" : ''}');
+      }
+    }
+
+    final statsB = playerStatsForTeam(_match.teamB.id);
+    if (statsB.isNotEmpty) {
+      buf.writeln('\n👥 Joueurs ${_match.teamB.name} :');
+      for (final p in statsB) {
+        final details = [
+          if (p.goals > 0) '${p.goals} ⚽',
+          if (p.assists > 0) '${p.assists} 🅰️',
+          if (p.yellowCards > 0) '${p.yellowCards} 🟨',
+          if (p.redCards > 0) '${p.redCards} 🟥',
+        ];
+        buf.writeln('- ${p.playerName}${details.isNotEmpty ? " (${details.join(', ')})" : ''}');
+      }
     }
 
     if (topScorers.isNotEmpty) {
@@ -118,6 +220,25 @@ class SummaryViewModel extends ChangeNotifier {
   }
 }
 
+/// Modèle pour les statistiques individuelles d'un joueur pendant un match.
+class PlayerMatchStats {
+  const PlayerMatchStats({
+    required this.playerName,
+    required this.teamId,
+    this.goals = 0,
+    this.assists = 0,
+    this.yellowCards = 0,
+    this.redCards = 0,
+  });
+
+  final String playerName;
+  final String teamId;
+  final int goals;
+  final int assists;
+  final int yellowCards;
+  final int redCards;
+}
+
 /// Écran de résumé et statistiques de fin de match.
 class SummaryView extends StatelessWidget {
   const SummaryView({super.key, required this.viewModel});
@@ -127,6 +248,8 @@ class SummaryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match = viewModel.match;
+    final statsA = viewModel.playerStatsForTeam(match.teamA.id);
+    final statsB = viewModel.playerStatsForTeam(match.teamB.id);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -157,10 +280,26 @@ class SummaryView extends StatelessWidget {
             _TeamStatsCard(viewModel: viewModel, match: match),
             const SizedBox(height: 16),
 
+            // ─── Stats par joueur (Équipe A et Équipe B) ───
+            if (statsA.isNotEmpty || statsB.isNotEmpty) ...[
+              _TeamPlayersStatsCard(
+                team: match.teamA,
+                color: Colors.redAccent,
+                stats: statsA,
+              ),
+              const SizedBox(height: 12),
+              _TeamPlayersStatsCard(
+                team: match.teamB,
+                color: Colors.blueAccent,
+                stats: statsB,
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // ─── Top buteurs ───
             if (viewModel.topScorers.isNotEmpty) ...[
               _StatsList(
-                title: '⚽ Buteurs',
+                title: '⚽ Top Buteurs',
                 entries: viewModel.topScorers,
                 unit: 'but(s)',
               ),
@@ -170,7 +309,7 @@ class SummaryView extends StatelessWidget {
             // ─── Top passeurs ───
             if (viewModel.topAssists.isNotEmpty) ...[
               _StatsList(
-                title: '🅰️ Passeurs',
+                title: '🅰️ Top Passeurs',
                 entries: viewModel.topAssists,
                 unit: 'passe(s)',
               ),
@@ -532,5 +671,136 @@ class _EventTimeline extends StatelessWidget {
         '${playerOutName ?? '?'} → ${playerInName ?? '?'} — $team',
       _ => '${event.type.label} — $team',
     };
+  }
+}
+
+class _TeamPlayersStatsCard extends StatelessWidget {
+  const _TeamPlayersStatsCard({
+    required this.team,
+    required this.color,
+    required this.stats,
+  });
+
+  final Team team;
+  final Color color;
+  final List<PlayerMatchStats> stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shield, color: color, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'STATS JOUEURS — ${team.name.toUpperCase()}',
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (stats.isEmpty)
+            const Text(
+              'Aucun joueur enregistré',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            )
+          else
+            ...stats.map((p) {
+              final badges = <Widget>[];
+              if (p.goals > 0) {
+                badges.add(_StatBadge(
+                  label: '⚽ ${p.goals} but${p.goals > 1 ? "s" : ""}',
+                  color: Colors.greenAccent,
+                ));
+              }
+              if (p.assists > 0) {
+                badges.add(_StatBadge(
+                  label: '🅰️ ${p.assists} assist${p.assists > 1 ? "s" : ""}',
+                  color: Colors.cyanAccent,
+                ));
+              }
+              if (p.yellowCards > 0) {
+                badges.add(_StatBadge(
+                  label: '🟨 ${p.yellowCards}',
+                  color: Colors.amberAccent,
+                ));
+              }
+              if (p.redCards > 0) {
+                badges.add(_StatBadge(
+                  label: '🟥 ${p.redCards}',
+                  color: Colors.redAccent,
+                ));
+              }
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: AppTheme.textSecondary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        p.playerName,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    if (badges.isNotEmpty)
+                      Wrap(spacing: 6, children: badges)
+                    else
+                      const Text(
+                        '0 but',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                      ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  const _StatBadge({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 }

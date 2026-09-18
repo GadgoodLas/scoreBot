@@ -81,6 +81,9 @@ class AudioService {
         bitRate: 128000,
         sampleRate: 16000,
         numChannels: 1,
+        autoGain: true,
+        echoCancel: true,
+        noiseSuppress: true,
       );
       await _recorder.start(config, path: _currentRecordingPath!);
     }

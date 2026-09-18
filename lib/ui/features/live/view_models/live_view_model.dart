@@ -93,8 +93,11 @@ class LiveViewModel extends ChangeNotifier {
 
   /// Démarre l'enregistrement vocal.
   Future<void> startListening() async {
-    if (_isTransitioning || _voiceState != VoiceState.idle) return;
-    if (_match.status != GameMatchStatus.live) return;
+    if (_isTransitioning || _voiceState != VoiceState.recording) {
+      if (_voiceState != VoiceState.idle) return;
+    }
+    // Permettre l'enregistrement même en pause pour dire "reprends" ou "fin"
+    if (_match.status == GameMatchStatus.finished) return;
 
     _isTransitioning = true;
     _voiceState = VoiceState.recording;
@@ -102,6 +105,9 @@ class LiveViewModel extends ChangeNotifier {
     _lastTranscription = null;
     _recordingSeconds = 0;
     notifyListeners();
+
+    // Retour haptique immédiat au tap
+    HapticFeedback.selectionClick();
 
     try {
       await _repository.startVoiceCommand();
@@ -111,7 +117,8 @@ class LiveViewModel extends ChangeNotifier {
         _recordingSeconds++;
         notifyListeners();
       });
-      HapticFeedback.lightImpact();
+      // Vibration distincte confirmant que le micro est ouvert
+      HapticFeedback.heavyImpact();
     } catch (e) {
       _isTransitioning = false;
       _recordingTimer?.cancel();
@@ -129,7 +136,7 @@ class LiveViewModel extends ChangeNotifier {
     }
   }
 
-  /// Bascule entre démarrage et arrêt (idéal pour Web/Desktop).
+  /// Bascule entre démarrage et arrêt (idéal pour Wear OS / Mobile).
   Future<void> toggleListening() async {
     if (_isTransitioning) return;
     if (_voiceState == VoiceState.idle) {
@@ -158,18 +165,20 @@ class LiveViewModel extends ChangeNotifier {
       _lastTranscription = result.transcription;
 
       if (result.isSuccess) {
-        _lastEvent = result.event!;
         _lastError = null;
         _voiceState = VoiceState.success;
 
-        // Traitement spécial pour les corrections
-        if (result.event is CorrectionEvent) {
-          await _handleCorrection(result.event as CorrectionEvent);
-        } else {
-          _events.add(result.event!);
-          // Recalcul du score si c'est un but
-          if (result.event is GoalEvent) {
-            _match = await _repository.recalculateScore(_match);
+        if (result.matchControl != null) {
+          await _handleMatchControl(result.matchControl!);
+        } else if (result.event != null) {
+          _lastEvent = result.event!;
+          if (result.event is CorrectionEvent) {
+            await _handleCorrection(result.event as CorrectionEvent);
+          } else {
+            _events.add(result.event!);
+            if (result.event is GoalEvent) {
+              _match = await _repository.recalculateScore(_match);
+            }
           }
         }
 
@@ -188,7 +197,6 @@ class LiveViewModel extends ChangeNotifier {
         _lastError = result.errorMessage;
         _voiceState = VoiceState.error;
 
-        // Retour à idle après 4 secondes
         Timer(const Duration(seconds: 4), () {
           if (_voiceState == VoiceState.error) {
             _voiceState = VoiceState.idle;
@@ -226,16 +234,20 @@ class LiveViewModel extends ChangeNotifier {
     final result = await _repository.processTextCommand(text.trim(), _match);
 
     if (result.isSuccess) {
-      _lastEvent = result.event!;
       _lastError = null;
       _voiceState = VoiceState.success;
 
-      if (result.event is CorrectionEvent) {
-        await _handleCorrection(result.event as CorrectionEvent);
-      } else {
-        _events.add(result.event!);
-        if (result.event is GoalEvent) {
-          _match = await _repository.recalculateScore(_match);
+      if (result.matchControl != null) {
+        await _handleMatchControl(result.matchControl!);
+      } else if (result.event != null) {
+        _lastEvent = result.event!;
+        if (result.event is CorrectionEvent) {
+          await _handleCorrection(result.event as CorrectionEvent);
+        } else {
+          _events.add(result.event!);
+          if (result.event is GoalEvent) {
+            _match = await _repository.recalculateScore(_match);
+          }
         }
       }
 
@@ -260,6 +272,24 @@ class LiveViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> _handleMatchControl(String control) async {
+    switch (control) {
+      case 'pause':
+        _match = await _repository.pauseMatch(_match);
+        break;
+      case 'resume':
+        _match = await _repository.resumeMatch(_match);
+        break;
+      case 'halftime':
+        _match = await _repository.startHalftime(_match);
+        break;
+      case 'end_match':
+        _match = await _repository.endMatch(_match);
+        _chronoTimer?.cancel();
+        break;
+    }
   }
 
   /// Annule l'enregistrement en cours.
@@ -295,6 +325,44 @@ class LiveViewModel extends ChangeNotifier {
   Future<void> endMatch() async {
     _match = await _repository.endMatch(_match);
     _chronoTimer?.cancel();
+    notifyListeners();
+  }
+
+  // ─────────────── Score Actions (+1 / -1) ───────────────
+
+  /// Incrémente le score de l'équipe A (+1 au tap).
+  Future<void> incrementScoreA() async {
+    if (_match.status == GameMatchStatus.finished) return;
+    HapticFeedback.lightImpact();
+    _match = await _repository.addPoint(_match, _match.teamA.id);
+    _loadEvents();
+    notifyListeners();
+  }
+
+  /// Décrémente le score de l'équipe A (-1 au double tap).
+  Future<void> decrementScoreA() async {
+    if (_match.status == GameMatchStatus.finished || _match.scoreA <= 0) return;
+    HapticFeedback.mediumImpact();
+    _match = await _repository.removePoint(_match, _match.teamA.id);
+    _loadEvents();
+    notifyListeners();
+  }
+
+  /// Incrémente le score de l'équipe B (+1 au tap).
+  Future<void> incrementScoreB() async {
+    if (_match.status == GameMatchStatus.finished) return;
+    HapticFeedback.lightImpact();
+    _match = await _repository.addPoint(_match, _match.teamB.id);
+    _loadEvents();
+    notifyListeners();
+  }
+
+  /// Décrémente le score de l'équipe B (-1 au double tap).
+  Future<void> decrementScoreB() async {
+    if (_match.status == GameMatchStatus.finished || _match.scoreB <= 0) return;
+    HapticFeedback.mediumImpact();
+    _match = await _repository.removePoint(_match, _match.teamB.id);
+    _loadEvents();
     notifyListeners();
   }
 

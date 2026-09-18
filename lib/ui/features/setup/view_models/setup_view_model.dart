@@ -29,6 +29,12 @@ class SetupViewModel extends ChangeNotifier {
   String _teamBColor = 'bleu';
   String get teamBColor => _teamBColor;
 
+  final List<String> _teamAPlayers = [];
+  List<String> get teamAPlayers => List.unmodifiable(_teamAPlayers);
+
+  final List<String> _teamBPlayers = [];
+  List<String> get teamBPlayers => List.unmodifiable(_teamBPlayers);
+
   int _durationMinutes = 90;
   int get durationMinutes => _durationMinutes;
 
@@ -66,6 +72,42 @@ class SetupViewModel extends ChangeNotifier {
   void setTeamBColor(String color) {
     _teamBColor = color;
     notifyListeners();
+  }
+
+  void addPlayerToTeamA(String input) {
+    final names = input.split(RegExp(r'[,;\n]'));
+    for (var name in names) {
+      name = name.trim();
+      if (name.isNotEmpty && !_teamAPlayers.contains(name)) {
+        _teamAPlayers.add(name);
+      }
+    }
+    notifyListeners();
+  }
+
+  void removePlayerFromTeamA(int index) {
+    if (index >= 0 && index < _teamAPlayers.length) {
+      _teamAPlayers.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  void addPlayerToTeamB(String input) {
+    final names = input.split(RegExp(r'[,;\n]'));
+    for (var name in names) {
+      name = name.trim();
+      if (name.isNotEmpty && !_teamBPlayers.contains(name)) {
+        _teamBPlayers.add(name);
+      }
+    }
+    notifyListeners();
+  }
+
+  void removePlayerFromTeamB(int index) {
+    if (index >= 0 && index < _teamBPlayers.length) {
+      _teamBPlayers.removeAt(index);
+      notifyListeners();
+    }
   }
 
   void setDuration(int minutes) {
@@ -108,11 +150,17 @@ class SetupViewModel extends ChangeNotifier {
         id: _uuid.v4(),
         name: _teamAName.trim(),
         color: _teamAColor.trim(),
+        players: _teamAPlayers
+            .map((name) => Player(id: _uuid.v4(), name: name))
+            .toList(),
       );
       final teamB = Team(
         id: _uuid.v4(),
         name: _teamBName.trim(),
         color: _teamBColor.trim(),
+        players: _teamBPlayers
+            .map((name) => Player(id: _uuid.v4(), name: name))
+            .toList(),
       );
 
       final match = await _repository.createMatch(
