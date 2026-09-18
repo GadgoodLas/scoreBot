@@ -5,6 +5,7 @@ import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/data/repositories/match_repository.dart';
+import 'package:score_bot/data/services/audio_service.dart';
 
 /// États de la reconnaissance vocale sur l'écran live.
 enum VoiceState {
@@ -84,7 +85,7 @@ class LiveViewModel extends ChangeNotifier {
   GameEvent? _lastEvent;
   GameEvent? get lastEvent => _lastEvent;
 
-  /// Démarre l'enregistrement vocal (push-to-talk).
+  /// Démarre l'enregistrement vocal.
   Future<void> startListening() async {
     if (_voiceState != VoiceState.idle) return;
     if (_match.status != GameMatchStatus.live) return;
@@ -94,10 +95,30 @@ class LiveViewModel extends ChangeNotifier {
     _lastTranscription = null;
     notifyListeners();
 
-    await _repository.startVoiceCommand();
+    try {
+      await _repository.startVoiceCommand();
+      HapticFeedback.lightImpact();
+    } catch (e) {
+      _voiceState = VoiceState.error;
+      _lastError = e is AudioException ? e.message : 'Erreur micro : $e';
+      notifyListeners();
+      Timer(const Duration(seconds: 4), () {
+        if (_voiceState == VoiceState.error) {
+          _voiceState = VoiceState.idle;
+          _lastError = null;
+          notifyListeners();
+        }
+      });
+    }
+  }
 
-    // Vibration haptique sur début enregistrement
-    HapticFeedback.lightImpact();
+  /// Bascule entre démarrage et arrêt (idéal pour Web/Desktop).
+  Future<void> toggleListening() async {
+    if (_voiceState == VoiceState.idle) {
+      await startListening();
+    } else if (_voiceState == VoiceState.recording) {
+      await stopListening();
+    }
   }
 
   /// Arrête l'enregistrement et traite la commande.

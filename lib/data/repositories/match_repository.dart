@@ -109,7 +109,10 @@ class MatchRepository {
       final audioBytes = await _audio.stopRecording();
 
       // 2. Transcrire l'audio via Gemini
-      final transcription = await _gemini.transcribeAudio(audioBytes);
+      final transcription = await _gemini.transcribeAudio(
+        audioBytes,
+        mimeType: _audio.mimeType,
+      );
       if (transcription.isEmpty) {
         return const VoiceCommandResult(
           transcription: '',

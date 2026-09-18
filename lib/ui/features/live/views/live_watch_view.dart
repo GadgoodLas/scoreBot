@@ -19,8 +19,7 @@ class LiveWatchView extends StatelessWidget {
         builder: (context, _) {
           return GestureDetector(
             // Tap pour démarrer / arrêter l'enregistrement
-            onTapDown: (_) => viewModel.startListening(),
-            onTapUp: (_) => viewModel.stopListening(),
+            onTap: () => viewModel.toggleListening(),
             child: Stack(
               children: [
                 // Score central

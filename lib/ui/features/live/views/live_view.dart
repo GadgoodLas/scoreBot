@@ -400,49 +400,73 @@ class _MicButton extends StatelessWidget {
     final isDisabled = isProcessing ||
         viewModel.match.status != GameMatchStatus.live;
 
+    final hintText = switch (viewModel.voiceState) {
+      VoiceState.recording => '🔴 Enregistrement... Cliquez pour envoyer',
+      VoiceState.processing => '⚙️ Analyse par Gemini...',
+      VoiceState.success => '✅ Événement pris en compte',
+      VoiceState.error => '❌ Réessayez',
+      VoiceState.idle => '🎙️ Cliquez pour dicter un événement',
+    };
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: GestureDetector(
-        onTapDown: isDisabled ? null : (_) => viewModel.startListening(),
-        onTapUp: isDisabled ? null : (_) => viewModel.stopListening(),
-        onTapCancel: isRecording ? () => viewModel.cancelListening() : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: isRecording ? 90 : 74,
-          height: isRecording ? 90 : 74,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isDisabled
-                ? AppTheme.surface
-                : isRecording
-                    ? Colors.redAccent
-                    : AppTheme.primary,
-            boxShadow: isRecording
-                ? [
-                    BoxShadow(
-                      color: Colors.redAccent.withValues(alpha: 0.5),
-                      blurRadius: 20,
-                      spreadRadius: 4,
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: AppTheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ],
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: isDisabled ? null : () => viewModel.toggleListening(),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isRecording ? 84 : 70,
+              height: isRecording ? 84 : 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDisabled
+                    ? AppTheme.surface
+                    : isRecording
+                        ? Colors.redAccent
+                        : AppTheme.primary,
+                boxShadow: isRecording
+                    ? [
+                        BoxShadow(
+                          color: Colors.redAccent.withValues(alpha: 0.5),
+                          blurRadius: 20,
+                          spreadRadius: 4,
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+              ),
+              child: Icon(
+                isProcessing
+                    ? Icons.hourglass_top
+                    : isRecording
+                        ? Icons.stop
+                        : Icons.mic,
+                color: isDisabled ? AppTheme.textSecondary : Colors.black,
+                size: 32,
+              ),
+            ),
           ),
-          child: Icon(
-            isProcessing
-                ? Icons.hourglass_top
-                : isRecording
-                    ? Icons.stop
-                    : Icons.mic,
-            color: isDisabled ? AppTheme.textSecondary : Colors.black,
-            size: 32,
+          const SizedBox(height: 8),
+          Text(
+            hintText,
+            style: TextStyle(
+              color: isRecording
+                  ? Colors.redAccent
+                  : isProcessing
+                      ? Colors.orangeAccent
+                      : AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: isRecording ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
