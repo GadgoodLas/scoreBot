@@ -19,11 +19,17 @@ class SummaryWatchView extends StatelessWidget {
           final isGenerating = viewModel.isGeneratingReport;
           final report = viewModel.generatedReport;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                 // ─── Statut ───
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -214,8 +220,12 @@ class SummaryWatchView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-              ],
-            ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

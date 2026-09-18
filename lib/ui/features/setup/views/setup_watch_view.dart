@@ -4,7 +4,8 @@ import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 
 /// Vue d'accueil / configuration du match optimisée pour Wear OS (Pixel Watch).
-/// Affiche le contenu en 3 étapes courtes défilables verticalement.
+/// Utilise un PageView vertical en 3 étapes. Chaque page utilise un
+/// LayoutBuilder + SingleChildScrollView pour éviter tout overflow.
 class SetupWatchView extends StatefulWidget {
   const SetupWatchView({super.key, required this.viewModel});
 
@@ -69,183 +70,111 @@ class _SetupWatchViewState extends State<SetupWatchView> {
             scrollDirection: Axis.vertical,
             children: [
               // ─── Page 1 : Sport ───
-              _WatchPage(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '⚽ SPORT',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
+              _WatchScrollPage(
+                children: [
+                  const Text(
+                    '⚽ SPORT',
+                    style: TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
-                    const SizedBox(height: 8),
-                    _WatchSportGrid(
-                      selectedSport: widget.viewModel.selectedSport,
-                      onSelect: (s) {
-                        widget.viewModel.selectSport(s);
-                        _nextPage();
-                      },
-                    ),
-                    const SizedBox(height: 6),
-                    _WatchPageIndicator(current: 0, total: 3),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 6),
+                  _WatchSportGrid(
+                    selectedSport: widget.viewModel.selectedSport,
+                    onSelect: (s) {
+                      widget.viewModel.selectSport(s);
+                      _nextPage();
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  _WatchPageIndicator(current: 0, total: 3),
+                ],
               ),
 
               // ─── Page 2 : Équipes ───
-              _WatchPage(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'ÉQUIPES',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
+              _WatchScrollPage(
+                children: [
+                  const Text(
+                    'ÉQUIPES',
+                    style: TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
-                    const SizedBox(height: 6),
-                    _WatchTextField(
-                      controller: _teamAController,
-                      hint: 'Équipe A',
-                      color: Colors.redAccent,
-                      onChanged: widget.viewModel.setTeamAName,
-                    ),
-                    const SizedBox(height: 6),
-                    _WatchTextField(
-                      controller: _teamBController,
-                      hint: 'Équipe B',
-                      color: Colors.blueAccent,
-                      onChanged: widget.viewModel.setTeamBName,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _WatchNavButton(
-                          icon: Icons.arrow_upward,
-                          onTap: _prevPage,
-                        ),
-                        const SizedBox(width: 12),
-                        _WatchNavButton(
-                          icon: Icons.arrow_downward,
-                          onTap: _nextPage,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    _WatchPageIndicator(current: 1, total: 3),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  _WatchTextField(
+                    controller: _teamAController,
+                    hint: 'Équipe A',
+                    color: Colors.redAccent,
+                    onChanged: widget.viewModel.setTeamAName,
+                  ),
+                  const SizedBox(height: 4),
+                  _WatchTextField(
+                    controller: _teamBController,
+                    hint: 'Équipe B',
+                    color: Colors.blueAccent,
+                    onChanged: widget.viewModel.setTeamBName,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _WatchNavButton(icon: Icons.arrow_upward, onTap: _prevPage),
+                      const SizedBox(width: 10),
+                      _WatchNavButton(icon: Icons.arrow_downward, onTap: _nextPage),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  _WatchPageIndicator(current: 1, total: 3),
+                ],
               ),
 
               // ─── Page 3 : Démarrer ───
-              _WatchPage(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Mode vocal actif
-                    _WatchVoiceBadge(isLocal: widget.viewModel.isLocalVoiceMode),
-                    const SizedBox(height: 8),
-
-                    // Résumé
+              _WatchScrollPage(
+                children: [
+                  _WatchVoiceBadge(isLocal: widget.viewModel.isLocalVoiceMode),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${widget.viewModel.selectedSport.emoji} ${widget.viewModel.selectedSport.label}',
+                    style: const TextStyle(color: Colors.white60, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  _WatchTeamRow(
+                    teamA: widget.viewModel.teamAName.isEmpty
+                        ? 'A'
+                        : widget.viewModel.teamAName,
+                    teamB: widget.viewModel.teamBName.isEmpty
+                        ? 'B'
+                        : widget.viewModel.teamBName,
+                  ),
+                  Text(
+                    '${widget.viewModel.durationMinutes} min',
+                    style: const TextStyle(color: Colors.white38, fontSize: 9),
+                  ),
+                  const SizedBox(height: 8),
+                  if (widget.viewModel.errorMessage != null) ...[
                     Text(
-                      '${widget.viewModel.selectedSport.emoji} ${widget.viewModel.selectedSport.label}',
-                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                      widget.viewModel.errorMessage!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 9),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.viewModel.teamAName.isEmpty
-                              ? 'Équipe A'
-                              : widget.viewModel.teamAName,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          ' vs ',
-                          style: TextStyle(color: Colors.white38, fontSize: 10),
-                        ),
-                        Text(
-                          widget.viewModel.teamBName.isEmpty
-                              ? 'Équipe B'
-                              : widget.viewModel.teamBName,
-                          style: const TextStyle(
-                            color: Colors.blueAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${widget.viewModel.durationMinutes} min',
-                      style: const TextStyle(color: Colors.white38, fontSize: 10),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Erreur
-                    if (widget.viewModel.errorMessage != null) ...[
-                      Text(
-                        widget.viewModel.errorMessage!,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 9),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                    ],
-
-                    // Bouton démarrer
-                    GestureDetector(
-                      onTap: widget.viewModel.isCreating
-                          ? null
-                          : () => _startMatch(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: widget.viewModel.isCreating
-                              ? AppTheme.primary.withValues(alpha: 0.4)
-                              : AppTheme.primary,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: widget.viewModel.isCreating
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.black,
-                                ),
-                              )
-                            : const Text(
-                                '🚀 Démarrer',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _WatchNavButton(icon: Icons.arrow_upward, onTap: _prevPage),
-                    const SizedBox(height: 2),
-                    _WatchPageIndicator(current: 2, total: 3),
+                    const SizedBox(height: 4),
                   ],
-                ),
+                  _WatchStartButton(
+                    isCreating: widget.viewModel.isCreating,
+                    onTap: () => _startMatch(context),
+                  ),
+                  const SizedBox(height: 4),
+                  _WatchNavButton(icon: Icons.arrow_upward, onTap: _prevPage),
+                  const SizedBox(height: 2),
+                  _WatchPageIndicator(current: 2, total: 3),
+                ],
               ),
             ],
           );
@@ -257,22 +186,36 @@ class _SetupWatchViewState extends State<SetupWatchView> {
 
 // ─── Widgets internes ────────────────────────────────────────────────────────
 
-class _WatchPage extends StatelessWidget {
-  const _WatchPage({required this.child});
-  final Widget child;
+/// Conteneur de page qui s'adapte à l'espace disponible sans déborder.
+/// Utilise LayoutBuilder pour contraindre le contenu à la hauteur réelle.
+class _WatchScrollPage extends StatelessWidget {
+  const _WatchScrollPage({required this.children});
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: child,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: children,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-/// Indicateurs de page (petits points).
+/// Indicateurs de page (petits traits).
 class _WatchPageIndicator extends StatelessWidget {
   const _WatchPageIndicator({required this.current, required this.total});
   final int current;
@@ -284,13 +227,11 @@ class _WatchPageIndicator extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(total, (i) {
         return Container(
-          width: i == current ? 12 : 6,
-          height: 4,
+          width: i == current ? 10 : 5,
+          height: 3,
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
-            color: i == current
-                ? AppTheme.primary
-                : Colors.white24,
+            color: i == current ? AppTheme.primary : Colors.white24,
             borderRadius: BorderRadius.circular(2),
           ),
         );
@@ -312,8 +253,8 @@ class _WatchSportGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+      spacing: 5,
+      runSpacing: 5,
       alignment: WrapAlignment.center,
       children: SportType.values.map((sport) {
         final isSelected = selectedSport == sport;
@@ -321,8 +262,8 @@ class _WatchSportGrid extends StatelessWidget {
           onTap: () => onSelect(sport),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 52,
-            height: 40,
+            width: 48,
+            height: 36,
             decoration: BoxDecoration(
               color: isSelected
                   ? AppTheme.primary.withValues(alpha: 0.2)
@@ -330,18 +271,18 @@ class _WatchSportGrid extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isSelected ? AppTheme.primary : Colors.white12,
-                width: isSelected ? 2 : 1,
+                width: isSelected ? 1.5 : 1,
               ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(sport.emoji, style: const TextStyle(fontSize: 14)),
+                Text(sport.emoji, style: const TextStyle(fontSize: 13)),
                 Text(
                   sport.label,
                   style: TextStyle(
                     color: isSelected ? AppTheme.primary : Colors.white60,
-                    fontSize: 8,
+                    fontSize: 7,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -374,13 +315,14 @@ class _WatchTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      style: TextStyle(color: color, fontSize: 12),
+      style: TextStyle(color: color, fontSize: 11),
       textAlign: TextAlign.center,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white30, fontSize: 11),
+        hintStyle: const TextStyle(color: Colors.white30, fontSize: 10),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         filled: true,
         fillColor: color.withValues(alpha: 0.08),
         enabledBorder: OutlineInputBorder(
@@ -407,14 +349,102 @@ class _WatchNavButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 28,
-        height: 28,
+        width: 26,
+        height: 26,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.07),
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white12),
         ),
-        child: Icon(icon, size: 14, color: Colors.white60),
+        child: Icon(icon, size: 13, color: Colors.white60),
+      ),
+    );
+  }
+}
+
+/// Affichage compact des deux équipes sur une ligne.
+class _WatchTeamRow extends StatelessWidget {
+  const _WatchTeamRow({required this.teamA, required this.teamB});
+  final String teamA;
+  final String teamB;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            teamA,
+            style: const TextStyle(
+              color: Colors.redAccent,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            'vs',
+            style: TextStyle(color: Colors.white38, fontSize: 9),
+          ),
+        ),
+        Flexible(
+          child: Text(
+            teamB,
+            style: const TextStyle(
+              color: Colors.blueAccent,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Bouton démarrer compact.
+class _WatchStartButton extends StatelessWidget {
+  const _WatchStartButton({
+    required this.isCreating,
+    required this.onTap,
+  });
+  final bool isCreating;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isCreating ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        decoration: BoxDecoration(
+          color: isCreating
+              ? AppTheme.primary.withValues(alpha: 0.4)
+              : AppTheme.primary,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: isCreating
+            ? const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.black,
+                ),
+              )
+            : const Text(
+                '🚀 Démarrer',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+              ),
       ),
     );
   }
@@ -430,10 +460,10 @@ class _WatchVoiceBadge extends StatelessWidget {
     final color = isLocal ? Colors.tealAccent : AppTheme.primary;
     final label = isLocal ? '⚡ Local' : '🧠 Gemini';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(

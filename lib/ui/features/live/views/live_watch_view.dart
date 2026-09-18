@@ -40,132 +40,140 @@ class LiveWatchView extends StatelessWidget {
             child: Stack(
               children: [
                 // ─── Vue standard du match ───
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Statut match si non live
-                        if (viewModel.match.status != GameMatchStatus.live) ...[
-                          _WatchStatusBadge(status: viewModel.match.status),
-                          const SizedBox(height: 2),
-                        ],
-
-                        // Chronomètre
-                        Text(
-                          viewModel.elapsedFormatted,
-                          style: const TextStyle(
-                            color: AppTheme.primary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 2,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
                         ),
-                        const SizedBox(height: 2),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Statut match si non live
+                              if (viewModel.match.status != GameMatchStatus.live) ...[
+                                _WatchStatusBadge(status: viewModel.match.status),
+                                const SizedBox(height: 2),
+                              ],
 
-                        // Score
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _WatchScore(
-                              score: viewModel.scoreA,
-                              color: Colors.redAccent,
-                              teamName: viewModel.match.teamA.name,
-                              onTap: () => viewModel.incrementScoreA(),
-                              onDoubleTap: () => viewModel.decrementScoreA(),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                ':',
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w200,
+                              // Chronomètre
+                              Text(
+                                viewModel.elapsedFormatted,
+                                style: const TextStyle(
+                                  color: AppTheme.primary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 2,
+                                  fontFeatures: [FontFeature.tabularFigures()],
                                 ),
                               ),
-                            ),
-                            _WatchScore(
-                              score: viewModel.scoreB,
-                              color: Colors.blueAccent,
-                              teamName: viewModel.match.teamB.name,
-                              onTap: () => viewModel.incrementScoreB(),
-                              onDoubleTap: () => viewModel.decrementScoreB(),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(height: 2),
 
-                        const SizedBox(height: 4),
-
-                        // Bouton micro indicateur
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: viewModel.isVoiceReady
-                                ? (viewModel.isLocalVoiceMode
-                                    ? Colors.tealAccent.withValues(alpha: 0.15)
-                                    : AppTheme.primary.withValues(alpha: 0.15))
-                                : Colors.amber.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: viewModel.isVoiceReady
-                                  ? (viewModel.isLocalVoiceMode
-                                      ? Colors.tealAccent.withValues(alpha: 0.4)
-                                      : AppTheme.primary.withValues(alpha: 0.4))
-                                  : Colors.amber.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                viewModel.isVoiceReady
-                                    ? (viewModel.isLocalVoiceMode
-                                        ? Icons.offline_bolt
-                                        : Icons.mic)
-                                    : Icons.mic_off,
-                                size: 14,
-                                color: viewModel.isVoiceReady
-                                    ? (viewModel.isLocalVoiceMode
-                                        ? Colors.tealAccent
-                                        : AppTheme.primary)
-                                    : Colors.amberAccent,
+                              // Score
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _WatchScore(
+                                    score: viewModel.scoreA,
+                                    color: Colors.redAccent,
+                                    teamName: viewModel.match.teamA.name,
+                                    onTap: () => viewModel.incrementScoreA(),
+                                    onDoubleTap: () => viewModel.decrementScoreA(),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(
+                                      ':',
+                                      style: TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w200,
+                                      ),
+                                    ),
+                                  ),
+                                  _WatchScore(
+                                    score: viewModel.scoreB,
+                                    color: Colors.blueAccent,
+                                    teamName: viewModel.match.teamB.name,
+                                    onTap: () => viewModel.incrementScoreB(),
+                                    onDoubleTap: () => viewModel.decrementScoreB(),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                viewModel.isVoiceReady
-                                    ? (viewModel.isLocalVoiceMode
-                                        ? '⚡ Local'
-                                        : 'Tap pour parler')
-                                    : 'IA non configurée',
-                                style: TextStyle(
+
+                              const SizedBox(height: 3),
+
+                              // Bouton micro indicateur
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
                                   color: viewModel.isVoiceReady
                                       ? (viewModel.isLocalVoiceMode
-                                          ? Colors.tealAccent
-                                          : AppTheme.primary)
-                                      : Colors.amberAccent,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
+                                          ? Colors.tealAccent.withValues(alpha: 0.15)
+                                          : AppTheme.primary.withValues(alpha: 0.15))
+                                      : Colors.amber.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: viewModel.isVoiceReady
+                                        ? (viewModel.isLocalVoiceMode
+                                            ? Colors.tealAccent.withValues(alpha: 0.4)
+                                            : AppTheme.primary.withValues(alpha: 0.4))
+                                        : Colors.amber.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      viewModel.isVoiceReady
+                                          ? (viewModel.isLocalVoiceMode
+                                              ? Icons.offline_bolt
+                                              : Icons.mic)
+                                          : Icons.mic_off,
+                                      size: 12,
+                                      color: viewModel.isVoiceReady
+                                          ? (viewModel.isLocalVoiceMode
+                                              ? Colors.tealAccent
+                                              : AppTheme.primary)
+                                          : Colors.amberAccent,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      viewModel.isVoiceReady
+                                          ? (viewModel.isLocalVoiceMode
+                                              ? '⚡ Local'
+                                              : 'Tap pour parler')
+                                          : 'IA non configurée',
+                                      style: TextStyle(
+                                        color: viewModel.isVoiceReady
+                                            ? (viewModel.isLocalVoiceMode
+                                                ? Colors.tealAccent
+                                                : AppTheme.primary)
+                                            : Colors.amberAccent,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+
+                              const SizedBox(height: 4),
+
+                              // ─── Boutons de contrôle du match ───
+                              _WatchMatchControls(viewModel: viewModel, context: context),
                             ],
                           ),
                         ),
-
-                        const SizedBox(height: 6),
-
-                        // ─── Boutons de contrôle du match ───
-                        // AbsorbPointer évite que le GestureDetector parent
-                        // intercepte les taps sur ces boutons
-                        _WatchMatchControls(viewModel: viewModel, context: context),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
 
                 // ─── Overlay Vocal Dynamique (Enregistrement / Analyse / Résultat) ───
