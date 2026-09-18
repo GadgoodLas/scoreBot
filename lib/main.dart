@@ -11,6 +11,7 @@ import 'package:score_bot/ui/features/live/views/live_view.dart';
 import 'package:score_bot/ui/features/live/views/live_watch_view.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 import 'package:score_bot/ui/features/setup/views/setup_view.dart';
+import 'package:score_bot/ui/features/setup/views/setup_watch_view.dart';
 import 'package:score_bot/ui/features/summary/views/summary_view.dart';
 import 'package:score_bot/ui/features/summary/views/summary_watch_view.dart';
 import 'package:score_bot/domain/models/match.dart';
@@ -61,7 +62,7 @@ class ScoreBotApp extends StatelessWidget {
   Route<dynamic>? _generateRoute(RouteSettings settings) {
     return switch (settings.name) {
       '/' => MaterialPageRoute(
-          builder: (_) => SetupView(
+          builder: (_) => _WatchOrPhoneSetupView(
             viewModel: SetupViewModel(
               matchRepository: sl<MatchRepository>(),
             ),
@@ -126,6 +127,21 @@ class _WatchOrPhoneSummaryView extends StatelessWidget {
     return isWatch
         ? SummaryWatchView(viewModel: viewModel)
         : SummaryView(viewModel: viewModel);
+  }
+}
+
+class _WatchOrPhoneSetupView extends StatelessWidget {
+  const _WatchOrPhoneSetupView({required this.viewModel});
+  final SetupViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isWatch = width < 250;
+
+    return isWatch
+        ? SetupWatchView(viewModel: viewModel)
+        : SetupView(viewModel: viewModel);
   }
 }
 
