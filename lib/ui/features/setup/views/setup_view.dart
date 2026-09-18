@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
+import 'package:score_bot/ui/features/setup/widgets/ai_config_dialog.dart';
 
 /// Écran de configuration du match avant son démarrage.
 class SetupView extends StatefulWidget {
@@ -22,6 +23,33 @@ class _SetupViewState extends State<SetupView> {
     super.initState();
     _teamAController.text = widget.viewModel.teamAName;
     _teamBController.text = widget.viewModel.teamBName;
+
+    // Détecte au premier lancement si l'utilisateur doit être invité à configurer l'IA
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.viewModel.shouldPromptAiOnboarding && mounted) {
+        _openAiSettings(context, isOnboarding: true);
+      }
+    });
+  }
+
+  void _openAiSettings(BuildContext context, {bool isOnboarding = false}) {
+    AiConfigDialog.show(
+      context: context,
+      initialApiKey: widget.viewModel.currentApiKey,
+      initialModel: widget.viewModel.currentAiModel,
+      initialVoiceEngine: widget.viewModel.voiceEngine,
+      isOnboarding: isOnboarding,
+      onDismissOnboarding: () => widget.viewModel.dismissAiOnboarding(),
+      onSave: (apiKey, model, voiceEngine) => widget.viewModel.saveAiConfig(
+        apiKey: apiKey,
+        model: model,
+        voiceEngine: voiceEngine,
+      ),
+      onTestConnection: (apiKey, model) => widget.viewModel.testAiConnection(
+        apiKey: apiKey,
+        model: model,
+      ),
+    );
   }
 
   @override
@@ -46,6 +74,41 @@ class _SetupViewState extends State<SetupView> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: ListenableBuilder(
+              listenable: widget.viewModel,
+              builder: (context, _) {
+                final isConfigured = widget.viewModel.isAiConfigured;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      color: isConfigured ? AppTheme.primary : Colors.amberAccent,
+                    ),
+                    if (!isConfigured)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            tooltip: 'Configuration Modèle IA / Clé',
+            onPressed: () => _openAiSettings(context),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: ListenableBuilder(
         listenable: widget.viewModel,
@@ -55,6 +118,13 @@ class _SetupViewState extends State<SetupView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ─── Statut IA / Mode vocal ───
+                _AiStatusCard(
+                  viewModel: widget.viewModel,
+                  onConfigure: () => _openAiSettings(context),
+                ),
+                const SizedBox(height: 20),
+
                 // ─── Sélection du sport ───
                 _SectionTitle(title: 'Sport'),
                 const SizedBox(height: 12),
@@ -416,4 +486,93 @@ class _PlayersSectionState extends State<_PlayersSection> {
   }
 }
 
+/// Carte indiquant l'état d'activation du modèle IA et du mode vocal.
+class _AiStatusCard extends StatelessWidget {
+  const _AiStatusCard({
+    required this.viewModel,
+    required this.onConfigure,
+  });
 
+  final SetupViewModel viewModel;
+  final VoidCallback onConfigure;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocal = viewModel.isLocalVoiceMode;
+    final isConfigured = viewModel.isAiConfigured;
+    final modelName = viewModel.currentAiModel;
+
+    final (icon, title, subtitle, color) = isLocal
+        ? (
+            Icons.offline_bolt,
+            '⚡ Mode vocal local actif (sans IA)',
+            'Reconnaissance 100% hors-ligne — Cliquez pour passer en mode IA',
+            AppTheme.primary,
+          )
+        : isConfigured
+            ? (
+                Icons.auto_awesome,
+                '🧠 Mode vocal IA actif (Gemini)',
+                'Modèle : $modelName — Cliquez pour modifier',
+                AppTheme.primary,
+              )
+            : (
+                Icons.mic_off_outlined,
+                'Mode vocal non configuré',
+                'Activez le mode local ou configurez une clé Gemini',
+                Colors.amberAccent,
+              );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onConfigure,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              foregroundColor: color,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: color.withValues(alpha: 0.5)),
+              ),
+            ),
+            child: const Text(
+              'Réglages',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,36 +1,49 @@
 # ⚽ ScoreBot
 
-Application mobile et montre connectée de scoring sportif en temps réel avec commandes vocales et intelligence artificielle.
+Application mobile et montre connectée de scoring sportif en temps réel avec commandes vocales, scoring tactile et intelligence artificielle.
 
-> Enregistrez les scores, buteurs, passeurs, cartons et statistiques d'un match simplement en parlant.  
+> Enregistrez les scores, buteurs, passeurs, cartons et statistiques d'un match simplement en parlant ou en tapotant l'écran.  
 > **"But équipe A Stéphane assist Nabil"** → Score et statistiques mis à jour instantanément.
 
 ---
 
 ## 🎯 Fonctionnalités
 
-- **🎙️ Commandes vocales intelligentes** : Appuyez ou dictez — Gemini transcrit et extrait l'événement en une seule passe multimodale.
+- **⚡ Mode Sans IA (Local / 100% Hors-ligne)** :
+  - **Aucune clé API requise** : Utilisez les commandes vocales essentielles directement dès l'installation, sans compte ni connexion Internet.
+  - **Latence ultra-faible (< 1 ms)** : Reconnaissance vocale locale (`speech_to_text`) associée à un analyseur déterministe ultra-rapide.
+  - Reconnaît les buts/points, les noms des joueurs de l'effectif, les passes décisives, les cartons, les fautes, ainsi que toutes les commandes d'arbitrage (*"Pause"*, *"Reprends"*, *"Mi-temps"*, *"Annule"*).
+- **🎙️ Mode IA (Google Gemini)** :
+  - Compréhension du langage naturel avancée pour les phrases complexes et tournures libres.
+  - Analyse multimodale directe ou saisie texte assistée.
+- **🤖 Choix du moteur vocal & Clé API personnalisable** :
+  - Bascule en un tap entre **⚡ Mode Sans IA (Local)** et **🧠 Mode IA (Gemini)** dans les paramètres.
+  - Configuration de son propre modèle d'IA (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-pro` ou modèle personnalisé) et de sa propre clé API Gemini.
+  - **Invite d'installation automatique** : Guide l'utilisateur au premier lancement tout en permettant d'utiliser l'app immédiatement en mode local.
+  - Bouton de test en temps réel pour valider instantanément la clé et le modèle.
+  - Sauvegarde locale sécurisée avec Hive.
 - **👆 Scoring tactile rapide** :
   - **1 tap sur le score d'une équipe** 👉 **+1 point**
-  - **2 taps (double-tap) sur le score d'une équipe** 👉 **-1 point** *(protection contre les scores négatifs)*
+  - **2 taps rapides (double-tap) sur le score** 👉 **-1 point** *(avec protection anti-score négatif)*
 - **👥 Gestion des effectifs & joueurs** :
-  - Saisie des noms des joueurs pour chaque équipe avant le coup d'envoi.
-  - Attribution automatique des buts et des passes décisives aux joueurs.
-- **📊 Statistiques complètes par équipe et par joueur** :
-  - Cartes individuelles par équipe : Buts ⚽, Passes décisives 🅰️, Cartons jaunes 🟨, Cartons rouges 🟥.
-  - Classement des meilleurs buteurs et meilleurs passeurs.
-  - Chronologie complète et export texte pour partage (WhatsApp, SMS, etc.).
+  - Saisie des noms des joueurs pour chaque équipe avant le coup d'envoi (ajout unitaire ou liste séparée par des virgules).
+  - Attribution automatique des buts et des passes décisives aux joueurs enregistrés (aussi bien en mode local qu'en mode IA).
+- **📊 Statistiques complètes d'après-match** :
+  - Podiums des meilleurs buteurs et meilleurs passeurs.
+  - Cartes détaillées par joueur pour chaque équipe : Buts ⚽, Passes décisives 🅰️, Cartons jaunes 🟨, Cartons rouges 🟥.
+  - Chronologie complète des événements et bouton d'export texte pour partage (WhatsApp, SMS, etc.).
 - **⌚ Optimisé Pixel Watch (Wear OS)** :
-  - Interface compacte AMOLED à fort contraste.
-  - Retour textuel et visuel immédiat sur la transcription vocale.
-  - Retours haptiques (vibrations) à l'ouverture du micro et à la validation.
+  - Interface circulaire AMOLED à fort contraste.
+  - Affichage instantané du badge d'état vocal (`⚡ Local` ou `🧠 IA`) et transcription vocale en superposition.
+  - Retours haptiques distincts (vibrations) à l'ouverture du micro, sur fin d'enregistrement et sur validation.
 - **⏱️ Contrôle vocal du match** :
-  - Commandes vocales d'arbitrage : *"Pause"*, *"Reprends"*, *"Mi-temps"*, *"Fin du match"*, *"Annule le but"*.
-- **🛡️ Résilience API Gemini (Multi-Model Fallback)** :
-  - Bascule automatique en cascade (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-3.8-flash`...).
-  - Gestion automatique des erreurs 429 (*Rate Limit*) et 503 (*Surchargé*) avec retry et backoff exponentiel.
+  - Commandes d'arbitrage : *"Pause"*, *"Reprends"*, *"Mi-temps"*, *"Fin du match"*, *"Annule le dernier but"*.
+- **🛡️ Résilience API Gemini (Fallback automatique)** :
+  - Ordre d'exécution prioritaire commençant par le modèle choisi par l'utilisateur.
+  - Bascule automatique en cascade sur d'autres modèles en cas de surcharge.
+  - Gestion des quotas 429 (*Rate Limit*) et 503 (*Surchargé*) avec retry et backoff exponentiel.
 - **Multi-sports** : Football, Basketball, Handball, Rugby, Volleyball, Personnalisé.
-- **Stockage local persistant** : Matchs et événements sauvegardés localement avec Hive (fonctionne hors ligne).
+- **Stockage local persistant** : Matchs et événements sauvegardés localement avec Hive (fonctionne 100% hors ligne).
 
 ---
 
@@ -40,11 +53,13 @@ Application mobile et montre connectée de scoring sportif en temps réel avec c
 lib/
 ├── data/
 │   ├── repositories/
-│   │   └── match_repository.dart    # Orchestre Audio, Gemini et Persistance
+│   │   └── match_repository.dart             # Orchestre Audio, Gemini/Local et Persistance
 │   └── services/
-│       ├── audio_service.dart       # Capture micro (record, autoGain, noiseSuppress)
-│       ├── gemini_service.dart      # Transcription + NLP structuré avec fallback
-│       └── storage_service.dart     # Stockage local NoSQL (Hive)
+│       ├── audio_service.dart                # Capture micro audio (AAC/M4A) pour Gemini
+│       ├── gemini_service.dart               # Transcription + NLP multimodal avec fallback
+│       ├── local_speech_service.dart         # Reconnaissance vocale locale (speech_to_text)
+│       ├── offline_voice_command_parser.dart # Analyseur déterministe hors-ligne (< 1 ms)
+│       └── storage_service.dart              # Stockage local NoSQL (Hive)
 ├── domain/
 │   └── models/
 │       ├── match.dart               # GameMatch, Team, Player
@@ -53,7 +68,10 @@ lib/
 └── ui/
     ├── core/theme/                  # Thème sombre AMOLED AppTheme
     └── features/
-        ├── setup/                   # Configuration du match et saisie des joueurs
+        ├── setup/                   # Configuration match, effectifs et réglages IA
+        │   ├── view_models/
+        │   ├── views/
+        │   └── widgets/             # AiConfigDialog, SportSelector, PlayersSection
         ├── live/                    # Match en direct (vue smartphone + vue montre)
         └── summary/                 # Résumé, podiums et stats détaillées
 ```
@@ -62,16 +80,16 @@ Pattern **MVVM** + **Clean Architecture** :
 - **Views** : Widgets Flutter purs, réactifs et découplés.
 - **ViewModels** : Étendent `ChangeNotifier`, gèrent l'état UI et les retours haptiques.
 - **Repositories** : Source unique de vérité et résolution intelligente des entités.
-- **Services** : Wrappers stateless des services natifs et API Gemini.
+- **Services** : Wrappers stateless des services natifs et de l'API Gemini.
 
 ---
 
-## 🚀 Démarrage
+## 🚀 Démarrage Rapide
 
 ### Prérequis
 
 - Flutter SDK ≥ 3.7.0
-- Clé API Gemini ([Google AI Studio](https://aistudio.google.com/))
+- Clé API Gemini gratuite ([Google AI Studio](https://aistudio.google.com/))
 - Android SDK (pour smartphone ou Pixel Watch) ou Xcode (pour iOS)
 
 ### Installation
@@ -79,10 +97,6 @@ Pattern **MVVM** + **Clean Architecture** :
 ```bash
 git clone https://github.com/GadgoodLas/scoreBot.git
 cd scoreBot
-
-# Configurer la clé API
-cp .env.example .env
-# Éditez .env et renseignez votre clé GEMINI_API_KEY
 
 # Installer les dépendances
 flutter pub get
@@ -93,6 +107,20 @@ flutter run
 
 ---
 
+## ⚙️ Configuration du Modèle d'IA & Clé API
+
+1. **Au premier lancement** : L'application vous propose automatiquement d'activer le mode vocal en renseignant votre clé API Google Gemini et votre modèle d'IA préféré.
+2. **À tout moment depuis l'accueil** : Cliquez sur l'icône **IA** (`✨`) dans l'AppBar pour modifier votre clé ou votre modèle.
+3. **Pendant le match** : L'icône IA dans le bandeau supérieur permet d'ajuster le modèle en cours de partie.
+4. **Modèles supportés** :
+   - `gemini-2.5-flash` ⭐ *(Recommandé — ultra-rapide et multimodal)*
+   - `gemini-2.0-flash` *(Équilibré)*
+   - `gemini-1.5-flash` *(Très stable)*
+   - `gemini-1.5-pro` *(Haute précision de raisonnement)*
+   - *Modèle personnalisé* (ex: `gemini-2.5-pro`, modèles expérimentaux)
+
+---
+
 ## ⌚ Déploiement sur Pixel Watch (Wear OS)
 
 1. **Activer le mode Développeur sur la Pixel Watch** :
@@ -100,7 +128,7 @@ flutter run
    - Tapotez **7 fois** sur **Version** / **Numéro de build**.
 2. **Activer le Débogage Wi-Fi** :
    - Dans **Paramètres** > **Options pour les développeurs** : activez **Débogage ADB** et **Débogage sans fil**.
-   - Cliquez sur **Associer un appareil** (*Pair device*) et notez l'IP, le port et le code à 6 chiffres.
+   - Cliquez sur **Associer un appareil** (*Pair device*) et notez l'adresse IP, le port et le code à 6 chiffres.
 3. **Appairer et connecter via ADB** :
    ```powershell
    adb pair <IP_MONTRE>:<PORT_PAIRING>
@@ -139,6 +167,7 @@ flutter run
 - Nom et couleur des deux équipes.
 - **Saisie des joueurs** : Ajout un par un ou par liste séparée par des virgules.
 - Réglage de la durée du match (slider 10–120 min).
+- **Statut IA & Accès aux réglages** : Badge d'état du mode vocal et bouton de configuration.
 
 ### 2. Match en direct ([`LiveView`](lib/ui/features/live/views/live_view.dart) & [`LiveWatchView`](lib/ui/features/live/views/live_watch_view.dart))
 - **Score tactile** : 1 tap (+1), double-tap (-1).
@@ -157,12 +186,13 @@ flutter run
 
 ---
 
-## 🔐 Sécurité
+##  Sécurité & Données Locales
 
-> ⚠️ Le fichier `.env` est exclu du contrôle de version (`.gitignore`). Ne commitez jamais votre clé API Gemini.
+- La clé API de l'utilisateur est stockée en local sur l'appareil via Hive et n'est jamais transmise à des serveurs tiers en dehors de l'API officielle Google Gemini (`generativelanguage.googleapis.com`).
+- Le fichier `.env` est ignoré par `.gitignore` pour le développement local.
 
 ---
 
-## 📄 Licence
+##  Licence
 
-MIT License — Libre d'utilisation et de modification.
+MIT

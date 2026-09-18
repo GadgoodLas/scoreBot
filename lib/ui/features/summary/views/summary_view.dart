@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/match.dart';
@@ -10,14 +11,47 @@ class SummaryViewModel extends ChangeNotifier {
   SummaryViewModel({
     required MatchRepository matchRepository,
     required GameMatch match,
-  }) : _match = match {
+  })  : _matchRepository = matchRepository,
+        _match = match {
     _events = matchRepository.getEvents(match.id);
+    _generateAutomaticReport();
   }
 
+  final MatchRepository _matchRepository;
   final GameMatch _match;
   GameMatch get match => _match;
 
   late final List<GameEvent> _events;
+
+  // ─────────────── Rapport de match ───────────────
+
+  String? _generatedReport;
+  String? get generatedReport => _generatedReport;
+
+  bool _isGeneratingReport = false;
+  bool get isGeneratingReport => _isGeneratingReport;
+
+  bool _isAiReport = false;
+  bool get isAiReport => _isAiReport;
+
+  Future<void> _generateAutomaticReport() async {
+    _isGeneratingReport = true;
+    notifyListeners();
+    try {
+      _generatedReport = await _matchRepository.generateMatchReport(_match);
+      _isAiReport = !_matchRepository.isLocalVoiceMode && _matchRepository.isAiConfigured;
+    } catch (_) {
+      _generatedReport = generateShareText();
+      _isAiReport = false;
+    } finally {
+      _isGeneratingReport = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> regenerateReport() async {
+    await _generateAutomaticReport();
+  }
 
   // ─────────────── Stats globales ───────────────
 
@@ -267,60 +301,90 @@ class SummaryView extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ─── Score final ───
-            _FinalScoreCard(viewModel: viewModel),
-            const SizedBox(height: 16),
+      body: ListenableBuilder(
+        listenable: viewModel,
+        builder: (context, _) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ─── Score final ───
+                _FinalScoreCard(viewModel: viewModel),
+                const SizedBox(height: 16),
 
-            // ─── Stats équipes ───
-            _TeamStatsCard(viewModel: viewModel, match: match),
-            const SizedBox(height: 16),
+                // ─── Compte-rendu automatique ───
+                _MatchReportCard(viewModel: viewModel),
+                const SizedBox(height: 16),
 
-            // ─── Stats par joueur (Équipe A et Équipe B) ───
-            if (statsA.isNotEmpty || statsB.isNotEmpty) ...[
-              _TeamPlayersStatsCard(
-                team: match.teamA,
-                color: Colors.redAccent,
-                stats: statsA,
-              ),
-              const SizedBox(height: 12),
-              _TeamPlayersStatsCard(
-                team: match.teamB,
-                color: Colors.blueAccent,
-                stats: statsB,
-              ),
-              const SizedBox(height: 16),
-            ],
+                // ─── Stats équipes ───
+                _TeamStatsCard(viewModel: viewModel, match: match),
+                const SizedBox(height: 16),
 
-            // ─── Top buteurs ───
-            if (viewModel.topScorers.isNotEmpty) ...[
-              _StatsList(
-                title: '⚽ Top Buteurs',
-                entries: viewModel.topScorers,
-                unit: 'but(s)',
-              ),
-              const SizedBox(height: 16),
-            ],
+                // ─── Stats par joueur (Équipe A et Équipe B) ───
+                if (statsA.isNotEmpty || statsB.isNotEmpty) ...[
+                  _TeamPlayersStatsCard(
+                    team: match.teamA,
+                    color: Colors.redAccent,
+                    stats: statsA,
+                  ),
+                  const SizedBox(height: 12),
+                  _TeamPlayersStatsCard(
+                    team: match.teamB,
+                    color: Colors.blueAccent,
+                    stats: statsB,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-            // ─── Top passeurs ───
-            if (viewModel.topAssists.isNotEmpty) ...[
-              _StatsList(
-                title: '🅰️ Top Passeurs',
-                entries: viewModel.topAssists,
-                unit: 'passe(s)',
-              ),
-              const SizedBox(height: 16),
-            ],
+                // ─── Top buteurs ───
+                if (viewModel.topScorers.isNotEmpty) ...[
+                  _StatsList(
+                    title: '⚽ Top Buteurs',
+                    entries: viewModel.topScorers,
+                    unit: 'but(s)',
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-            // ─── Timeline des événements ───
-            _EventTimeline(viewModel: viewModel),
-            const SizedBox(height: 24),
-          ],
-        ),
+                // ─── Top passeurs ───
+                if (viewModel.topAssists.isNotEmpty) ...[
+                  _StatsList(
+                    title: '🅰️ Top Passeurs',
+                    entries: viewModel.topAssists,
+                    unit: 'passe(s)',
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ─── Timeline des événements ───
+                _EventTimeline(viewModel: viewModel),
+                const SizedBox(height: 24),
+
+                // ─── Bouton Nouveau match ───
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                  },
+                  icon: const Icon(Icons.sports_soccer),
+                  label: const Text(
+                    'Commencer un nouveau match',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -425,6 +489,157 @@ class _ScoreBlock extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+}
+
+class _MatchReportCard extends StatelessWidget {
+  const _MatchReportCard({required this.viewModel});
+  final SummaryViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final report = viewModel.generatedReport;
+    final isGenerating = viewModel.isGeneratingReport;
+    final isAi = viewModel.isAiReport;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isAi
+              ? AppTheme.primary.withValues(alpha: 0.4)
+              : Colors.tealAccent.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isAi ? Icons.auto_awesome : Icons.article_outlined,
+                color: isAi ? AppTheme.primary : Colors.tealAccent,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Compte-rendu du match',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (isAi ? AppTheme.primary : Colors.tealAccent).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: (isAi ? AppTheme.primary : Colors.tealAccent).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isAi ? Icons.auto_awesome : Icons.offline_bolt,
+                      size: 12,
+                      color: isAi ? AppTheme.primary : Colors.tealAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isAi ? 'IA Gemini' : 'Auto Local',
+                      style: TextStyle(
+                        color: isAi ? AppTheme.primary : Colors.tealAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isGenerating) ...[
+            Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: isAi ? AppTheme.primary : Colors.tealAccent,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  isAi
+                      ? 'Rédaction par l\'IA en cours...'
+                      : 'Génération du rapport en cours...',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ] else if (report != null && report.isNotEmpty) ...[
+            SelectableText(
+              report,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: report));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('📋 Compte-rendu copié !'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copier'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primary,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => viewModel.regenerateReport(),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Régénérer'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondary,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            const Text(
+              'Aucun rapport disponible.',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

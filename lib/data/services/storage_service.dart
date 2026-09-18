@@ -7,21 +7,36 @@ import 'package:score_bot/domain/models/game_event.dart';
 class _BoxNames {
   static const matches = 'matches';
   static const events = 'events';
+  static const settings = 'settings';
+}
+
+/// Clés utilisées dans la boîte settings.
+class _SettingKeys {
+  static const apiKey = 'gemini_api_key';
+  static const aiModel = 'gemini_ai_model';
+  static const hasSeenOnboarding = 'has_seen_ai_onboarding';
+  static const voiceEngine = 'voice_engine'; // 'local' ou 'gemini'
 }
 
 /// Service de persistance locale utilisant Hive.
 class StorageService {
   late Box<String> _matchesBox;
   late Box<String> _eventsBox;
+  late Box<String> _settingsBox;
 
   bool _initialized = false;
 
   /// Initialise Hive et ouvre les boîtes de stockage.
-  Future<void> init() async {
+  Future<void> init([String? customPath]) async {
     if (_initialized) return;
-    await Hive.initFlutter();
+    if (customPath != null) {
+      Hive.init(customPath);
+    } else {
+      await Hive.initFlutter();
+    }
     _matchesBox = await Hive.openBox<String>(_BoxNames.matches);
     _eventsBox = await Hive.openBox<String>(_BoxNames.events);
+    _settingsBox = await Hive.openBox<String>(_BoxNames.settings);
     _initialized = true;
   }
 
@@ -94,6 +109,82 @@ class StorageService {
     await _eventsBox.delete('${matchId}_$eventId');
   }
 
+  // ─────────────── SETTINGS (IA & CONFIG) ───────────────
+
+  /// Récupère la clé API Gemini configurée par l'utilisateur.
+  String? getApiKey() {
+    _assertInitialized();
+    final key = _settingsBox.get(_SettingKeys.apiKey);
+    if (key == null || key.trim().isEmpty) return null;
+    return key.trim();
+  }
+
+  /// Sauvegarde la clé API Gemini de l'utilisateur.
+  Future<void> saveApiKey(String key) async {
+    _assertInitialized();
+    await _settingsBox.put(_SettingKeys.apiKey, key.trim());
+  }
+
+  /// Récupère le modèle IA sélectionné par l'utilisateur (défaut : gemini-2.5-flash).
+  String getAiModel() {
+    _assertInitialized();
+    final model = _settingsBox.get(_SettingKeys.aiModel);
+    if (model == null || model.trim().isEmpty) return 'gemini-2.5-flash';
+    return model.trim();
+  }
+
+  /// Sauvegarde le modèle IA préféré de l'utilisateur.
+  Future<void> saveAiModel(String model) async {
+    _assertInitialized();
+    await _settingsBox.put(_SettingKeys.aiModel, model.trim());
+  }
+
+  /// Indique si l'utilisateur a déjà vu le dialogue d'onboarding IA.
+  bool hasSeenAiOnboarding() {
+    _assertInitialized();
+    return _settingsBox.get(_SettingKeys.hasSeenOnboarding) == 'true';
+  }
+
+  /// Marque l'onboarding IA comme vu.
+  Future<void> setAiOnboardingSeen([bool seen = true]) async {
+    _assertInitialized();
+    await _settingsBox.put(_SettingKeys.hasSeenOnboarding, seen ? 'true' : 'false');
+  }
+
+  /// Vérifie si l'IA est configurée avec une clé valide.
+  bool isAiConfigured() {
+    final key = getApiKey();
+    return key != null && key.isNotEmpty && !key.contains('your_gemini_api_key');
+  }
+
+  /// Récupère le moteur vocal actif : 'local' ou 'gemini'.
+  /// Si non spécifié, utilise 'gemini' si une clé est configurée, sinon 'local'.
+  String getVoiceEngine() {
+    _assertInitialized();
+    final engine = _settingsBox.get(_SettingKeys.voiceEngine);
+    if (engine != null && engine.isNotEmpty) {
+      return engine;
+    }
+    return isAiConfigured() ? 'gemini' : 'local';
+  }
+
+  /// Enregistre le moteur vocal choisi ('local' ou 'gemini').
+  Future<void> saveVoiceEngine(String engine) async {
+    _assertInitialized();
+    await _settingsBox.put(_SettingKeys.voiceEngine, engine.trim().toLowerCase());
+  }
+
+  /// Indique si le mode vocal actif est le mode local (sans IA).
+  bool get isLocalVoiceMode => getVoiceEngine() == 'local';
+
+  /// Efface la configuration IA (pour tests ou réinitialisation).
+  Future<void> clearAiConfig() async {
+    _assertInitialized();
+    await _settingsBox.delete(_SettingKeys.apiKey);
+    await _settingsBox.delete(_SettingKeys.aiModel);
+    await _settingsBox.delete(_SettingKeys.voiceEngine);
+  }
+
   // ─────────────── HELPERS ───────────────
 
   void _assertInitialized() {
@@ -108,6 +199,7 @@ class StorageService {
   Future<void> dispose() async {
     await _matchesBox.close();
     await _eventsBox.close();
+    await _settingsBox.close();
     _initialized = false;
   }
 }

@@ -18,6 +18,19 @@ class LiveWatchView extends StatelessWidget {
       body: ListenableBuilder(
         listenable: viewModel,
         builder: (context, _) {
+          // Navigation automatique vers le résumé dès la fin du match
+          if (viewModel.isMatchFinished) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(
+                  context,
+                  '/summary',
+                  arguments: viewModel.match,
+                );
+              }
+            });
+          }
+
           final isVoiceActive = viewModel.voiceState != VoiceState.idle;
 
           return GestureDetector(
@@ -93,21 +106,49 @@ class LiveWatchView extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.15),
+                            color: viewModel.isVoiceReady
+                                ? (viewModel.isLocalVoiceMode
+                                    ? Colors.tealAccent.withValues(alpha: 0.15)
+                                    : AppTheme.primary.withValues(alpha: 0.15))
+                                : Colors.amber.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppTheme.primary.withValues(alpha: 0.4),
+                              color: viewModel.isVoiceReady
+                                  ? (viewModel.isLocalVoiceMode
+                                      ? Colors.tealAccent.withValues(alpha: 0.4)
+                                      : AppTheme.primary.withValues(alpha: 0.4))
+                                  : Colors.amber.withValues(alpha: 0.4),
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.mic, size: 14, color: AppTheme.primary),
-                              SizedBox(width: 4),
+                              Icon(
+                                viewModel.isVoiceReady
+                                    ? (viewModel.isLocalVoiceMode
+                                        ? Icons.offline_bolt
+                                        : Icons.mic)
+                                    : Icons.mic_off,
+                                size: 14,
+                                color: viewModel.isVoiceReady
+                                    ? (viewModel.isLocalVoiceMode
+                                        ? Colors.tealAccent
+                                        : AppTheme.primary)
+                                    : Colors.amberAccent,
+                              ),
+                              const SizedBox(width: 4),
                               Text(
-                                'Tap pour parler',
+                                viewModel.isVoiceReady
+                                    ? (viewModel.isLocalVoiceMode
+                                        ? '⚡ Local'
+                                        : 'Tap pour parler')
+                                    : 'IA non configurée',
                                 style: TextStyle(
-                                  color: AppTheme.primary,
+                                  color: viewModel.isVoiceReady
+                                      ? (viewModel.isLocalVoiceMode
+                                          ? Colors.tealAccent
+                                          : AppTheme.primary)
+                                      : Colors.amberAccent,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -115,6 +156,13 @@ class LiveWatchView extends StatelessWidget {
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: 6),
+
+                        // ─── Boutons de contrôle du match ───
+                        // AbsorbPointer évite que le GestureDetector parent
+                        // intercepte les taps sur ces boutons
+                        _WatchMatchControls(viewModel: viewModel, context: context),
                       ],
                     ),
                   ),
@@ -129,6 +177,121 @@ class LiveWatchView extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Boutons Pause/Reprendre et Terminer le match sur la montre.
+class _WatchMatchControls extends StatelessWidget {
+  const _WatchMatchControls({
+    required this.viewModel,
+    required this.context,
+  });
+
+  final LiveViewModel viewModel;
+  final BuildContext context;
+
+  Future<void> _confirmEnd() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        title: const Text(
+          'Terminer ?',
+          style: TextStyle(color: Colors.white, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Non', style: TextStyle(fontSize: 12)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                child: const Text('Oui', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await viewModel.endMatch();
+      // La navigation est gérée automatiquement via isMatchFinished
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPaused = viewModel.match.status == GameMatchStatus.paused;
+
+    return GestureDetector(
+      // Absorbe le tap ici pour ne pas déclencher le toggleListening parent
+      onTap: () {},
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Pause / Reprendre
+          _WatchIconButton(
+            icon: isPaused ? Icons.play_arrow : Icons.pause,
+            color: Colors.orangeAccent,
+            tooltip: isPaused ? 'Reprendre' : 'Pause',
+            onTap: () => viewModel.togglePause(),
+          ),
+          const SizedBox(width: 12),
+          // Terminer le match
+          _WatchIconButton(
+            icon: Icons.flag,
+            color: Colors.redAccent,
+            tooltip: 'Fin du match',
+            onTap: _confirmEnd,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bouton icône compact pour la montre.
+class _WatchIconButton extends StatelessWidget {
+  const _WatchIconButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        child: Icon(icon, size: 16, color: color),
       ),
     );
   }
@@ -239,7 +402,7 @@ class _WatchVoiceOverlay extends StatelessWidget {
                     ),
                   ],
                 ),
-              VoiceState.processing => const Column(
+              VoiceState.processing => Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
@@ -247,14 +410,20 @@ class _WatchVoiceOverlay extends StatelessWidget {
                       height: 32,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        color: Colors.orangeAccent,
+                        color: viewModel.isLocalVoiceMode
+                            ? Colors.tealAccent
+                            : Colors.orangeAccent,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
-                      'Analyse Gemini...',
+                      viewModel.isLocalVoiceMode
+                          ? 'Analyse Locale...'
+                          : 'Analyse Gemini...',
                       style: TextStyle(
-                        color: Colors.orangeAccent,
+                        color: viewModel.isLocalVoiceMode
+                            ? Colors.tealAccent
+                            : Colors.orangeAccent,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),

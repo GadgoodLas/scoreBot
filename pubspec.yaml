@@ -22,8 +22,9 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
-  # Audio recording
+  # Audio recording & Local Speech
   record: ^6.1.2
+  speech_to_text: ^7.4.0
   path_provider: ^2.1.5
   path: ^1.9.0
 

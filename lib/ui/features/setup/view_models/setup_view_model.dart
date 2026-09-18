@@ -44,6 +44,51 @@ class SetupViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  // ─────────────── Configuration IA & Mode Vocal ───────────────
+
+  bool get shouldPromptAiOnboarding =>
+      !_repository.hasSeenAiOnboarding && !_repository.isAiConfigured;
+
+  bool get isAiConfigured => _repository.isAiConfigured;
+
+  String get currentAiModel => _repository.aiModel;
+
+  String get currentApiKey => _repository.apiKey;
+
+  String get voiceEngine => _repository.voiceEngine;
+
+  bool get isLocalVoiceMode => _repository.isLocalVoiceMode;
+
+  Future<void> setVoiceEngine(String engine) async {
+    await _repository.setVoiceEngine(engine);
+    notifyListeners();
+  }
+
+  Future<void> saveAiConfig({
+    required String apiKey,
+    required String model,
+    String? voiceEngine,
+  }) async {
+    await _repository.saveAiConfig(
+      apiKey: apiKey,
+      model: model,
+      voiceEngine: voiceEngine,
+    );
+    notifyListeners();
+  }
+
+  Future<void> dismissAiOnboarding() async {
+    await _repository.dismissAiOnboarding();
+    notifyListeners();
+  }
+
+  Future<bool> testAiConnection({
+    required String apiKey,
+    required String model,
+  }) {
+    return _repository.testAiConnection(apiKey: apiKey, model: model);
+  }
+
   // ─────────────── Actions ───────────────
 
   void selectSport(SportType sport) {

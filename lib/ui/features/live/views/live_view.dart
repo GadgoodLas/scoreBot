@@ -3,6 +3,7 @@ import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
+import 'package:score_bot/ui/features/setup/widgets/ai_config_dialog.dart';
 
 /// Écran principal du match en cours (vue téléphone).
 class LiveView extends StatelessWidget {
@@ -17,6 +18,20 @@ class LiveView extends StatelessWidget {
       body: ListenableBuilder(
         listenable: viewModel,
         builder: (context, _) {
+          // Navigation automatique vers le résumé dès la fin du match
+          // (déclenché par commande vocale ou bouton)
+          if (viewModel.isMatchFinished) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(
+                  context,
+                  '/summary',
+                  arguments: viewModel.match,
+                );
+              }
+            });
+          }
+
           return SafeArea(
             child: Column(
               children: [
@@ -51,6 +66,24 @@ class LiveView extends StatelessWidget {
   }
 }
 
+void _openAiSettings(BuildContext context, LiveViewModel viewModel) {
+  AiConfigDialog.show(
+    context: context,
+    initialVoiceEngine: viewModel.voiceEngine,
+    initialApiKey: viewModel.currentApiKey,
+    initialModel: viewModel.currentAiModel,
+    onSave: (apiKey, model, voiceEngine) => viewModel.saveAiConfig(
+      apiKey: apiKey,
+      model: model,
+      voiceEngine: voiceEngine,
+    ),
+    onTestConnection: (apiKey, model) => viewModel.testAiConnection(
+      apiKey: apiKey,
+      model: model,
+    ),
+  );
+}
+
 // ─── Match Header ───────────────────────────────────────────────
 
 class _MatchHeader extends StatelessWidget {
@@ -72,8 +105,36 @@ class _MatchHeader extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
+        alignment: Alignment.topCenter,
         children: [
+          Positioned(
+            right: 0,
+            top: 0,
+            child: IconButton(
+              icon: Icon(
+                viewModel.isLocalVoiceMode
+                    ? Icons.offline_bolt
+                    : (viewModel.isAiConfigured
+                        ? Icons.auto_awesome
+                        : Icons.warning_amber_rounded),
+                size: 20,
+                color: viewModel.isLocalVoiceMode
+                    ? Colors.tealAccent
+                    : (viewModel.isAiConfigured
+                        ? AppTheme.primary
+                        : Colors.amberAccent),
+              ),
+              tooltip: viewModel.isLocalVoiceMode
+                  ? 'Mode vocal : Local (Sans IA)'
+                  : (viewModel.isAiConfigured
+                      ? 'Modèle IA : ${viewModel.currentAiModel}'
+                      : 'Configurer l\'IA / Mode vocal'),
+              onPressed: () => _openAiSettings(context, viewModel),
+            ),
+          ),
+          Column(
+            children: [
           // Chronomètre
           Text(
             viewModel.elapsedFormatted,
@@ -165,6 +226,8 @@ class _MatchHeader extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
         ],
       ),
     );
@@ -410,13 +473,21 @@ class _MicButton extends StatelessWidget {
     final isDisabled = isProcessing ||
         viewModel.match.status != GameMatchStatus.live;
 
+    final isReady = viewModel.isVoiceReady;
+    final isLocal = viewModel.isLocalVoiceMode;
     final hintText = switch (viewModel.voiceState) {
       VoiceState.recording =>
         '🔴 Enregistrement (${viewModel.recordingSeconds}s)... Cliquez pour envoyer',
-      VoiceState.processing => '⚙️ Analyse par Gemini...',
+      VoiceState.processing => isLocal
+          ? '⚡ Analyse locale...'
+          : '⚙️ Analyse par Gemini...',
       VoiceState.success => '✅ Événement pris en compte',
-      VoiceState.error => '❌ Réessayez ou utilisez le clavier ⌨️',
-      VoiceState.idle => '🎙️ Cliquez pour dicter (ou ⌨️ pour saisir)',
+      VoiceState.error => viewModel.lastError ?? '❌ Réessayez ou utilisez le clavier ⌨️',
+      VoiceState.idle => isReady
+          ? (isLocal
+              ? '🎙️ Mode Sans IA (Local) : dictez ou ⌨️ saisissez'
+              : '🎙️ Cliquez pour dicter (ou ⌨️ pour saisir)')
+          : '⚠️ Mode vocal non configuré (cliquez pour activer)',
     };
 
     return Padding(
@@ -429,7 +500,15 @@ class _MicButton extends StatelessWidget {
             children: [
               const SizedBox(width: 48), // Pour centrer le micro
               GestureDetector(
-                onTap: isDisabled ? null : () => viewModel.toggleListening(),
+                onTap: isDisabled
+                    ? null
+                    : () {
+                        if (!isReady) {
+                          _openAiSettings(context, viewModel);
+                        } else {
+                          viewModel.toggleListening();
+                        }
+                      },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: isRecording ? 84 : 70,
@@ -440,7 +519,9 @@ class _MicButton extends StatelessWidget {
                         ? AppTheme.surface
                         : isRecording
                             ? Colors.redAccent
-                            : AppTheme.primary,
+                            : isReady
+                                ? (isLocal ? Colors.tealAccent : AppTheme.primary)
+                                : Colors.amber.shade700,
                     boxShadow: isRecording
                         ? [
                             BoxShadow(
@@ -451,7 +532,10 @@ class _MicButton extends StatelessWidget {
                           ]
                         : [
                             BoxShadow(
-                              color: AppTheme.primary.withValues(alpha: 0.3),
+                              color: (isReady
+                                      ? (isLocal ? Colors.tealAccent : AppTheme.primary)
+                                      : Colors.amber)
+                                  .withValues(alpha: 0.3),
                               blurRadius: 12,
                               spreadRadius: 2,
                             ),
@@ -462,7 +546,9 @@ class _MicButton extends StatelessWidget {
                         ? Icons.hourglass_top
                         : isRecording
                             ? Icons.stop
-                            : Icons.mic,
+                            : isReady
+                                ? (isLocal ? Icons.offline_bolt : Icons.mic)
+                                : Icons.mic_off,
                     color: isDisabled ? AppTheme.textSecondary : Colors.black,
                     size: 32,
                   ),
@@ -475,7 +561,13 @@ class _MicButton extends StatelessWidget {
                 tooltip: 'Saisir du texte',
                 onPressed: isDisabled
                     ? null
-                    : () => _showTextInputDialog(context),
+                    : () {
+                        if (!isReady) {
+                          _openAiSettings(context, viewModel);
+                        } else {
+                          _showTextInputDialog(context);
+                        }
+                      },
               ),
             ],
           ),
@@ -487,7 +579,9 @@ class _MicButton extends StatelessWidget {
                   ? Colors.redAccent
                   : isProcessing
                       ? Colors.orangeAccent
-                      : AppTheme.textSecondary,
+                      : isReady
+                          ? (isLocal ? Colors.tealAccent : AppTheme.textSecondary)
+                          : Colors.amberAccent,
               fontSize: 12,
               fontWeight: isRecording ? FontWeight.bold : FontWeight.normal,
             ),

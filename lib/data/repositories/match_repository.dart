@@ -4,6 +4,8 @@ import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/data/services/audio_service.dart';
 import 'package:score_bot/data/services/gemini_service.dart';
+import 'package:score_bot/data/services/local_speech_service.dart';
+import 'package:score_bot/data/services/offline_voice_command_parser.dart';
 import 'package:score_bot/data/services/storage_service.dart';
 
 /// Résultat d'une commande vocale traitée.
@@ -15,7 +17,7 @@ class VoiceCommandResult {
     this.errorMessage,
   });
 
-  /// Texte transcrit par Gemini.
+  /// Texte transcrit par Gemini ou la reconnaissance locale.
   final String transcription;
 
   /// Événement créé (null si parsing échoué ou commande de contrôle match).
@@ -31,20 +33,73 @@ class VoiceCommandResult {
 }
 
 /// Repository central de ScoreBot.
-/// Orchestre les services Audio, Gemini et Storage pour gérer un match en direct.
+/// Orchestre les services Audio, Gemini, Local Speech et Storage.
 class MatchRepository {
   MatchRepository({
     required AudioService audioService,
     required GeminiService geminiService,
     required StorageService storageService,
+    LocalSpeechService? localSpeechService,
+    OfflineVoiceCommandParser? offlineParser,
   })  : _audio = audioService,
         _gemini = geminiService,
-        _storage = storageService;
+        _storage = storageService,
+        _localSpeech = localSpeechService ?? LocalSpeechService(),
+        _offlineParser = offlineParser ?? const OfflineVoiceCommandParser();
 
   final AudioService _audio;
   final GeminiService _gemini;
   final StorageService _storage;
+  final LocalSpeechService _localSpeech;
+  final OfflineVoiceCommandParser _offlineParser;
   final _uuid = const Uuid();
+
+  String _lastLocalTranscription = '';
+
+  // ─────────────── AI & SETTINGS ───────────────
+
+  String get apiKey => _gemini.apiKey;
+  String get aiModel => _gemini.preferredModel;
+  bool get isAiConfigured => _gemini.isConfigured;
+  bool get hasSeenAiOnboarding => _storage.hasSeenAiOnboarding();
+  String get voiceEngine => _storage.getVoiceEngine();
+  bool get isLocalVoiceMode => _storage.isLocalVoiceMode;
+  bool get isVoiceReady => isLocalVoiceMode || isAiConfigured;
+
+  /// Définit le moteur vocal actif ('local' ou 'gemini').
+  Future<void> setVoiceEngine(String engine) async {
+    await _storage.saveVoiceEngine(engine);
+  }
+
+  /// Enregistre la configuration IA (clé API et modèle).
+  Future<void> saveAiConfig({
+    required String apiKey,
+    required String model,
+    String? voiceEngine,
+  }) async {
+    await _storage.saveApiKey(apiKey);
+    await _storage.saveAiModel(model);
+    if (voiceEngine != null) {
+      await _storage.saveVoiceEngine(voiceEngine);
+    } else if (apiKey.isNotEmpty) {
+      await _storage.saveVoiceEngine('gemini');
+    }
+    await _storage.setAiOnboardingSeen(true);
+    _gemini.updateConfig(apiKey: apiKey, preferredModel: model);
+  }
+
+  /// Marque l'invite d'onboarding IA comme vue.
+  Future<void> dismissAiOnboarding() async {
+    await _storage.setAiOnboardingSeen(true);
+  }
+
+  /// Teste la connexion à l'API Gemini avec la clé et le modèle donnés.
+  Future<bool> testAiConnection({
+    required String apiKey,
+    required String model,
+  }) async {
+    return GeminiService.validateApiKey(apiKey: apiKey, model: model);
+  }
 
   // ─────────────── MATCH LIFECYCLE ───────────────
 
@@ -112,16 +167,155 @@ class MatchRepository {
     return updated;
   }
 
+  /// Génère un compte-rendu textuel complet du match.
+  /// Utilise Gemini si configuré et actif, sinon génère un rapport local soigné.
+  Future<String> generateMatchReport(GameMatch match) async {
+    final events = getEvents(match.id);
+
+    if (!isLocalVoiceMode && isAiConfigured) {
+      try {
+        return await _gemini.generateMatchReport(match: match, events: events);
+      } catch (_) {
+        // Fallback transparent sur le générateur local
+      }
+    }
+
+    return _generateLocalMatchReport(match, events);
+  }
+
+  /// Générateur déterministe hors-ligne d'un compte-rendu journalistique de match.
+  String _generateLocalMatchReport(GameMatch match, List<GameEvent> events) {
+    final buf = StringBuffer();
+
+    // Titre & Épilogue
+    final winnerText = match.scoreA > match.scoreB
+        ? '🏆 Victoire de ${match.teamA.name} face à ${match.teamB.name} !'
+        : (match.scoreB > match.scoreA
+            ? '🏆 Victoire de ${match.teamB.name} face à ${match.teamA.name} !'
+            : '🤝 Match nul entre ${match.teamA.name} et ${match.teamB.name} !');
+
+    buf.writeln(winnerText);
+    buf.writeln('');
+    buf.writeln(
+      'Au terme d\'une confrontation disputée de ${match.sport.label}, '
+      '${match.teamA.name} et ${match.teamB.name} se quittent sur le score final de '
+      '${match.scoreA} à ${match.scoreB}.',
+    );
+    buf.writeln('');
+
+    // Faits saillants chronologiques
+    final goals = events.whereType<GoalEvent>().toList();
+    final cards = events.whereType<CardEvent>().toList();
+    final fouls = events.whereType<FoulEvent>().toList();
+
+    buf.writeln('⏱️ Faits marquants de la rencontre :');
+    if (events.isEmpty) {
+      buf.writeln('• Match calme sans incident ni but notable.');
+    } else {
+      for (final e in events) {
+        final team = e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
+        if (e is GoalEvent) {
+          final scorer = e.scorerName ?? 'But';
+          final assist = e.assistName != null ? ' (passe décisive : ${e.assistName})' : '';
+          buf.writeln('• ${e.minute}\' : ⚽ $scorer fait trembler les filets pour $team$assist.');
+        } else if (e is CardEvent) {
+          final player = e.playerName ?? 'Un joueur';
+          final cardType = e.type == GameEventType.yellowCard ? '🟨 Carton jaune' : '🟥 Carton rouge';
+          buf.writeln('• ${e.minute}\' : $cardType adressé à $player ($team).');
+        } else if (e is FoulEvent) {
+          buf.writeln('• ${e.minute}\' : ⚠️ Faute signalée pour ${e.playerName ?? "un joueur"} ($team).');
+        }
+      }
+    }
+    buf.writeln('');
+
+    // Buteurs et performances individuelles
+    final scorerCounts = <String, int>{};
+    final assistCounts = <String, int>{};
+    for (final g in goals) {
+      if (g.scorerName != null && g.scorerName!.isNotEmpty) {
+        scorerCounts[g.scorerName!] = (scorerCounts[g.scorerName!] ?? 0) + g.points;
+      }
+      if (g.assistName != null && g.assistName!.isNotEmpty) {
+        assistCounts[g.assistName!] = (assistCounts[g.assistName!] ?? 0) + 1;
+      }
+    }
+
+    buf.writeln('⭐ Distinctions & statistiques clés :');
+    if (scorerCounts.isNotEmpty) {
+      final bestScorer = (scorerCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
+      buf.writeln('• Homme du match : ${bestScorer.key} avec ${bestScorer.value} réalisation(s).');
+    }
+    if (assistCounts.isNotEmpty) {
+      final bestAssister = (assistCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
+      buf.writeln('• Meilleur passeur : ${bestAssister.key} (${bestAssister.value} passe(s)).');
+    }
+    if (cards.isNotEmpty || fouls.isNotEmpty) {
+      buf.writeln('• Bilan arbitral : ${cards.length} carton(s) et ${fouls.length} faute(s) signalée(s).');
+    }
+
+    return buf.toString();
+  }
+
   // ─────────────── VOICE COMMANDS ───────────────
 
-  /// Démarre l'enregistrement d'une commande vocale.
-  Future<void> startVoiceCommand() => _audio.startRecording();
+  /// Démarre l'enregistrement ou l'écoute d'une commande vocale.
+  Future<void> startVoiceCommand() async {
+    if (isLocalVoiceMode) {
+      _lastLocalTranscription = '';
+      await _localSpeech.startListening(
+        onResult: (words, isFinal) {
+          _lastLocalTranscription = words;
+        },
+      );
+    } else {
+      await _audio.startRecording();
+    }
+  }
 
-  /// Arrête l'enregistrement, traite l'audio via Gemini en une seule passe,
-  /// crée et persiste l'événement de match ou exécute l'action de contrôle.
-  ///
-  /// Retourne un [VoiceCommandResult] avec l'événement créé ou l'erreur.
+  /// Annule l'enregistrement en cours sans traiter.
+  Future<void> cancelVoiceCommand() async {
+    if (isLocalVoiceMode) {
+      await _localSpeech.cancelListening();
+      _lastLocalTranscription = '';
+    } else {
+      await _audio.cancelRecording();
+    }
+  }
+
+  /// Arrête l'écoute/enregistrement, parse la commande (via moteur local ou Gemini)
+  /// et crée l'événement de match.
   Future<VoiceCommandResult> stopAndProcessVoiceCommand(GameMatch match) async {
+    // ─── Mode Local (Sans IA / Hors-ligne) ───
+    if (isLocalVoiceMode) {
+      try {
+        await _localSpeech.stopListening();
+        // Légère attente pour s'assurer de recevoir les derniers mots de l'OS
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        final text = _lastLocalTranscription.trim();
+        if (text.isEmpty) {
+          return const VoiceCommandResult(
+            transcription: '',
+            errorMessage: 'Aucune parole claire détectée. Réessayez.',
+          );
+        }
+
+        final parsed = _offlineParser.parse(rawText: text, match: match);
+        return _processParsedCommand(
+          parsed: parsed,
+          match: match,
+          fallbackTranscription: text,
+        );
+      } catch (e) {
+        return VoiceCommandResult(
+          transcription: _lastLocalTranscription,
+          errorMessage: 'Erreur vocale locale : $e',
+        );
+      }
+    }
+
+    // ─── Mode Gemini (Cloud Multimodal) ───
     try {
       // 1. Arrêter l'enregistrement et récupérer l'audio
       final audioBytes = await _audio.stopRecording();
@@ -133,55 +327,10 @@ class MatchRepository {
         match: match,
       );
 
-      final transcription = parsed.transcription.isNotEmpty
-          ? parsed.transcription
-          : 'Commande vocale';
-
-      // 3. Gestion d'un contrôle de match vocal (pause, reprise, mi-temps, fin)
-      if (parsed.matchControl != null) {
-        return VoiceCommandResult(
-          transcription: transcription,
-          matchControl: parsed.matchControl,
-        );
-      }
-
-      if (parsed.type == GameEventType.unknown) {
-        return VoiceCommandResult(
-          transcription: transcription,
-          errorMessage: parsed.transcription.isNotEmpty
-              ? 'Événement non reconnu : "${parsed.transcription}"'
-              : 'Aucune parole claire détectée. Réessayez.',
-        );
-      }
-
-      // 4. Résoudre l'équipe (correspondance par nom, joueur ou couleur)
-      final resolvedTeam = _resolveTeam(
-        parsed.teamName,
-        match,
-        playerName: parsed.playerName,
-        secondaryPlayerName: parsed.secondaryPlayerName,
-      );
-
-      // 5. Créer l'événement de domaine
-      final minute = parsed.minute ?? match.currentMinute;
-      final eventId = _uuid.v4();
-      final now = DateTime.now();
-
-      final event = _buildEvent(
-        id: eventId,
+      return _processParsedCommand(
         parsed: parsed,
-        teamId: resolvedTeam?.id ?? match.teamA.id,
-        minute: minute,
-        timestamp: now,
         match: match,
-      );
-
-      // 6. Persister l'événement
-      await _storage.saveEvent(match.id, event);
-
-      return VoiceCommandResult(
-        transcription: transcription,
-        event: event,
+        fallbackTranscription: 'Commande vocale',
       );
     } on AudioException catch (e) {
       return VoiceCommandResult(
@@ -206,54 +355,36 @@ class MatchRepository {
     String text,
     GameMatch match,
   ) async {
+    // Mode local (sans IA)
+    if (isLocalVoiceMode) {
+      final parsed = _offlineParser.parse(rawText: text, match: match);
+      return _processParsedCommand(
+        parsed: parsed,
+        match: match,
+        fallbackTranscription: text,
+      );
+    }
+
+    // Mode Gemini avec fallback automatique vers parseur hors-ligne si réseau/quota indisponible
     try {
       final parsed = await _gemini.parseTextCommand(
         text: text,
         match: match,
       );
-
-      final transcription = parsed.transcription.isNotEmpty ? parsed.transcription : text;
-
-      if (parsed.matchControl != null) {
-        return VoiceCommandResult(
-          transcription: transcription,
-          matchControl: parsed.matchControl,
-        );
-      }
-
-      if (parsed.type == GameEventType.unknown) {
-        return VoiceCommandResult(
-          transcription: transcription,
-          errorMessage: 'Commande non reconnue : "$text"',
-        );
-      }
-
-      final resolvedTeam = _resolveTeam(
-        parsed.teamName,
-        match,
-        playerName: parsed.playerName,
-        secondaryPlayerName: parsed.secondaryPlayerName,
-      );
-      final minute = parsed.minute ?? match.currentMinute;
-      final eventId = _uuid.v4();
-      final now = DateTime.now();
-
-      final event = _buildEvent(
-        id: eventId,
+      return _processParsedCommand(
         parsed: parsed,
-        teamId: resolvedTeam?.id ?? match.teamA.id,
-        minute: minute,
-        timestamp: now,
         match: match,
-      );
-
-      await _storage.saveEvent(match.id, event);
-
-      return VoiceCommandResult(
-        transcription: transcription,
-        event: event,
+        fallbackTranscription: text,
       );
     } on GeminiException catch (e) {
+      final fallbackParsed = _offlineParser.parse(rawText: text, match: match);
+      if (fallbackParsed.type != GameEventType.unknown || fallbackParsed.matchControl != null) {
+        return _processParsedCommand(
+          parsed: fallbackParsed,
+          match: match,
+          fallbackTranscription: text,
+        );
+      }
       return VoiceCommandResult(
         transcription: text,
         errorMessage: e.message,
@@ -266,8 +397,61 @@ class MatchRepository {
     }
   }
 
-  /// Annule l'enregistrement en cours sans traiter.
-  Future<void> cancelVoiceCommand() => _audio.cancelRecording();
+  /// Factorisation du traitement d'un [ParsedVoiceCommand] (commun à Local et Gemini).
+  Future<VoiceCommandResult> _processParsedCommand({
+    required ParsedVoiceCommand parsed,
+    required GameMatch match,
+    required String fallbackTranscription,
+  }) async {
+    final transcription = parsed.transcription.isNotEmpty
+        ? parsed.transcription
+        : (fallbackTranscription.isNotEmpty ? fallbackTranscription : 'Commande vocale');
+
+    if (parsed.matchControl != null) {
+      return VoiceCommandResult(
+        transcription: transcription,
+        matchControl: parsed.matchControl,
+      );
+    }
+
+    if (parsed.type == GameEventType.unknown) {
+      return VoiceCommandResult(
+        transcription: transcription,
+        errorMessage: parsed.transcription.isNotEmpty
+            ? 'Événement non reconnu : "${parsed.transcription}"'
+            : 'Aucune parole claire détectée. Réessayez.',
+      );
+    }
+
+    // Résoudre l'équipe
+    final resolvedTeam = _resolveTeam(
+      parsed.teamName,
+      match,
+      playerName: parsed.playerName,
+      secondaryPlayerName: parsed.secondaryPlayerName,
+    );
+
+    // Créer l'événement
+    final minute = parsed.minute ?? match.currentMinute;
+    final eventId = _uuid.v4();
+    final now = DateTime.now();
+
+    final event = _buildEvent(
+      id: eventId,
+      parsed: parsed,
+      teamId: resolvedTeam?.id ?? match.teamA.id,
+      minute: minute,
+      timestamp: now,
+      match: match,
+    );
+
+    await _storage.saveEvent(match.id, event);
+
+    return VoiceCommandResult(
+      transcription: transcription,
+      event: event,
+    );
+  }
 
   // ─────────────── EVENTS ───────────────
 

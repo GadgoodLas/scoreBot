@@ -12,6 +12,7 @@ import 'package:score_bot/ui/features/live/views/live_watch_view.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 import 'package:score_bot/ui/features/setup/views/setup_view.dart';
 import 'package:score_bot/ui/features/summary/views/summary_view.dart';
+import 'package:score_bot/ui/features/summary/views/summary_watch_view.dart';
 import 'package:score_bot/domain/models/match.dart';
 
 final GetIt sl = GetIt.instance;
@@ -29,7 +30,9 @@ Future<void> main() async {
   // Injection de dépendances
   sl.registerSingleton<StorageService>(storageService);
   sl.registerSingleton<AudioService>(AudioService());
-  sl.registerSingleton<GeminiService>(GeminiService());
+  sl.registerSingleton<GeminiService>(
+    GeminiService(storageService: sl<StorageService>()),
+  );
   sl.registerSingleton<MatchRepository>(
     MatchRepository(
       audioService: sl<AudioService>(),
@@ -78,12 +81,11 @@ class ScoreBotApp extends StatelessWidget {
       '/summary' => MaterialPageRoute(
           builder: (_) {
             final match = settings.arguments as GameMatch;
-            return SummaryView(
-              viewModel: SummaryViewModel(
-                matchRepository: sl<MatchRepository>(),
-                match: match,
-              ),
+            final vm = SummaryViewModel(
+              matchRepository: sl<MatchRepository>(),
+              match: match,
             );
+            return _WatchOrPhoneSummaryView(viewModel: vm);
           },
         ),
       _ => MaterialPageRoute(
@@ -94,7 +96,7 @@ class ScoreBotApp extends StatelessWidget {
 }
 
 /// Détecte automatiquement si l'app tourne sur une petite surface (montre)
-/// et affiche la vue adaptée.
+/// et affiche la vue live adaptée.
 class _WatchOrPhoneView extends StatelessWidget {
   const _WatchOrPhoneView({required this.viewModel});
   final LiveViewModel viewModel;
@@ -108,6 +110,22 @@ class _WatchOrPhoneView extends StatelessWidget {
     return isWatch
         ? LiveWatchView(viewModel: viewModel)
         : LiveView(viewModel: viewModel);
+  }
+}
+
+/// Détecte automatiquement si l'app tourne sur une montre et affiche la vue résumé adaptée.
+class _WatchOrPhoneSummaryView extends StatelessWidget {
+  const _WatchOrPhoneSummaryView({required this.viewModel});
+  final SummaryViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isWatch = width < 250;
+
+    return isWatch
+        ? SummaryWatchView(viewModel: viewModel)
+        : SummaryView(viewModel: viewModel);
   }
 }
 

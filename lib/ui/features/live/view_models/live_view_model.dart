@@ -91,6 +91,35 @@ class LiveViewModel extends ChangeNotifier {
 
   bool _isTransitioning = false;
 
+  // ─────────────── Configuration IA ───────────────
+
+  bool get isAiConfigured => _repository.isAiConfigured;
+  bool get isLocalVoiceMode => _repository.isLocalVoiceMode;
+  bool get isVoiceReady => _repository.isVoiceReady;
+  String get currentApiKey => _repository.apiKey;
+  String get currentAiModel => _repository.aiModel;
+  String get voiceEngine => _repository.voiceEngine;
+
+  Future<void> saveAiConfig({
+    required String apiKey,
+    required String model,
+    String? voiceEngine,
+  }) async {
+    await _repository.saveAiConfig(
+      apiKey: apiKey,
+      model: model,
+      voiceEngine: voiceEngine,
+    );
+    notifyListeners();
+  }
+
+  Future<bool> testAiConnection({
+    required String apiKey,
+    required String model,
+  }) {
+    return _repository.testAiConnection(apiKey: apiKey, model: model);
+  }
+
   /// Démarre l'enregistrement vocal.
   Future<void> startListening() async {
     if (_isTransitioning || _voiceState != VoiceState.recording) {
@@ -98,6 +127,21 @@ class LiveViewModel extends ChangeNotifier {
     }
     // Permettre l'enregistrement même en pause pour dire "reprends" ou "fin"
     if (_match.status == GameMatchStatus.finished) return;
+
+    if (!_repository.isVoiceReady) {
+      _voiceState = VoiceState.error;
+      _lastError = 'Mode vocal non configuré';
+      HapticFeedback.vibrate();
+      notifyListeners();
+      Timer(const Duration(seconds: 4), () {
+        if (_voiceState == VoiceState.error) {
+          _voiceState = VoiceState.idle;
+          _lastError = null;
+          notifyListeners();
+        }
+      });
+      return;
+    }
 
     _isTransitioning = true;
     _voiceState = VoiceState.recording;
@@ -226,6 +270,20 @@ class LiveViewModel extends ChangeNotifier {
     if (text.trim().isEmpty) return;
     if (_voiceState == VoiceState.processing) return;
 
+    if (!_repository.isVoiceReady) {
+      _voiceState = VoiceState.error;
+      _lastError = 'Mode vocal non configuré';
+      notifyListeners();
+      Timer(const Duration(seconds: 4), () {
+        if (_voiceState == VoiceState.error) {
+          _voiceState = VoiceState.idle;
+          _lastError = null;
+          notifyListeners();
+        }
+      });
+      return;
+    }
+
     _voiceState = VoiceState.processing;
     _lastError = null;
     _lastTranscription = text.trim();
@@ -327,6 +385,9 @@ class LiveViewModel extends ChangeNotifier {
     _chronoTimer?.cancel();
     notifyListeners();
   }
+
+  /// Vrai dès que le match est terminé (utilisé pour la navigation auto).
+  bool get isMatchFinished => _match.status == GameMatchStatus.finished;
 
   // ─────────────── Score Actions (+1 / -1) ───────────────
 
