@@ -28,6 +28,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Ensure .env exists for asset bundling
+        run: |
+          if [ ! -f .env ]; then
+            touch .env
+          fi
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -47,28 +53,27 @@ jobs:
       - name: Run automated tests
         run: flutter test
 
-      - name: Restore Keystore from Secrets
-        if: env.HAS_KEYSTORE == 'true'
-        env:
-          HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Setup Keystore & key.properties
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/scorebot-release-key.jks
-
-      - name: Create key.properties
-        if: env.HAS_KEYSTORE == 'true'
-        env:
-          HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          cat <<EOF > android/key.properties
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Restoring production keystore from secrets..."
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/scorebot-release-key.jks
+            cat <<EOF > android/key.properties
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=../scorebot-release-key.jks
           EOF
+          else
+            echo "No production keystore secret found, generating temporary CI keystore..."
+            keytool -genkey -v -keystore android/scorebot-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias scorebot -storepass android -keypass android -dname "CN=CI, OU=CI, O=CI, L=CI, S=CI, C=US"
+            cat <<EOF > android/key.properties
+          storePassword=android
+          keyPassword=android
+          keyAlias=scorebot
+          storeFile=../scorebot-release-key.jks
+          EOF
+          fi
 
       - name: Build Android App Bundles (Phone & Watch)
         run: |
@@ -88,10 +93,8 @@ jobs:
           name: scorebot-watch-bundle
           path: build/app/outputs/bundle/watchRelease/app-watch-release.aab
 
-      - name: Deploy to Google Play Store (Internal Track)
-        if: env.HAS_PLAY_AUTH == 'true'
-        env:
-          HAS_PLAY_AUTH: ${{ secrets.PLAY_STORE_JSON_KEY != '' }}
+      - name: Deploy to Google Play Store
+        if: ${{ secrets.PLAY_STORE_JSON_KEY != '' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}

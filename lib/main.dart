@@ -22,8 +22,12 @@ final GetIt sl = GetIt.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Chargement des variables d'environnement
-  await dotenv.load(fileName: '.env');
+  // Chargement des variables d'environnement (silencieux si absent)
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Fichier .env optionnel en production/CI
+  }
 
   // Initialisation du stockage local
   final storageService = StorageService();
