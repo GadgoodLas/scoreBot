@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
@@ -147,8 +148,8 @@ class LiveWatchView extends StatelessWidget {
                                     Text(
                                       viewModel.isVoiceReady
                                           ? (viewModel.isLocalVoiceMode
-                                              ? '⚡ Local'
-                                              : 'Tap pour parler')
+                                              ? '⚡ ${AppLocalizations.of(context)!.localVoiceModeBadge}'
+                                              : AppLocalizations.of(context)!.tapToSpeak)
                                           : 'IA non configurée',
                                       style: TextStyle(
                                         color: viewModel.isVoiceReady
@@ -201,15 +202,16 @@ class _WatchMatchControls extends StatelessWidget {
   final BuildContext context;
 
   Future<void> _confirmEnd() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.grey[900],
         contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
         titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        title: const Text(
-          'Terminer ?',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          l10n.endMatchDialogTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         actions: [
@@ -218,7 +220,7 @@ class _WatchMatchControls extends StatelessWidget {
             children: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Non', style: TextStyle(fontSize: 12)),
+                child: Text(l10n.no, style: const TextStyle(fontSize: 12)),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
@@ -226,7 +228,7 @@ class _WatchMatchControls extends StatelessWidget {
                   backgroundColor: Colors.redAccent,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
-                child: const Text('Oui', style: TextStyle(fontSize: 12)),
+                child: Text(l10n.yes, style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
@@ -242,6 +244,7 @@ class _WatchMatchControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isPaused = viewModel.match.status == GameMatchStatus.paused;
 
     return GestureDetector(
@@ -256,7 +259,7 @@ class _WatchMatchControls extends StatelessWidget {
           _WatchIconButton(
             icon: isPaused ? Icons.play_arrow : Icons.pause,
             color: Colors.orangeAccent,
-            tooltip: isPaused ? 'Reprendre' : 'Pause',
+            tooltip: isPaused ? l10n.resume : l10n.pause,
             onTap: () => viewModel.togglePause(),
           ),
           const SizedBox(width: 12),
@@ -264,7 +267,7 @@ class _WatchMatchControls extends StatelessWidget {
           _WatchIconButton(
             icon: Icons.flag,
             color: Colors.redAccent,
-            tooltip: 'Fin du match',
+            tooltip: l10n.endMatch,
             onTap: _confirmEnd,
           ),
         ],
@@ -499,10 +502,11 @@ class _WatchStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final (text, color) = switch (status) {
-      GameMatchStatus.paused => ('⏸ PAUSE', Colors.orangeAccent),
-      GameMatchStatus.halftime => ('⏱ MI-TEMPS', Colors.amberAccent),
-      GameMatchStatus.finished => ('🏁 FIN', Colors.greenAccent),
+      GameMatchStatus.paused => ('⏸ ${l10n.matchPaused}', Colors.orangeAccent),
+      GameMatchStatus.halftime => ('⏱ ${l10n.matchHalftime}', Colors.amberAccent),
+      GameMatchStatus.finished => ('🏁 ${l10n.matchFinished}', Colors.greenAccent),
       _ => ('', Colors.transparent),
     };
 

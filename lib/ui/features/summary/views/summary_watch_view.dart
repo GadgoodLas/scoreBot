@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/ui/features/summary/views/summary_view.dart';
 
@@ -10,6 +11,8 @@ class SummaryWatchView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: ListenableBuilder(
@@ -38,9 +41,9 @@ class SummaryWatchView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
                   ),
-                  child: const Text(
-                    '🏁 MATCH TERMINÉ',
-                    style: TextStyle(
+                  child: Text(
+                    '🏁 ${l10n.matchFinished}',
+                    style: const TextStyle(
                       color: Colors.greenAccent,
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
@@ -52,9 +55,9 @@ class SummaryWatchView extends StatelessWidget {
 
                 // ─── Vainqueur ───
                 Text(
-                  viewModel.winner == 'Égalité'
-                      ? '🤝 Égalité'
-                      : '🏆 ${viewModel.winner}',
+                  viewModel.scoreA == viewModel.scoreB
+                      ? '🤝 ${l10n.draw}'
+                      : '🏆 ${l10n.winner(viewModel.winner)}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppTheme.primary,
@@ -130,7 +133,7 @@ class SummaryWatchView extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              isAi ? 'Compte-rendu IA' : 'Compte-rendu auto',
+                              isAi ? l10n.aiReportBadge : l10n.localReportBadge,
                               style: TextStyle(
                                 color: isAi ? AppTheme.primary : Colors.tealAccent,
                                 fontSize: 10,
@@ -142,17 +145,17 @@ class SummaryWatchView extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       if (isGenerating) ...[
-                        const Row(
+                        Row(
                           children: [
-                            SizedBox(
+                            const SizedBox(
                               width: 12,
                               height: 12,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'Génération...',
-                              style: TextStyle(
+                              l10n.generatingReport,
+                              style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 10,
                                 fontStyle: FontStyle.italic,
@@ -170,9 +173,9 @@ class SummaryWatchView extends StatelessWidget {
                           ),
                         ),
                       ] else ...[
-                        const Text(
-                          'Aucun rapport.',
-                          style: TextStyle(color: Colors.white60, fontSize: 10),
+                        Text(
+                          l10n.noReportAvailable,
+                          style: const TextStyle(color: Colors.white60, fontSize: 10),
                         ),
                       ],
                     ],
@@ -190,7 +193,7 @@ class SummaryWatchView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      '⚽ Meilleur buteur : ${viewModel.topScorers.first.key} (${viewModel.topScorers.first.value})',
+                      '⚽ ${l10n.topScorer(viewModel.topScorers.first.key, viewModel.topScorers.first.value)}',
                       style: const TextStyle(color: Colors.white70, fontSize: 10),
                     ),
                   ),
@@ -205,9 +208,9 @@ class SummaryWatchView extends StatelessWidget {
                       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
                     },
                     icon: const Icon(Icons.sports_soccer, size: 14),
-                    label: const Text(
-                      'Nouveau match',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    label: Text(
+                      l10n.newMatch,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,

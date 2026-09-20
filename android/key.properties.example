@@ -7,3 +7,4 @@ storePassword=mon_mot_de_passe_keystore
 keyPassword=mon_mot_de_passe_cle
 keyAlias=scorebot
 storeFile=C:/Users/moham/scorebot-release-key.jks
+

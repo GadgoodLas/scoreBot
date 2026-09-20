@@ -65,6 +65,12 @@ class MatchRepository {
   String get voiceEngine => _storage.getVoiceEngine();
   bool get isLocalVoiceMode => _storage.isLocalVoiceMode;
   bool get isVoiceReady => isLocalVoiceMode || isAiConfigured;
+  String get languageCode => _storage.getLanguageCode();
+
+  /// Définit la langue active ('en' ou 'fr').
+  Future<void> setLanguageCode(String code) async {
+    await _storage.saveLanguageCode(code);
+  }
 
   /// Définit le moteur vocal actif ('local' ou 'gemini').
   Future<void> setVoiceEngine(String engine) async {
@@ -174,7 +180,11 @@ class MatchRepository {
 
     if (!isLocalVoiceMode && isAiConfigured) {
       try {
-        return await _gemini.generateMatchReport(match: match, events: events);
+        return await _gemini.generateMatchReport(
+          match: match,
+          events: events,
+          language: languageCode,
+        );
       } catch (_) {
         // Fallback transparent sur le générateur local
       }
@@ -185,21 +195,32 @@ class MatchRepository {
 
   /// Générateur déterministe hors-ligne d'un compte-rendu journalistique de match.
   String _generateLocalMatchReport(GameMatch match, List<GameEvent> events) {
+    final isFrench = languageCode == 'fr';
     final buf = StringBuffer();
 
     // Titre & Épilogue
-    final winnerText = match.scoreA > match.scoreB
-        ? '🏆 Victoire de ${match.teamA.name} face à ${match.teamB.name} !'
-        : (match.scoreB > match.scoreA
-            ? '🏆 Victoire de ${match.teamB.name} face à ${match.teamA.name} !'
-            : '🤝 Match nul entre ${match.teamA.name} et ${match.teamB.name} !');
+    final winnerText = isFrench
+        ? (match.scoreA > match.scoreB
+            ? '🏆 Victoire de ${match.teamA.name} face à ${match.teamB.name} !'
+            : (match.scoreB > match.scoreA
+                ? '🏆 Victoire de ${match.teamB.name} face à ${match.teamA.name} !'
+                : '🤝 Match nul entre ${match.teamA.name} et ${match.teamB.name} !'))
+        : (match.scoreA > match.scoreB
+            ? '🏆 Victory for ${match.teamA.name} against ${match.teamB.name}!'
+            : (match.scoreB > match.scoreA
+                ? '🏆 Victory for ${match.teamB.name} against ${match.teamA.name}!'
+                : '🤝 Draw between ${match.teamA.name} and ${match.teamB.name}!'));
 
     buf.writeln(winnerText);
     buf.writeln('');
     buf.writeln(
-      'Au terme d\'une confrontation disputée de ${match.sport.label}, '
-      '${match.teamA.name} et ${match.teamB.name} se quittent sur le score final de '
-      '${match.scoreA} à ${match.scoreB}.',
+      isFrench
+          ? 'Au terme d\'une confrontation disputée de ${match.sport.label}, '
+            '${match.teamA.name} et ${match.teamB.name} se quittent sur le score final de '
+            '${match.scoreA} à ${match.scoreB}.'
+          : 'At the end of a hard-fought ${match.sport.label} game, '
+            '${match.teamA.name} and ${match.teamB.name} finish with a final score of '
+            '${match.scoreA} - ${match.scoreB}.',
     );
     buf.writeln('');
 
@@ -208,22 +229,32 @@ class MatchRepository {
     final cards = events.whereType<CardEvent>().toList();
     final fouls = events.whereType<FoulEvent>().toList();
 
-    buf.writeln('⏱️ Faits marquants de la rencontre :');
+    buf.writeln(isFrench ? '⏱️ Faits marquants de la rencontre :' : '⏱️ Match Highlights:');
     if (events.isEmpty) {
-      buf.writeln('• Match calme sans incident ni but notable.');
+      buf.writeln(isFrench ? '• Match calme sans incident ni but notable.' : '• Quiet match with no notable incidents.');
     } else {
       for (final e in events) {
         final team = e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
         if (e is GoalEvent) {
-          final scorer = e.scorerName ?? 'But';
-          final assist = e.assistName != null ? ' (passe décisive : ${e.assistName})' : '';
-          buf.writeln('• ${e.minute}\' : ⚽ $scorer fait trembler les filets pour $team$assist.');
+          final scorer = e.scorerName ?? (isFrench ? 'But' : 'Goal');
+          final assist = e.assistName != null
+              ? (isFrench ? ' (passe décisive : ${e.assistName})' : ' (assist: ${e.assistName})')
+              : '';
+          buf.writeln(isFrench
+              ? '• ${e.minute}\' : ⚽ $scorer fait trembler les filets pour $team$assist.'
+              : '• ${e.minute}\' : ⚽ $scorer scores for $team$assist.');
         } else if (e is CardEvent) {
-          final player = e.playerName ?? 'Un joueur';
-          final cardType = e.type == GameEventType.yellowCard ? '🟨 Carton jaune' : '🟥 Carton rouge';
-          buf.writeln('• ${e.minute}\' : $cardType adressé à $player ($team).');
+          final player = e.playerName ?? (isFrench ? 'Un joueur' : 'A player');
+          final cardType = e.type == GameEventType.yellowCard
+              ? (isFrench ? '🟨 Carton jaune' : '🟨 Yellow card')
+              : (isFrench ? '🟥 Carton rouge' : '🟥 Red card');
+          buf.writeln(isFrench
+              ? '• ${e.minute}\' : $cardType adressé à $player ($team).'
+              : '• ${e.minute}\' : $cardType given to $player ($team).');
         } else if (e is FoulEvent) {
-          buf.writeln('• ${e.minute}\' : ⚠️ Faute signalée pour ${e.playerName ?? "un joueur"} ($team).');
+          buf.writeln(isFrench
+              ? '• ${e.minute}\' : ⚠️ Faute signalée pour ${e.playerName ?? "un joueur"} ($team).'
+              : '• ${e.minute}\' : ⚠️ Foul called on ${e.playerName ?? "a player"} ($team).');
         }
       }
     }
@@ -241,17 +272,23 @@ class MatchRepository {
       }
     }
 
-    buf.writeln('⭐ Distinctions & statistiques clés :');
+    buf.writeln(isFrench ? '⭐ Distinctions & statistiques clés :' : '⭐ Key Awards & Statistics:');
     if (scorerCounts.isNotEmpty) {
       final bestScorer = (scorerCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
-      buf.writeln('• Homme du match : ${bestScorer.key} avec ${bestScorer.value} réalisation(s).');
+      buf.writeln(isFrench
+          ? '• Homme du match : ${bestScorer.key} avec ${bestScorer.value} réalisation(s).'
+          : '• Player of the match: ${bestScorer.key} with ${bestScorer.value} point(s).');
     }
     if (assistCounts.isNotEmpty) {
       final bestAssister = (assistCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
-      buf.writeln('• Meilleur passeur : ${bestAssister.key} (${bestAssister.value} passe(s)).');
+      buf.writeln(isFrench
+          ? '• Meilleur passeur : ${bestAssister.key} (${bestAssister.value} passe(s)).'
+          : '• Top playmaker: ${bestAssister.key} (${bestAssister.value} assist(s)).');
     }
     if (cards.isNotEmpty || fouls.isNotEmpty) {
-      buf.writeln('• Bilan arbitral : ${cards.length} carton(s) et ${fouls.length} faute(s) signalée(s).');
+      buf.writeln(isFrench
+          ? '• Bilan arbitral : ${cards.length} carton(s) et ${fouls.length} faute(s) signalée(s).'
+          : '• Disciplinary summary: ${cards.length} card(s) and ${fouls.length} foul(s).');
     }
 
     return buf.toString();
@@ -264,6 +301,7 @@ class MatchRepository {
     if (isLocalVoiceMode) {
       _lastLocalTranscription = '';
       await _localSpeech.startListening(
+        localeId: languageCode == 'fr' ? 'fr_FR' : 'en_US',
         onResult: (words, isFinal) {
           _lastLocalTranscription = words;
         },

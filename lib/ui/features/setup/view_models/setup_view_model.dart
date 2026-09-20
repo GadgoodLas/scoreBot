@@ -17,10 +17,10 @@ class SetupViewModel extends ChangeNotifier {
   SportType _selectedSport = SportType.football;
   SportType get selectedSport => _selectedSport;
 
-  String _teamAName = 'Équipe A';
+  String _teamAName = 'Team A';
   String get teamAName => _teamAName;
 
-  String _teamBName = 'Équipe B';
+  String _teamBName = 'Team B';
   String get teamBName => _teamBName;
 
   String _teamAColor = 'rouge';
@@ -58,6 +58,13 @@ class SetupViewModel extends ChangeNotifier {
   String get voiceEngine => _repository.voiceEngine;
 
   bool get isLocalVoiceMode => _repository.isLocalVoiceMode;
+
+  String get languageCode => _repository.languageCode;
+
+  Future<void> setLanguageCode(String code) async {
+    await _repository.setLanguageCode(code);
+    notifyListeners();
+  }
 
   Future<void> setVoiceEngine(String engine) async {
     await _repository.setVoiceEngine(engine);

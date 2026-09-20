@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 
 /// Modèles prédéfinis recommandés pour ScoreBot.
@@ -228,6 +229,7 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isLocal = _selectedEngine == 'local';
 
     return Dialog(
@@ -263,8 +265,8 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                       children: [
                         Text(
                           widget.isOnboarding
-                              ? '🎙️ Activer le mode vocal'
-                              : '⚙️ Configuration du Mode Vocal',
+                              ? l10n.voiceModeOnboardingTitle
+                              : l10n.voiceModeConfigTitle,
                           style: const TextStyle(
                             color: AppTheme.textPrimary,
                             fontWeight: FontWeight.bold,
@@ -274,8 +276,8 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                         const SizedBox(height: 2),
                         Text(
                           isLocal
-                              ? 'Reconnaissance locale sans IA (Hors-ligne)'
-                              : 'Reconnaissance intelligente par Gemini',
+                              ? l10n.modeNoAiSubtitle
+                              : l10n.modeGeminiSubtitle,
                           style: const TextStyle(
                             color: AppTheme.textSecondary,
                             fontSize: 12,
@@ -294,9 +296,9 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
               const SizedBox(height: 20),
 
               // ─── Sélecteur de Mode (Local vs Gemini) ───
-              const Text(
-                'Moteur vocal',
-                style: TextStyle(
+              Text(
+                l10n.voiceEngine,
+                style: const TextStyle(
                   color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -307,8 +309,8 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                 children: [
                   Expanded(
                     child: _EngineCard(
-                      title: '⚡ Mode Sans IA',
-                      subtitle: '100% hors-ligne, zéro quota, instantané',
+                      title: l10n.modeNoAiTitle,
+                      subtitle: l10n.modeNoAiSubtitle,
                       isSelected: isLocal,
                       onTap: () => setState(() => _selectedEngine = 'local'),
                     ),
@@ -316,8 +318,8 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _EngineCard(
-                      title: '🧠 Mode IA Gemini',
-                      subtitle: 'Langage naturel, passes décisives, cartons',
+                      title: l10n.modeGeminiTitle,
+                      subtitle: l10n.modeGeminiSubtitle,
                       isSelected: !isLocal,
                       onTap: () => setState(() => _selectedEngine = 'gemini'),
                     ),
@@ -335,26 +337,21 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                   ),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '💡 Comment ça fonctionne en mode sans IA ?',
-                        style: TextStyle(
+                        l10n.howLocalWorksTitle,
+                        style: const TextStyle(
                           color: AppTheme.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                        'ScoreBot utilise le moteur vocal intégré à votre smartphone/montre sans aucun appel réseau. '
-                        'Les commandes courantes sont reconnues immédiatement :\n'
-                        '• "But équipe A" ou "But équipe rouge"\n'
-                        '• "But de [Nom du joueur]" (selon l\'effectif saisi)\n'
-                        '• "Pause" / "Reprends" / "Mi-temps" / "Fin du match"\n'
-                        '• "Annule le dernier but"',
-                        style: TextStyle(
+                        l10n.howLocalWorksContent,
+                        style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 12,
                           height: 1.4,
@@ -365,9 +362,9 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                 ),
               ] else ...[
                 // ─── Mode Gemini : Clé API & Modèle ───
-                const Text(
-                  'Clé API Google Gemini',
-                  style: TextStyle(
+                Text(
+                  l10n.apiKeyLabel,
+                  style: const TextStyle(
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -546,7 +543,7 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.network_check, size: 18),
-                  label: Text(_isTesting ? 'Test en cours...' : 'Tester la connexion Gemini'),
+                  label: Text(_isTesting ? l10n.testingConnection : l10n.testConnection),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primary,
                     side: const BorderSide(color: AppTheme.primary),
@@ -567,9 +564,9 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                           widget.onDismissOnboarding?.call();
                           Navigator.of(context).pop();
                         },
-                        child: const Text(
-                          'Passer',
-                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                        child: Text(
+                          l10n.skip,
+                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                         ),
                       ),
                     ),
@@ -590,7 +587,7 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                             )
                           : Text(
-                              isLocal ? '⚡ Activer le mode sans IA' : '🧠 Enregistrer et activer l\'IA',
+                              isLocal ? '⚡ ${l10n.activateNoAi}' : '🧠 ${l10n.saveAndActivateAi}',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                     ),

@@ -14,6 +14,7 @@ import 'package:score_bot/ui/features/setup/views/setup_view.dart';
 import 'package:score_bot/ui/features/setup/views/setup_watch_view.dart';
 import 'package:score_bot/ui/features/summary/views/summary_view.dart';
 import 'package:score_bot/ui/features/summary/views/summary_watch_view.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/domain/models/match.dart';
 
 final GetIt sl = GetIt.instance;
@@ -45,8 +46,35 @@ Future<void> main() async {
   runApp(const ScoreBotApp());
 }
 
-class ScoreBotApp extends StatelessWidget {
+class ScoreBotApp extends StatefulWidget {
   const ScoreBotApp({super.key});
+
+  /// Permet de basculer la langue de l'application depuis n'importe où
+  static void setLocale(BuildContext context, Locale newLocale) {
+    final state = context.findAncestorStateOfType<_ScoreBotAppState>();
+    state?.changeLocale(newLocale);
+  }
+
+  @override
+  State<ScoreBotApp> createState() => _ScoreBotAppState();
+}
+
+class _ScoreBotAppState extends State<ScoreBotApp> {
+  late Locale _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    final savedCode = sl<StorageService>().getLanguageCode();
+    _locale = Locale(savedCode);
+  }
+
+  void changeLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+    sl<StorageService>().saveLanguageCode(locale.languageCode);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +82,9 @@ class ScoreBotApp extends StatelessWidget {
       title: 'ScoreBot',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
+      locale: _locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       initialRoute: '/',
       onGenerateRoute: _generateRoute,
     );

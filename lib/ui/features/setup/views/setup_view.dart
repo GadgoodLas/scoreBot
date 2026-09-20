@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:score_bot/main.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
@@ -61,13 +63,16 @@ class _SetupViewState extends State<SetupView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentLang = Localizations.localeOf(context).languageCode;
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
-        title: const Text(
-          '⚽ ScoreBot',
-          style: TextStyle(
+        title: Text(
+          '⚽ ${l10n.appTitle}',
+          style: const TextStyle(
             color: AppTheme.primary,
             fontWeight: FontWeight.bold,
             fontSize: 22,
@@ -75,6 +80,68 @@ class _SetupViewState extends State<SetupView> {
         ),
         centerTitle: true,
         actions: [
+          // ─── Sélecteur de langue EN / FR ───
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: PopupMenuButton<String>(
+              initialValue: currentLang,
+              tooltip: l10n.language,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: AppTheme.surface,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      currentLang == 'fr' ? '🇫🇷 FR' : '🇬🇧 EN',
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white60, size: 16),
+                  ],
+                ),
+              ),
+              onSelected: (lang) {
+                ScoreBotApp.setLocale(context, Locale(lang));
+                widget.viewModel.setLanguageCode(lang);
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'en',
+                  child: Row(
+                    children: [
+                      Text('🇬🇧'),
+                      SizedBox(width: 8),
+                      Text('English', style: TextStyle(color: AppTheme.textPrimary)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'fr',
+                  child: Row(
+                    children: [
+                      Text('🇫🇷'),
+                      SizedBox(width: 8),
+                      Text('Français', style: TextStyle(color: AppTheme.textPrimary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
           IconButton(
             icon: ListenableBuilder(
               listenable: widget.viewModel,
@@ -104,7 +171,7 @@ class _SetupViewState extends State<SetupView> {
                 );
               },
             ),
-            tooltip: 'Configuration Modèle IA / Clé',
+            tooltip: l10n.voiceModeConfigTitle,
             onPressed: () => _openAiSettings(context),
           ),
           const SizedBox(width: 8),
@@ -126,16 +193,16 @@ class _SetupViewState extends State<SetupView> {
                 const SizedBox(height: 20),
 
                 // ─── Sélection du sport ───
-                _SectionTitle(title: 'Sport'),
+                _SectionTitle(title: l10n.sport),
                 const SizedBox(height: 12),
                 _SportSelector(viewModel: widget.viewModel),
                 const SizedBox(height: 28),
 
                 // ─── Équipes & Joueurs ───
-                _SectionTitle(title: 'Équipes & Joueurs'),
+                _SectionTitle(title: l10n.teamsAndPlayers),
                 const SizedBox(height: 12),
                 _TeamInput(
-                  label: 'Équipe A',
+                  label: l10n.teamA,
                   controller: _teamAController,
                   color: Colors.redAccent,
                   onChanged: widget.viewModel.setTeamAName,
@@ -150,7 +217,7 @@ class _SetupViewState extends State<SetupView> {
                 ),
                 const SizedBox(height: 20),
                 _TeamInput(
-                  label: 'Équipe B',
+                  label: l10n.teamB,
                   controller: _teamBController,
                   color: Colors.blueAccent,
                   onChanged: widget.viewModel.setTeamBName,
@@ -166,7 +233,7 @@ class _SetupViewState extends State<SetupView> {
                 const SizedBox(height: 28),
 
                 // ─── Durée ───
-                _SectionTitle(title: 'Durée du match'),
+                _SectionTitle(title: l10n.matchDuration),
                 const SizedBox(height: 12),
                 _DurationSlider(viewModel: widget.viewModel),
                 const SizedBox(height: 32),
@@ -208,9 +275,9 @@ class _SetupViewState extends State<SetupView> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text(
-                          '🚀 Démarrer le match',
-                          style: TextStyle(
+                      : Text(
+                          '🚀 ${l10n.startMatch}',
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -340,17 +407,18 @@ class _DurationSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Durée',
-              style: TextStyle(color: AppTheme.textSecondary),
+            Text(
+              l10n.matchDuration,
+              style: const TextStyle(color: AppTheme.textSecondary),
             ),
             Text(
-              '${viewModel.durationMinutes} min',
+              l10n.durationMinutes(viewModel.durationMinutes),
               style: const TextStyle(
                 color: AppTheme.primary,
                 fontWeight: FontWeight.bold,
@@ -411,6 +479,7 @@ class _PlayersSectionState extends State<_PlayersSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -429,7 +498,7 @@ class _PlayersSectionState extends State<_PlayersSection> {
                   onSubmitted: (_) => _submit(),
                   style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Ajouter joueur(s) (ex: Stéphane, Nabil...)',
+                    hintText: l10n.addPlayerHint,
                     hintStyle: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 12,
@@ -450,7 +519,7 @@ class _PlayersSectionState extends State<_PlayersSection> {
               IconButton(
                 icon: Icon(Icons.person_add, color: widget.color, size: 20),
                 onPressed: _submit,
-                tooltip: 'Ajouter',
+                tooltip: l10n.addPlayerHint,
               ),
             ],
           ),
@@ -498,6 +567,7 @@ class _AiStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isLocal = viewModel.isLocalVoiceMode;
     final isConfigured = viewModel.isAiConfigured;
     final modelName = viewModel.currentAiModel;
@@ -505,21 +575,21 @@ class _AiStatusCard extends StatelessWidget {
     final (icon, title, subtitle, color) = isLocal
         ? (
             Icons.offline_bolt,
-            '⚡ Mode vocal local actif (sans IA)',
-            'Reconnaissance 100% hors-ligne — Cliquez pour passer en mode IA',
+            l10n.aiStatusLocal,
+            l10n.aiStatusLocalSub,
             AppTheme.primary,
           )
         : isConfigured
             ? (
                 Icons.auto_awesome,
-                '🧠 Mode vocal IA actif (Gemini)',
-                'Modèle : $modelName — Cliquez pour modifier',
+                l10n.aiStatusGemini,
+                l10n.aiStatusGeminiSub(modelName),
                 AppTheme.primary,
               )
             : (
                 Icons.mic_off_outlined,
-                'Mode vocal non configuré',
-                'Activez le mode local ou configurez une clé Gemini',
+                l10n.aiStatusUnconfigured,
+                l10n.aiStatusUnconfiguredSub,
                 Colors.amberAccent,
               );
 
@@ -566,9 +636,9 @@ class _AiStatusCard extends StatelessWidget {
                 side: BorderSide(color: color.withValues(alpha: 0.5)),
               ),
             ),
-            child: const Text(
-              'Réglages',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            child: Text(
+              l10n.settings,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         ],

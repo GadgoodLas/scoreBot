@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/match.dart';
@@ -285,19 +286,20 @@ class SummaryView extends StatelessWidget {
     final statsA = viewModel.playerStatsForTeam(match.teamA.id);
     final statsB = viewModel.playerStatsForTeam(match.teamB.id);
 
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
-        title: const Text(
-          '🏆 Résumé du match',
-          style: TextStyle(color: AppTheme.textPrimary),
+        title: Text(
+          '🏆 ${l10n.summaryTitle}',
+          style: const TextStyle(color: AppTheme.textPrimary),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.share, color: AppTheme.primary),
             onPressed: () => _shareResult(context),
-            tooltip: 'Partager',
+            tooltip: l10n.copyReport,
           ),
         ],
       ),
@@ -410,6 +412,12 @@ class _FinalScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDraw = viewModel.scoreA == viewModel.scoreB;
+    final winnerTitle = isDraw
+        ? '🤝 ${l10n.draw} !'
+        : '🏆 ${l10n.winner(viewModel.winner)}';
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -420,9 +428,7 @@ class _FinalScoreCard extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            viewModel.winner == 'Égalité'
-                ? '🤝 Égalité !'
-                : '🏆 ${viewModel.winner}',
+            winnerTitle,
             style: const TextStyle(
               color: AppTheme.primary,
               fontSize: 20,
@@ -499,6 +505,7 @@ class _MatchReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final report = viewModel.generatedReport;
     final isGenerating = viewModel.isGeneratingReport;
     final isAi = viewModel.isAiReport;
@@ -525,10 +532,10 @@ class _MatchReportCard extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Compte-rendu du match',
-                  style: TextStyle(
+                  l10n.matchReport,
+                  style: const TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -554,7 +561,7 @@ class _MatchReportCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      isAi ? 'IA Gemini' : 'Auto Local',
+                      isAi ? l10n.aiReportBadge : l10n.localReportBadge,
                       style: TextStyle(
                         color: isAi ? AppTheme.primary : Colors.tealAccent,
                         fontSize: 10,
@@ -567,32 +574,31 @@ class _MatchReportCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          if (isGenerating) ...[
-            Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: isAi ? AppTheme.primary : Colors.tealAccent,
-                  ),
+          if (isGenerating)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.generatingReport,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  isAi
-                      ? 'Rédaction par l\'IA en cours...'
-                      : 'Génération du rapport en cours...',
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ] else if (report != null && report.isNotEmpty) ...[
-            SelectableText(
+              ),
+            )
+          else if (report != null && report.isNotEmpty) ...[
+            Text(
               report,
               style: const TextStyle(
                 color: AppTheme.textPrimary,
@@ -605,12 +611,23 @@ class _MatchReportCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
+                  onPressed: () => viewModel.regenerateReport(),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: Text(l10n.regenerateReport),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondary,
+                    textStyle: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: report));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('📋 Compte-rendu copié !'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(l10n.reportCopied),
+                        duration: const Duration(seconds: 2),
+                        backgroundColor: AppTheme.surface,
                       ),
                     );
                   },

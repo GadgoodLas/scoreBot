@@ -78,7 +78,10 @@ class OfflineVoiceCommandParser {
     if (norm == 'pause' ||
         norm.contains('en pause') ||
         norm.contains('temps mort') ||
+        norm.contains('timeout') ||
+        norm.contains('time out') ||
         norm.contains('arrete le chrono') ||
+        norm.contains('stop the clock') ||
         norm.contains('arret de jeu') ||
         norm == 'stop') {
       return 'pause';
@@ -87,24 +90,34 @@ class OfflineVoiceCommandParser {
     // Reprise
     if (norm == 'reprends' ||
         norm == 'reprendre' ||
+        norm == 'resume' ||
         norm == 'play' ||
         norm == 'relance' ||
         norm.contains('c est reparti') ||
         norm.contains('reparti') ||
+        norm.contains('start again') ||
         norm == 'continue') {
       return 'resume';
     }
 
     // Mi-temps
-    if (norm.contains('mi temps') || norm.contains('mitemps')) {
+    if (norm.contains('mi temps') ||
+        norm.contains('mitemps') ||
+        norm.contains('half time') ||
+        norm.contains('halftime')) {
       return 'halftime';
     }
 
     // Fin du match
     if (norm.contains('fin du match') ||
         norm.contains('fin de match') ||
+        norm.contains('end match') ||
+        norm.contains('end game') ||
+        norm.contains('finish match') ||
+        norm.contains('game over') ||
         norm.contains('termine') ||
-        norm.contains('sifflet final')) {
+        norm.contains('sifflet final') ||
+        norm.contains('final whistle')) {
       return 'end_match';
     }
 
@@ -116,16 +129,24 @@ class OfflineVoiceCommandParser {
   bool _isCorrection(String norm) {
     return norm.contains('annule') ||
         norm.contains('annuler') ||
+        norm.contains('undo') ||
+        norm.contains('cancel') ||
         norm.contains('pas but') ||
+        norm.contains('no goal') ||
         norm.contains('erreur') ||
-        norm.contains('retour en arriere');
+        norm.contains('mistake') ||
+        norm.contains('retour en arriere') ||
+        norm.contains('take back');
   }
 
   // ─────────────── DÉTECTION CARTONS ───────────────
 
   ParsedVoiceCommand? _detectCardEvent(String text, String norm, GameMatch match) {
-    final isYellow = norm.contains('jaune');
-    final isRed = norm.contains('rouge') && !norm.contains('equipe rouge') && !norm.contains('les rouges');
+    final isYellow = norm.contains('jaune') || norm.contains('yellow');
+    final isRed = (norm.contains('rouge') || norm.contains('red card') || norm.contains('red')) &&
+        !norm.contains('equipe rouge') &&
+        !norm.contains('les rouges') &&
+        !norm.contains('red team');
 
     if (!isYellow && !isRed) return null;
 
@@ -149,7 +170,7 @@ class OfflineVoiceCommandParser {
   // ─────────────── DÉTECTION FAUTES ───────────────
 
   ParsedVoiceCommand? _detectFoulEvent(String text, String norm, GameMatch match) {
-    final isFoul = norm.contains('faute');
+    final isFoul = norm.contains('faute') || norm.contains('foul');
     final isPenalty = norm.contains('penalty') || norm.contains('penaltie');
 
     if (!isFoul && !isPenalty) return null;
@@ -173,19 +194,27 @@ class OfflineVoiceCommandParser {
 
   ParsedVoiceCommand? _detectGoalEvent(String text, String norm, GameMatch match) {
     final isGoalKeyword = norm.contains('but') ||
+        norm.contains('goal') ||
         norm.contains('panier') ||
+        norm.contains('basket') ||
         norm.contains('essai') ||
+        norm.contains('try') ||
+        norm.contains('touchdown') ||
         norm.contains('point') ||
+        norm.contains('score') ||
+        norm.contains('scores') ||
+        norm.contains('scored') ||
         norm.contains('marque') ||
         norm.contains('marquer') ||
         norm.contains('plus un') ||
+        norm.contains('plus one') ||
         norm.contains('+1') ||
         norm.contains('un zero') ||
         norm.contains('1-0') ||
         norm.contains('deux un') ||
         norm.contains('2-1');
 
-    // N'extraire un candidat générique ("par X" ou "de X") que si un mot clé de but est présent
+    // N'extraire un candidat générique ("par X" ou "de X" ou "by X") que si un mot clé de but est présent
     final (team, scorer) = _resolveTeamAndPlayer(
       norm,
       match,
@@ -214,8 +243,8 @@ class OfflineVoiceCommandParser {
   // ─────────────── EXTRACTION PASSEUR ───────────────
 
   String? _detectAssist(String norm, GameMatch match, {String? excludePlayer}) {
-    // Patterns : "assist [nom]", "passe de [nom]", "passe [nom]", "assiste par [nom]"
-    final assistRegex = RegExp(r'(?:assist|assiste par|passe de|passeur|passe)\s+([a-z0-9à-ÿ]+)');
+    // Patterns : "assist [nom]", "assisted by [nom]", "pass from [nom]", "passe de [nom]", "passe [nom]"
+    final assistRegex = RegExp(r'(?:assisted by|assiste par|assist by|assist|pass from|passe de|passeur|passe)\s+([a-z0-9à-ÿ]+)');
     final matchRegex = assistRegex.firstMatch(norm);
 
     if (matchRegex != null) {
@@ -237,8 +266,8 @@ class OfflineVoiceCommandParser {
   // ─────────────── DÉTECTION DU NOMBRE DE POINTS ───────────────
 
   int _detectPoints(String norm) {
-    if (norm.contains('3 points') || norm.contains('trois points')) return 3;
-    if (norm.contains('2 points') || norm.contains('deux points')) return 2;
+    if (norm.contains('3 points') || norm.contains('trois points') || norm.contains('three points')) return 3;
+    if (norm.contains('2 points') || norm.contains('deux points') || norm.contains('two points')) return 2;
     return 1;
   }
 
@@ -281,11 +310,15 @@ class OfflineVoiceCommandParser {
       final teamBNorm = _normalize(match.teamB.name);
 
       final isExplicitTeamA = _containsWord(norm, 'equipe a') ||
+          _containsWord(norm, 'team a') ||
           _containsWord(norm, 'equipe 1') ||
+          _containsWord(norm, 'team 1') ||
           (teamANorm.isNotEmpty && _containsWord(norm, teamANorm));
 
       final isExplicitTeamB = _containsWord(norm, 'equipe b') ||
+          _containsWord(norm, 'team b') ||
           _containsWord(norm, 'equipe 2') ||
+          _containsWord(norm, 'team 2') ||
           (teamBNorm.isNotEmpty && _containsWord(norm, teamBNorm));
 
       if (isExplicitTeamA && !isExplicitTeamB) {
@@ -307,16 +340,17 @@ class OfflineVoiceCommandParser {
       }
     }
 
-    // 4. Si pas de joueur de l'effectif trouvé, chercher un nom générique après "par" ou "de"
+    // 4. Si pas de joueur de l'effectif trouvé, chercher un nom générique après "par", "de", "by", "from", "for"
     if (matchedPlayer == null && allowGenericCandidate) {
-      final byRegex = RegExp(r'(?:par|de|pour)\s+([a-zà-ÿ]+)');
+      final byRegex = RegExp(r'(?:par|de|pour|by|from|for)\s+([a-zà-ÿ]+)');
       final byMatch = byRegex.firstMatch(norm);
       if (byMatch != null) {
         final candidate = byMatch.group(1);
-        // Ne pas prendre "equipe", "les", etc.
+        // Ne pas prendre les mots de liaison / stopwords
         const stopWords = [
-          'equipe', 'les', 'le', 'la', 'un', 'une', 'des', 'ce', 'mon', 'son',
-          'qui', 'est', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'match'
+          'equipe', 'team', 'les', 'le', 'la', 'un', 'une', 'des', 'the', 'a', 'an',
+          'ce', 'mon', 'son', 'qui', 'est', 'il', 'elle', 'nous', 'vous', 'ils', 'elles',
+          'match', 'game'
         ];
         if (candidate != null && !stopWords.contains(candidate)) {
           matchedPlayer = candidate[0].toUpperCase() + candidate.substring(1);

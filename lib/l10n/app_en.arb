@@ -1,0 +1,122 @@
+{
+  "@@locale": "en",
+  "appTitle": "ScoreBot",
+  "@appTitle": {
+    "description": "The application name"
+  },
+  "sport": "Sport",
+  "teamsAndPlayers": "Teams & Players",
+  "teamA": "Team A",
+  "teamB": "Team B",
+  "addPlayerHint": "Add player(s) (e.g. Stephen, Kevin...)",
+  "matchDuration": "Match duration",
+  "durationMinutes": "{minutes} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "startMatch": "Start match",
+  "aiStatusLocal": "Offline voice mode active (no AI)",
+  "aiStatusLocalSub": "100% offline speech recognition — Tap to switch to AI",
+  "aiStatusGemini": "AI voice mode active (Gemini)",
+  "aiStatusGeminiSub": "Model: {model} — Tap to change",
+  "@aiStatusGeminiSub": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "aiStatusUnconfigured": "Voice mode not configured",
+  "aiStatusUnconfiguredSub": "Enable offline mode or configure a Gemini API key",
+  "settings": "Settings",
+  "language": "Language",
+  "english": "English",
+  "french": "French",
+  "tapToSpeak": "Tap to speak",
+  "localVoiceModeBadge": "Offline",
+  "listening": "Listening...",
+  "analyzing": "Analyzing...",
+  "matchPaused": "PAUSED",
+  "matchHalftime": "HALF-TIME",
+  "matchLive": "LIVE",
+  "matchFinished": "MATCH FINISHED",
+  "endMatchDialogTitle": "End match?",
+  "endMatchDialogContent": "This action cannot be undone.",
+  "cancel": "Cancel",
+  "confirm": "End",
+  "pause": "Pause",
+  "resume": "Resume",
+  "halftime": "Half-time",
+  "endMatch": "End match",
+  "summaryTitle": "Match Summary",
+  "matchReport": "Match Report",
+  "aiReportBadge": "AI Report",
+  "localReportBadge": "Auto Report",
+  "generatingReport": "Generating report...",
+  "noReportAvailable": "No report available.",
+  "copyReport": "Copy report",
+  "reportCopied": "Report copied to clipboard!",
+  "regenerateReport": "Regenerate",
+  "topScorer": "Top scorer: {player} ({points})",
+  "@topScorer": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "stats": "Statistics",
+  "teamStats": "Team Statistics",
+  "playerStats": "Player Statistics",
+  "newMatch": "New match",
+  "draw": "Draw",
+  "winner": "{name} wins!",
+  "@winner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goals": "Goals",
+  "assists": "Assists",
+  "yellowCards": "Yellow cards",
+  "redCards": "Red cards",
+  "voiceModeConfigTitle": "Voice Mode Settings",
+  "voiceModeOnboardingTitle": "Enable Voice Mode",
+  "voiceEngine": "Voice engine",
+  "modeNoAiTitle": "Offline Mode (No AI)",
+  "modeNoAiSubtitle": "100% offline, zero quota, instant",
+  "modeGeminiTitle": "Gemini AI Mode",
+  "modeGeminiSubtitle": "Natural speech, assists, cards and fouls",
+  "howLocalWorksTitle": "How does offline mode work?",
+  "howLocalWorksContent": "ScoreBot uses the speech recognition engine built into your device without any network requests.\nCommon commands are instantly recognized:\n• \"Goal Team A\" or \"Goal Red Team\"\n• \"Goal by [Player Name]\"\n• \"Pause\" / \"Resume\" / \"Half-time\" / \"End match\"\n• \"Cancel last goal\"",
+  "apiKeyLabel": "Google Gemini API Key",
+  "apiKeyHint": "AIzaSy...",
+  "apiKeyHelp": "Free API key from aistudio.google.com",
+  "geminiModelLabel": "Gemini Model",
+  "customModelHint": "e.g. gemini-2.5-pro...",
+  "testConnection": "Test Gemini Connection",
+  "testingConnection": "Testing connection...",
+  "testSuccess": "Connection successful! Model \"{model}\" is ready.",
+  "@testSuccess": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "testFailed": "Connection test failed. Please check your API key.",
+  "activateNoAi": "Activate Offline Mode",
+  "saveAndActivateAi": "Save & Activate AI",
+  "skip": "Skip",
+  "yes": "Yes",
+  "no": "No"
+}

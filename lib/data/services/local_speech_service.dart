@@ -32,9 +32,10 @@ class LocalSpeechService {
     }
   }
 
-  /// Démarre l'écoute locale avec la locale française.
+  /// Démarre l'écoute locale avec la locale spécifiée ('en_US' par défaut ou 'fr_FR').
   Future<void> startListening({
     required void Function(String recognizedWords, bool isFinal) onResult,
+    String localeId = 'en_US',
     Duration listenFor = const Duration(seconds: 10),
     Duration pauseFor = const Duration(seconds: 3),
   }) async {
@@ -58,7 +59,7 @@ class LocalSpeechService {
         partialResults: true,
       ),
       // ignore: deprecated_member_use
-      localeId: 'fr_FR',
+      localeId: localeId,
       // ignore: deprecated_member_use
       listenFor: listenFor,
       // ignore: deprecated_member_use

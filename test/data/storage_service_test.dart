@@ -73,5 +73,15 @@ void main() {
       expect(storageService.getVoiceEngine(), 'local');
       expect(storageService.isLocalVoiceMode, isTrue);
     });
+
+    test('language code defaults to en and persists fr', () async {
+      expect(storageService.getLanguageCode(), 'en');
+
+      await storageService.saveLanguageCode('fr');
+      expect(storageService.getLanguageCode(), 'fr');
+
+      await storageService.saveLanguageCode('en');
+      expect(storageService.getLanguageCode(), 'en');
+    });
   });
 }

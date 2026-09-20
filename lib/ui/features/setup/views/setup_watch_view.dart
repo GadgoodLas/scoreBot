@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
@@ -60,6 +61,8 @@ class _SetupWatchViewState extends State<SetupWatchView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: ListenableBuilder(
@@ -72,9 +75,9 @@ class _SetupWatchViewState extends State<SetupWatchView> {
               // ─── Page 1 : Sport ───
               _WatchScrollPage(
                 children: [
-                  const Text(
-                    '⚽ SPORT',
-                    style: TextStyle(
+                  Text(
+                    '⚽ ${l10n.sport.toUpperCase()}',
+                    style: const TextStyle(
                       color: AppTheme.primary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -97,9 +100,9 @@ class _SetupWatchViewState extends State<SetupWatchView> {
               // ─── Page 2 : Équipes ───
               _WatchScrollPage(
                 children: [
-                  const Text(
-                    'ÉQUIPES',
-                    style: TextStyle(
+                  Text(
+                    l10n.teamsAndPlayers.toUpperCase(),
+                    style: const TextStyle(
                       color: AppTheme.primary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -109,14 +112,14 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   const SizedBox(height: 4),
                   _WatchTextField(
                     controller: _teamAController,
-                    hint: 'Équipe A',
+                    hint: l10n.teamA,
                     color: Colors.redAccent,
                     onChanged: widget.viewModel.setTeamAName,
                   ),
                   const SizedBox(height: 4),
                   _WatchTextField(
                     controller: _teamBController,
-                    hint: 'Équipe B',
+                    hint: l10n.teamB,
                     color: Colors.blueAccent,
                     onChanged: widget.viewModel.setTeamBName,
                   ),
@@ -137,7 +140,10 @@ class _SetupWatchViewState extends State<SetupWatchView> {
               // ─── Page 3 : Démarrer ───
               _WatchScrollPage(
                 children: [
-                  _WatchVoiceBadge(isLocal: widget.viewModel.isLocalVoiceMode),
+                  _WatchVoiceBadge(
+                    isLocal: widget.viewModel.isLocalVoiceMode,
+                    localLabel: l10n.localVoiceModeBadge,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     '${widget.viewModel.selectedSport.emoji} ${widget.viewModel.selectedSport.label}',
@@ -154,7 +160,7 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                         : widget.viewModel.teamBName,
                   ),
                   Text(
-                    '${widget.viewModel.durationMinutes} min',
+                    l10n.durationMinutes(widget.viewModel.durationMinutes),
                     style: const TextStyle(color: Colors.white38, fontSize: 9),
                   ),
                   const SizedBox(height: 8),
@@ -168,6 +174,7 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   ],
                   _WatchStartButton(
                     isCreating: widget.viewModel.isCreating,
+                    label: l10n.startMatch,
                     onTap: () => _startMatch(context),
                   ),
                   const SizedBox(height: 4),
@@ -411,9 +418,11 @@ class _WatchTeamRow extends StatelessWidget {
 class _WatchStartButton extends StatelessWidget {
   const _WatchStartButton({
     required this.isCreating,
+    required this.label,
     required this.onTap,
   });
   final bool isCreating;
+  final String label;
   final VoidCallback onTap;
 
   @override
@@ -437,9 +446,9 @@ class _WatchStartButton extends StatelessWidget {
                   color: Colors.black,
                 ),
               )
-            : const Text(
-                '🚀 Démarrer',
-                style: TextStyle(
+            : Text(
+                '🚀 $label',
+                style: const TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
@@ -452,13 +461,17 @@ class _WatchStartButton extends StatelessWidget {
 
 /// Badge indiquant le mode vocal actif.
 class _WatchVoiceBadge extends StatelessWidget {
-  const _WatchVoiceBadge({required this.isLocal});
+  const _WatchVoiceBadge({
+    required this.isLocal,
+    this.localLabel = 'Local',
+  });
   final bool isLocal;
+  final String localLabel;
 
   @override
   Widget build(BuildContext context) {
     final color = isLocal ? Colors.tealAccent : AppTheme.primary;
-    final label = isLocal ? '⚡ Local' : '🧠 Gemini';
+    final label = isLocal ? '⚡ $localLabel' : '🧠 Gemini';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/match.dart';
@@ -261,10 +262,11 @@ class _StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final (text, color) = switch (status) {
-      GameMatchStatus.paused => ('⏸ PAUSE', Colors.orangeAccent),
-      GameMatchStatus.halftime => ('⏱ MI-TEMPS', Colors.amberAccent),
-      GameMatchStatus.finished => ('🏁 FIN DU MATCH', Colors.greenAccent),
+      GameMatchStatus.paused => ('⏸ ${l10n.matchPaused}', Colors.orangeAccent),
+      GameMatchStatus.halftime => ('⏱ ${l10n.matchHalftime}', Colors.amberAccent),
+      GameMatchStatus.finished => ('🏁 ${l10n.matchFinished}', Colors.greenAccent),
       _ => ('', Colors.transparent),
     };
 
@@ -666,6 +668,7 @@ class _MatchControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final match = viewModel.match;
     final isLive = match.status == GameMatchStatus.live;
     final isPaused = match.status == GameMatchStatus.paused;
@@ -680,7 +683,7 @@ class _MatchControls extends StatelessWidget {
           if (!isFinished)
             _ControlButton(
               icon: isLive ? Icons.pause : Icons.play_arrow,
-              label: isLive ? 'Pause' : 'Reprendre',
+              label: isLive ? l10n.pause : l10n.resume,
               onTap: viewModel.togglePause,
             ),
 
@@ -688,7 +691,7 @@ class _MatchControls extends StatelessWidget {
           if (isLive || isPaused)
             _ControlButton(
               icon: Icons.sports,
-              label: 'Mi-temps',
+              label: l10n.halftime,
               onTap: viewModel.startHalftime,
             ),
 
@@ -696,7 +699,7 @@ class _MatchControls extends StatelessWidget {
           if (!isFinished)
             _ControlButton(
               icon: Icons.flag,
-              label: 'Fin',
+              label: l10n.confirm,
               onTap: () => _confirmEndMatch(context),
               isDestructive: true,
             ),
@@ -705,7 +708,7 @@ class _MatchControls extends StatelessWidget {
           if (isFinished)
             _ControlButton(
               icon: Icons.bar_chart,
-              label: 'Statistiques',
+              label: l10n.stats,
               onTap: () => Navigator.of(context).pushNamed(
                 '/summary',
                 arguments: viewModel.match,
@@ -717,29 +720,30 @@ class _MatchControls extends StatelessWidget {
   }
 
   Future<void> _confirmEndMatch(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
-        title: const Text(
-          'Terminer le match ?',
-          style: TextStyle(color: AppTheme.textPrimary),
+        title: Text(
+          l10n.endMatchDialogTitle,
+          style: const TextStyle(color: AppTheme.textPrimary),
         ),
-        content: const Text(
-          'Cette action ne peut pas être annulée.',
-          style: TextStyle(color: AppTheme.textSecondary),
+        content: Text(
+          l10n.endMatchDialogContent,
+          style: const TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuler'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
             ),
-            child: const Text('Terminer'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),

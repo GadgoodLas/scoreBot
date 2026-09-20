@@ -175,6 +175,66 @@ void main() {
     });
   });
 
+  group('OfflineVoiceCommandParser - English Commands', () {
+    test('detects English match controls', () {
+      expect(parser.parse(rawText: 'pause', match: testMatch).matchControl, 'pause');
+      expect(parser.parse(rawText: 'timeout', match: testMatch).matchControl, 'pause');
+      expect(parser.parse(rawText: 'stop the clock', match: testMatch).matchControl, 'pause');
+      expect(parser.parse(rawText: 'resume', match: testMatch).matchControl, 'resume');
+      expect(parser.parse(rawText: 'continue', match: testMatch).matchControl, 'resume');
+      expect(parser.parse(rawText: 'half time', match: testMatch).matchControl, 'halftime');
+      expect(parser.parse(rawText: 'halftime', match: testMatch).matchControl, 'halftime');
+      expect(parser.parse(rawText: 'end match', match: testMatch).matchControl, 'end_match');
+      expect(parser.parse(rawText: 'end game', match: testMatch).matchControl, 'end_match');
+      expect(parser.parse(rawText: 'final whistle', match: testMatch).matchControl, 'end_match');
+    });
+
+    test('detects English undo and cancel keywords', () {
+      expect(parser.parse(rawText: 'undo', match: testMatch).type, GameEventType.correction);
+      expect(parser.parse(rawText: 'cancel last goal', match: testMatch).type, GameEventType.correction);
+      expect(parser.parse(rawText: 'no goal', match: testMatch).type, GameEventType.correction);
+      expect(parser.parse(rawText: 'mistake', match: testMatch).type, GameEventType.correction);
+    });
+
+    test('parses English goals and assists', () {
+      final goalTeamA = parser.parse(rawText: 'goal team A', match: testMatch);
+      expect(goalTeamA.type, GameEventType.goal);
+      expect(goalTeamA.teamName, 'Équipe A');
+
+      final goalByScorer = parser.parse(rawText: 'goal by Stephane', match: testMatch);
+      expect(goalByScorer.type, GameEventType.goal);
+      expect(goalByScorer.playerName, 'Stéphane');
+      expect(goalByScorer.teamName, 'Équipe A');
+
+      final goalWithAssist = parser.parse(
+        rawText: 'goal Cedric assisted by Karim',
+        match: testMatch,
+      );
+      expect(goalWithAssist.type, GameEventType.goal);
+      expect(goalWithAssist.playerName, 'Cedric');
+      expect(goalWithAssist.secondaryPlayerName, 'Karim');
+      expect(goalWithAssist.teamName, 'Équipe B');
+
+      final threePointer = parser.parse(rawText: 'three points for team B', match: testMatch);
+      expect(threePointer.type, GameEventType.goal);
+      expect(threePointer.points, 3);
+    });
+
+    test('parses English cards and fouls', () {
+      final yellow = parser.parse(rawText: 'yellow card for Stephane', match: testMatch);
+      expect(yellow.type, GameEventType.yellowCard);
+      expect(yellow.playerName, 'Stéphane');
+
+      final red = parser.parse(rawText: 'red card Cedric', match: testMatch);
+      expect(red.type, GameEventType.redCard);
+      expect(red.playerName, 'Cedric');
+
+      final foul = parser.parse(rawText: 'foul by Karim', match: testMatch);
+      expect(foul.type, GameEventType.foul);
+      expect(foul.playerName, 'Karim');
+    });
+  });
+
   group('OfflineVoiceCommandParser - Cas limites', () {
     test('handles empty or unrecognized input', () {
       final emptyResult = parser.parse(rawText: '', match: testMatch);

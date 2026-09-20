@@ -16,6 +16,7 @@ class _SettingKeys {
   static const aiModel = 'gemini_ai_model';
   static const hasSeenOnboarding = 'has_seen_ai_onboarding';
   static const voiceEngine = 'voice_engine'; // 'local' ou 'gemini'
+  static const language = 'app_language'; // 'en' ou 'fr'
 }
 
 /// Service de persistance locale utilisant Hive.
@@ -176,6 +177,25 @@ class StorageService {
 
   /// Indique si le mode vocal actif est le mode local (sans IA).
   bool get isLocalVoiceMode => getVoiceEngine() == 'local';
+
+  /// Récupère la langue active de l'application ('en' par défaut).
+  String getLanguageCode() {
+    _assertInitialized();
+    final lang = _settingsBox.get(_SettingKeys.language);
+    if (lang != null && (lang == 'en' || lang == 'fr')) {
+      return lang;
+    }
+    return 'en'; // Anglais par défaut
+  }
+
+  /// Sauvegarde la langue sélectionnée ('en' ou 'fr').
+  Future<void> saveLanguageCode(String languageCode) async {
+    _assertInitialized();
+    final code = languageCode.trim().toLowerCase();
+    if (code == 'en' || code == 'fr') {
+      await _settingsBox.put(_SettingKeys.language, code);
+    }
+  }
 
   /// Efface la configuration IA (pour tests ou réinitialisation).
   Future<void> clearAiConfig() async {

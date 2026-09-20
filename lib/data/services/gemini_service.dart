@@ -237,9 +237,9 @@ class GeminiService {
             },
             {
               'text':
-                  'Écoute attentivement cet enregistrement audio en français. '
-                  'Transcris exactement ce qui est dit dans le champ "transcription", '
-                  'puis analyse l\'événement de match pour remplir les champs structurés JSON.',
+                  'Listen carefully to this audio recording in English or French. '
+                  'Transcribe exactly what is said into the "transcription" field, '
+                  'then analyze the match event and populate the structured JSON fields.',
             },
           ],
         },
@@ -295,32 +295,40 @@ class GeminiService {
     return _executeWithFallback(body);
   }
 
-  /// Génère un compte-rendu journalistique du match en français.
+  /// Génère un compte-rendu journalistique du match dans la langue choisie ('en' ou 'fr').
   Future<String> generateMatchReport({
     required GameMatch match,
     required List<GameEvent> events,
+    String language = 'en',
   }) async {
     if (!isConfigured) {
       throw const GeminiException('Clé API Gemini non configurée');
     }
 
+    final isFrench = language == 'fr';
     final eventsSummary = StringBuffer();
     for (final e in events) {
       final team = e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
       final desc = switch (e) {
         GoalEvent(:final scorerName, :final assistName, :final points) =>
-          '${e.minute}\' : But/Point ($points pts) de $scorerName'
-              '${assistName != null ? " (passe: $assistName)" : ""} pour $team',
+          isFrench
+              ? '${e.minute}\' : But/Point ($points pts) de $scorerName${assistName != null ? " (passe: $assistName)" : ""} pour $team'
+              : '${e.minute}\' : Goal/Point ($points pts) by $scorerName${assistName != null ? " (assist: $assistName)" : ""} for $team',
         CardEvent(:final playerName) =>
-          '${e.minute}\' : ${e.type.label} pour $playerName ($team)',
+          isFrench
+              ? '${e.minute}\' : ${e.type.label} pour $playerName ($team)'
+              : '${e.minute}\' : ${e.type.label} for $playerName ($team)',
         FoulEvent(:final playerName) =>
-          '${e.minute}\' : Faute de $playerName ($team)',
-        _ => '${e.minute}\' : ${e.type.label} ($team)',
+          isFrench
+              ? '${e.minute}\' : Faute de $playerName ($team)'
+              : '${e.minute}\' : Foul by $playerName ($team)',
+        _ => isFrench ? '${e.minute}\' : ${e.type.label} ($team)' : '${e.minute}\' : ${e.type.label} ($team)',
       };
       eventsSummary.writeln('- $desc');
     }
 
-    final prompt = '''
+    final prompt = isFrench
+        ? '''
 Tu es un journaliste sportif passionné et rigoureux.
 Rédige un compte-rendu vivant, fluide et captivant du match suivant en français (entre 120 et 200 mots).
 Structure le texte avec :
@@ -337,6 +345,24 @@ Détails du match :
 ${eventsSummary.isNotEmpty ? eventsSummary.toString() : "- Aucun événement majeur enregistré"}
 
 Rédige directement le compte-rendu en texte brut soigné avec quelques sauts de ligne et émojis adaptés.
+'''
+        : '''
+You are a passionate, professional sports journalist.
+Write a vibrant, fluid and engaging post-match report in English (between 120 and 200 words).
+Structure the text with:
+1. A dynamic headline with emojis
+2. A sharp introduction summarizing the outcome
+3. Major game-changing moments and key plays
+4. Spotlight on the player of the match and team spirit
+
+Match Details:
+- Sport: ${match.sport.label}
+- Teams: ${match.teamA.name} vs ${match.teamB.name}
+- Final Score: ${match.teamA.name} ${match.scoreA} — ${match.scoreB} ${match.teamB.name}
+- Key Timeline Events:
+${eventsSummary.isNotEmpty ? eventsSummary.toString() : "- No major events recorded"}
+
+Write the report directly as clean plain text with spacing and relevant emojis.
 ''';
 
     final body = jsonEncode({
@@ -472,9 +498,10 @@ Rédige directement le compte-rendu en texte brut soigné avec quelques sauts de
         .join(', ');
 
     return '''
-Tu es un arbitre et scoreur sportif intelligent assistant en direct pendant un match.
-Tu reçois des commandes vocales ou textuelles courtes en français d'un joueur, arbitre ou coach (souvent depuis une montre Pixel Watch ou un smartphone au bord du terrain).
-Tu dois comprendre l'intention et extraire l'événement ou le contrôle du match sous forme de JSON strict.
+You are an intelligent sports referee and live match scorer assistant.
+You receive short voice or text commands in English or French from a player, referee, or coach (often via a Wear OS Pixel Watch or a sideline smartphone).
+You must understand the intent and extract the match event or match control as strict JSON.
+Tu comprends parfaitement l'anglais et le français.
 
 ## Contexte du match en cours
 - Sport : ${match.sport.label}
