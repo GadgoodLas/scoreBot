@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Wear OS form factor in Google Play Store -->
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <application>
+        <!-- Standalone Wear OS app: does not require a phone companion app -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+    </application>
+</manifest>
+

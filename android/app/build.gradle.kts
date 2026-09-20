@@ -42,6 +42,18 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "device"
+    productFlavors {
+        create("phone") {
+            dimension = "device"
+            versionCode = 101
+        }
+        create("watch") {
+            dimension = "device"
+            versionCode = 102
+        }
+    }
+
     packaging {
         jniLibs {
             keepDebugSymbols += "**/*.so"
