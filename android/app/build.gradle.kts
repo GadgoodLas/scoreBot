@@ -11,13 +11,19 @@ plugins {
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    val rawProps = Properties()
+    FileInputStream(keystorePropertiesFile).use { rawProps.load(it) }
+    for ((k, v) in rawProps) {
+        val cleanKey = k.toString().replace("\uFEFF", "").trim()
+        val cleanVal = v.toString().trim()
+        keystoreProperties.setProperty(cleanKey, cleanVal)
+    }
 }
 
 android {
     namespace = "com.scorebot.score_bot"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -34,6 +40,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    packaging {
+        jniLibs {
+            keepDebugSymbols += "**/*.so"
+        }
     }
 
     signingConfigs {
