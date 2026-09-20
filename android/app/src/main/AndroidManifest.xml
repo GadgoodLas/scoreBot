@@ -3,10 +3,20 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- Internet for Gemini API calls -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Support Wear OS tout en permettant l'installation sur smartphones -->
+    <uses-feature android:name="android.hardware.type.watch" android:required="false" />
+
     <application
-        android:label="score_bot"
+        android:label="ScoreBot"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- Indique que l'application fonctionne de façon autonome sur montre Wear OS -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

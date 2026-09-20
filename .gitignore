@@ -1,6 +1,11 @@
 # Environment variables — Ne jamais committer ce fichier !
 .env
 
+# Android signing
+key.properties
+*.jks
+*.keystore
+
 # Miscellaneous
 *.class
 *.log

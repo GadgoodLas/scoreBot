@@ -33,31 +33,50 @@ class LiveView extends StatelessWidget {
           }
 
           return SafeArea(
-            child: Column(
-              children: [
-                // ─── Header : Chrono + Score ───
-                _MatchHeader(viewModel: viewModel),
+            child: OrientationBuilder(
+              builder: (context, orientation) {
+                final isLandscape = orientation == Orientation.landscape;
 
-                // ─── Status banner ───
-                if (viewModel.match.status != GameMatchStatus.live)
-                  _StatusBanner(status: viewModel.match.status),
+                if (isLandscape) {
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: 360,
+                        child: _MatchHeader(viewModel: viewModel),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (viewModel.match.status != GameMatchStatus.live)
+                              _StatusBanner(status: viewModel.match.status),
+                            Expanded(child: _EventFeed(viewModel: viewModel)),
+                            _VoiceFeedback(viewModel: viewModel),
+                            _MicButton(viewModel: viewModel),
+                            _MatchControls(
+                              viewModel: viewModel,
+                              context: context,
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
 
-                // ─── Feed des événements ───
-                Expanded(
-                  child: _EventFeed(viewModel: viewModel),
-                ),
-
-                // ─── Voice feedback banner ───
-                _VoiceFeedback(viewModel: viewModel),
-
-                // ─── Bouton microphone ───
-                _MicButton(viewModel: viewModel),
-
-                // ─── Contrôles match ───
-                _MatchControls(viewModel: viewModel, context: context),
-
-                const SizedBox(height: 8),
-              ],
+                return Column(
+                  children: [
+                    _MatchHeader(viewModel: viewModel),
+                    if (viewModel.match.status != GameMatchStatus.live)
+                      _StatusBanner(status: viewModel.match.status),
+                    Expanded(child: _EventFeed(viewModel: viewModel)),
+                    _VoiceFeedback(viewModel: viewModel),
+                    _MicButton(viewModel: viewModel),
+                    _MatchControls(viewModel: viewModel, context: context),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              },
             ),
           );
         },

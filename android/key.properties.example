@@ -1,0 +1,9 @@
+# Exemple de configuration de signature Android Release
+# Copiez ce fichier sous le nom "key.properties" dans ce même dossier android/
+# et remplacez les valeurs ci-dessous par vos vraies informations.
+# Ce fichier "key.properties" est déjà ignoré par Git via .gitignore.
+
+storePassword=mon_mot_de_passe_keystore
+keyPassword=mon_mot_de_passe_cle
+keyAlias=scorebot
+storeFile=C:/Users/moham/scorebot-release-key.jks
