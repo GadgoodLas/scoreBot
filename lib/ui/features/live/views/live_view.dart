@@ -48,6 +48,8 @@ class LiveView extends StatelessWidget {
                       Expanded(
                         child: Column(
                           children: [
+                            if (viewModel.pendingAlert != null)
+                              _LiveAlertBanner(viewModel: viewModel),
                             if (viewModel.match.status != GameMatchStatus.live)
                               _StatusBanner(status: viewModel.match.status),
                             Expanded(child: _EventFeed(viewModel: viewModel)),
@@ -68,6 +70,8 @@ class LiveView extends StatelessWidget {
                 return Column(
                   children: [
                     _MatchHeader(viewModel: viewModel),
+                    if (viewModel.pendingAlert != null)
+                      _LiveAlertBanner(viewModel: viewModel),
                     if (viewModel.match.status != GameMatchStatus.live)
                       _StatusBanner(status: viewModel.match.status),
                     Expanded(child: _EventFeed(viewModel: viewModel)),
@@ -248,6 +252,107 @@ class _MatchHeader extends StatelessWidget {
           ),
         ],
       ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Live Alert Banner (Break / End Match) ───────────────────────
+
+class _LiveAlertBanner extends StatelessWidget {
+  const _LiveAlertBanner({required this.viewModel});
+  final LiveViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final alert = viewModel.pendingAlert;
+    if (alert == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final isBreak = alert == LiveAlertType.breakSuggested;
+    final color = isBreak ? Colors.tealAccent : Colors.amberAccent;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(isBreak ? Icons.pause_circle : Icons.timer_off, color: color, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isBreak ? l10n.breakAlertTitle : l10n.matchEndAlertTitle,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                color: Colors.white54,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                onPressed: viewModel.dismissPendingAlert,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isBreak ? l10n.breakAlertMessage : l10n.matchEndAlertMessage,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: viewModel.dismissPendingAlert,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white60,
+                  textStyle: const TextStyle(fontSize: 11),
+                ),
+                child: Text(l10n.continuePlaying),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  if (isBreak) {
+                    await viewModel.acceptBreakAlert();
+                  } else {
+                    await viewModel.acceptEndMatchAlert();
+                    if (context.mounted) {
+                      Navigator.of(context).pushReplacementNamed(
+                        '/summary',
+                        arguments: viewModel.match,
+                      );
+                    }
+                  }
+                },
+                icon: Icon(isBreak ? Icons.pause : Icons.sports_score, size: 14),
+                label: Text(
+                  isBreak ? l10n.takeBreak : l10n.finishMatch,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: const Size(0, 32),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

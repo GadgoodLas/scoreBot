@@ -268,4 +268,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get save => 'Save';
+
+  @override
+  String get breakDuration => 'Break / Halftime after';
+
+  @override
+  String get noBreak => 'No break';
+
+  @override
+  String get breakNotificationVocal => 'Break time! Take a break.';
+
+  @override
+  String get matchEndNotificationVocal => 'Full time! Match finished.';
+
+  @override
+  String get breakAlertTitle => 'Break suggested';
+
+  @override
+  String get breakAlertMessage =>
+      'Break time reached. Would you like to pause the match?';
+
+  @override
+  String get matchEndAlertTitle => 'Full time reached';
+
+  @override
+  String get matchEndAlertMessage =>
+      'Match duration completed. Would you like to end the match?';
+
+  @override
+  String get takeBreak => 'Take a break';
+
+  @override
+  String get finishMatch => 'Finish match';
+
+  @override
+  String get continuePlaying => 'Keep playing';
 }

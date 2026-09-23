@@ -408,8 +408,12 @@ class _DurationSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final maxBreak = (viewModel.durationMinutes - 1).clamp(5, 180);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ─── Durée totale ───
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -428,13 +432,128 @@ class _DurationSlider extends StatelessWidget {
           ],
         ),
         Slider(
-          value: viewModel.durationMinutes.toDouble(),
-          min: 10,
-          max: 120,
-          divisions: 22,
+          value: viewModel.durationMinutes.toDouble().clamp(5.0, 180.0),
+          min: 5,
+          max: 180,
+          divisions: 35,
           activeColor: AppTheme.primary,
           inactiveColor: AppTheme.divider,
           onChanged: (v) => viewModel.setDuration(v.round()),
+        ),
+        const SizedBox(height: 8),
+
+        // ─── Durée avant pause / mi-temps ───
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.breakDuration,
+              style: const TextStyle(color: AppTheme.textSecondary),
+            ),
+            Text(
+              viewModel.breakDurationMinutes != null
+                  ? l10n.durationMinutes(viewModel.breakDurationMinutes!)
+                  : l10n.noBreak,
+              style: TextStyle(
+                color: viewModel.breakDurationMinutes != null
+                    ? Colors.tealAccent
+                    : Colors.white38,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+        if (viewModel.breakDurationMinutes != null)
+          Slider(
+            value: viewModel.breakDurationMinutes!.toDouble().clamp(5.0, maxBreak.toDouble()),
+            min: 5,
+            max: maxBreak.toDouble(),
+            divisions: (maxBreak - 5).clamp(1, 50),
+            activeColor: Colors.tealAccent,
+            inactiveColor: AppTheme.divider,
+            onChanged: (v) => viewModel.setBreakDuration(v.round()),
+          ),
+        const SizedBox(height: 4),
+
+        // Puces rapides de configuration
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ChoiceChip(
+                label: Text(l10n.noBreak, style: const TextStyle(fontSize: 11)),
+                selected: viewModel.breakDurationMinutes == null,
+                onSelected: (selected) {
+                  if (selected) viewModel.setBreakDuration(null);
+                },
+                selectedColor: Colors.white24,
+                backgroundColor: AppTheme.surface,
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: Text('Mi-temps (${(viewModel.durationMinutes / 2).round()} min)',
+                    style: const TextStyle(fontSize: 11)),
+                selected: viewModel.breakDurationMinutes == (viewModel.durationMinutes / 2).round(),
+                onSelected: (selected) {
+                  if (selected) {
+                    viewModel.setBreakDuration((viewModel.durationMinutes / 2).round());
+                  }
+                },
+                selectedColor: Colors.tealAccent.withValues(alpha: 0.3),
+                backgroundColor: AppTheme.surface,
+              ),
+              if (viewModel.durationMinutes > 30) ...[
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: const Text('15 min', style: TextStyle(fontSize: 11)),
+                  selected: viewModel.breakDurationMinutes == 15,
+                  onSelected: (selected) {
+                    if (selected) viewModel.setBreakDuration(15);
+                  },
+                  selectedColor: Colors.tealAccent.withValues(alpha: 0.3),
+                  backgroundColor: AppTheme.surface,
+                ),
+              ],
+              if (viewModel.durationMinutes > 45) ...[
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: const Text('20 min', style: TextStyle(fontSize: 11)),
+                  selected: viewModel.breakDurationMinutes == 20,
+                  onSelected: (selected) {
+                    if (selected) viewModel.setBreakDuration(20);
+                  },
+                  selectedColor: Colors.tealAccent.withValues(alpha: 0.3),
+                  backgroundColor: AppTheme.surface,
+                ),
+              ],
+              if (viewModel.durationMinutes > 90) ...[
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: const Text('45 min', style: TextStyle(fontSize: 11)),
+                  selected: viewModel.breakDurationMinutes == 45,
+                  onSelected: (selected) {
+                    if (selected) viewModel.setBreakDuration(45);
+                  },
+                  selectedColor: Colors.tealAccent.withValues(alpha: 0.3),
+                  backgroundColor: AppTheme.surface,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: const [
+            Icon(Icons.volume_up, size: 14, color: AppTheme.primary),
+            SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Annonces vocales automatiques à la pause et à la fin du match',
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            ),
+          ],
         ),
       ],
     );

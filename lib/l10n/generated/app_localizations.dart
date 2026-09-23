@@ -589,6 +589,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get save;
+
+  /// No description provided for @breakDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Break / Halftime after'**
+  String get breakDuration;
+
+  /// No description provided for @noBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'No break'**
+  String get noBreak;
+
+  /// No description provided for @breakNotificationVocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Break time! Take a break.'**
+  String get breakNotificationVocal;
+
+  /// No description provided for @matchEndNotificationVocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Full time! Match finished.'**
+  String get matchEndNotificationVocal;
+
+  /// No description provided for @breakAlertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Break suggested'**
+  String get breakAlertTitle;
+
+  /// No description provided for @breakAlertMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Break time reached. Would you like to pause the match?'**
+  String get breakAlertMessage;
+
+  /// No description provided for @matchEndAlertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full time reached'**
+  String get matchEndAlertTitle;
+
+  /// No description provided for @matchEndAlertMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Match duration completed. Would you like to end the match?'**
+  String get matchEndAlertMessage;
+
+  /// No description provided for @takeBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a break'**
+  String get takeBreak;
+
+  /// No description provided for @finishMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish match'**
+  String get finishMatch;
+
+  /// No description provided for @continuePlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep playing'**
+  String get continuePlaying;
 }
 
 class _AppLocalizationsDelegate

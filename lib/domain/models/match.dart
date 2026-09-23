@@ -121,6 +121,7 @@ class GameMatch extends Equatable {
     required this.startTime,
     this.endTime,
     this.durationMinutes = 90,
+    this.breakDurationMinutes,
   });
 
   final String id;
@@ -133,11 +134,12 @@ class GameMatch extends Equatable {
   final DateTime startTime;
   final DateTime? endTime;
   final int durationMinutes;
+  final int? breakDurationMinutes;
 
   @override
   List<Object?> get props => [
         id, sport, teamA, teamB, status,
-        scoreA, scoreB, startTime, endTime, durationMinutes,
+        scoreA, scoreB, startTime, endTime, durationMinutes, breakDurationMinutes,
       ];
 
   /// Retourne l'équipe correspondant à l'id donné.
@@ -167,6 +169,8 @@ class GameMatch extends Equatable {
     DateTime? startTime,
     DateTime? endTime,
     int? durationMinutes,
+    int? breakDurationMinutes,
+    bool clearBreakDuration = false,
   }) {
     return GameMatch(
       id: id ?? this.id,
@@ -179,6 +183,9 @@ class GameMatch extends Equatable {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
+      breakDurationMinutes: clearBreakDuration
+          ? null
+          : (breakDurationMinutes ?? this.breakDurationMinutes),
     );
   }
 
@@ -193,6 +200,7 @@ class GameMatch extends Equatable {
         'startTime': startTime.toIso8601String(),
         'endTime': endTime?.toIso8601String(),
         'durationMinutes': durationMinutes,
+        'breakDurationMinutes': breakDurationMinutes,
       };
 
   factory GameMatch.fromMap(Map<String, dynamic> map) => GameMatch(
@@ -208,5 +216,6 @@ class GameMatch extends Equatable {
             ? DateTime.parse(map['endTime'] as String)
             : null,
         durationMinutes: map['durationMinutes'] as int? ?? 90,
+        breakDurationMinutes: map['breakDurationMinutes'] as int?,
       );
 }

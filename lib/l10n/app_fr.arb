@@ -88,6 +88,17 @@
   "skip": "Passer",
   "yes": "Oui",
   "no": "Non",
-  "save": "Enregistrer"
+  "save": "Enregistrer",
+  "breakDuration": "Pause / Mi-temps après",
+  "noBreak": "Sans pause",
+  "breakNotificationVocal": "C'est l'heure de la pause ! Prenez une pause.",
+  "matchEndNotificationVocal": "Fin du match ! Le temps réglementaire est écoulé.",
+  "breakAlertTitle": "Pause conseillée",
+  "breakAlertMessage": "La durée avant la pause est atteinte. Voulez-vous suspendre le match ?",
+  "matchEndAlertTitle": "Temps réglementaire écoulé",
+  "matchEndAlertMessage": "La durée du match est terminée. Voulez-vous terminer le match ?",
+  "takeBreak": "Faire la pause",
+  "finishMatch": "Terminer le match",
+  "continuePlaying": "Continuer à jouer"
 }
 

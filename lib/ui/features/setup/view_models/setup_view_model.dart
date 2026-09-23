@@ -38,6 +38,9 @@ class SetupViewModel extends ChangeNotifier {
   int _durationMinutes = 90;
   int get durationMinutes => _durationMinutes;
 
+  int? _breakDurationMinutes = 45;
+  int? get breakDurationMinutes => _breakDurationMinutes;
+
   bool _isCreating = false;
   bool get isCreating => _isCreating;
 
@@ -103,6 +106,9 @@ class SetupViewModel extends ChangeNotifier {
     _durationMinutes = sport.matchDurationMinutes > 0
         ? sport.matchDurationMinutes
         : 90;
+    _breakDurationMinutes = sport.hasHalftime && _durationMinutes > 0
+        ? (_durationMinutes / 2).round()
+        : null;
     notifyListeners();
   }
 
@@ -164,6 +170,14 @@ class SetupViewModel extends ChangeNotifier {
 
   void setDuration(int minutes) {
     _durationMinutes = minutes;
+    if (_breakDurationMinutes != null && _breakDurationMinutes! >= _durationMinutes) {
+      _breakDurationMinutes = (_durationMinutes / 2).round();
+    }
+    notifyListeners();
+  }
+
+  void setBreakDuration(int? minutes) {
+    _breakDurationMinutes = minutes;
     notifyListeners();
   }
 
@@ -220,6 +234,7 @@ class SetupViewModel extends ChangeNotifier {
         teamA: teamA,
         teamB: teamB,
         durationMinutes: _durationMinutes,
+        breakDurationMinutes: _breakDurationMinutes,
       );
 
       return match;

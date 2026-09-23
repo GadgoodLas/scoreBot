@@ -115,6 +115,7 @@ class MatchRepository {
     required Team teamA,
     required Team teamB,
     int? durationMinutes,
+    int? breakDurationMinutes,
   }) async {
     final match = GameMatch(
       id: _uuid.v4(),
@@ -126,6 +127,7 @@ class MatchRepository {
       scoreB: 0,
       startTime: DateTime.now(),
       durationMinutes: durationMinutes ?? sport.matchDurationMinutes,
+      breakDurationMinutes: breakDurationMinutes,
     );
 
     await _storage.saveMatch(match);

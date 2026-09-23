@@ -182,9 +182,33 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                         ? 'B'
                         : widget.viewModel.teamBName,
                   ),
-                  Text(
-                    l10n.durationMinutes(widget.viewModel.durationMinutes),
-                    style: const TextStyle(color: Colors.white38, fontSize: 9),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => _showWatchDurationDialog(context, widget.viewModel),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.timer_outlined, size: 10, color: AppTheme.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.viewModel.breakDurationMinutes != null
+                                ? '${widget.viewModel.durationMinutes}m (Pause: ${widget.viewModel.breakDurationMinutes}m)'
+                                : '${widget.viewModel.durationMinutes}m (${l10n.noBreak})',
+                            style: const TextStyle(color: Colors.white70, fontSize: 9),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.edit, size: 9, color: Colors.white38),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   if (widget.viewModel.errorMessage != null) ...[
@@ -524,4 +548,146 @@ class _WatchVoiceBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showWatchDurationDialog(BuildContext context, SetupViewModel viewModel) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final l10n = AppLocalizations.of(context)!;
+          return Dialog(
+            backgroundColor: AppTheme.surface,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '⏱️ ${l10n.matchDuration}',
+                    style: const TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        icon: const Icon(Icons.remove_circle_outline, size: 18),
+                        onPressed: viewModel.durationMinutes > 10
+                            ? () {
+                                setState(() {
+                                  viewModel.setDuration(viewModel.durationMinutes - 5);
+                                });
+                              }
+                            : null,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '${viewModel.durationMinutes} min',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        icon: const Icon(Icons.add_circle_outline, size: 18),
+                        onPressed: viewModel.durationMinutes < 180
+                            ? () {
+                                setState(() {
+                                  viewModel.setDuration(viewModel.durationMinutes + 5);
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Colors.white24, height: 12),
+                  Text(
+                    '⏸️ ${l10n.breakDuration}',
+                    style: const TextStyle(
+                      color: Colors.tealAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        icon: const Icon(Icons.remove_circle_outline, size: 18),
+                        onPressed: () {
+                          setState(() {
+                            if (viewModel.breakDurationMinutes == null) {
+                              viewModel.setBreakDuration((viewModel.durationMinutes / 2).round());
+                            } else if (viewModel.breakDurationMinutes! > 5) {
+                              viewModel.setBreakDuration(viewModel.breakDurationMinutes! - 5);
+                            } else {
+                              viewModel.setBreakDuration(null);
+                            }
+                          });
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          viewModel.breakDurationMinutes != null
+                              ? '${viewModel.breakDurationMinutes} min'
+                              : l10n.noBreak,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        icon: const Icon(Icons.add_circle_outline, size: 18),
+                        onPressed: () {
+                          setState(() {
+                            if (viewModel.breakDurationMinutes == null) {
+                              viewModel.setBreakDuration(5);
+                            } else if (viewModel.breakDurationMinutes! < viewModel.durationMinutes - 5) {
+                              viewModel.setBreakDuration(viewModel.breakDurationMinutes! + 5);
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 28,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.black,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(l10n.save, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }

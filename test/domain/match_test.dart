@@ -57,21 +57,29 @@ void main() {
       expect(match.currentMinute, lessThanOrEqualTo(90));
     });
 
-    test('toMap and fromMap are symmetric', () {
-      final map = match.toMap();
+    test('toMap and fromMap are symmetric with breakDurationMinutes', () {
+      final matchWithBreak = match.copyWith(breakDurationMinutes: 45);
+      final map = matchWithBreak.toMap();
       final restored = GameMatch.fromMap(map);
-      expect(restored.id, match.id);
-      expect(restored.scoreA, match.scoreA);
-      expect(restored.scoreB, match.scoreB);
-      expect(restored.sport, match.sport);
+      expect(restored.id, matchWithBreak.id);
+      expect(restored.scoreA, matchWithBreak.scoreA);
+      expect(restored.scoreB, matchWithBreak.scoreB);
+      expect(restored.sport, matchWithBreak.sport);
+      expect(restored.durationMinutes, 90);
+      expect(restored.breakDurationMinutes, 45);
     });
 
     test('copyWith updates only specified fields', () {
-      final updated = match.copyWith(scoreA: 3, status: GameMatchStatus.finished);
+      final updated = match.copyWith(
+        scoreA: 3,
+        status: GameMatchStatus.finished,
+        breakDurationMinutes: 40,
+      );
       expect(updated.scoreA, 3);
       expect(updated.scoreB, match.scoreB);
       expect(updated.status, GameMatchStatus.finished);
       expect(updated.id, match.id);
+      expect(updated.breakDurationMinutes, 40);
     });
   });
 

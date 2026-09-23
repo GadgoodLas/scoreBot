@@ -54,6 +54,12 @@ class LiveWatchView extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              // Alerte vocale / pause / fin de match
+                              if (viewModel.pendingAlert != null) ...[
+                                _WatchAlertBadge(viewModel: viewModel),
+                                const SizedBox(height: 3),
+                              ],
+
                               // Statut match si non live
                               if (viewModel.match.status != GameMatchStatus.live) ...[
                                 _WatchStatusBadge(status: viewModel.match.status),
@@ -559,6 +565,65 @@ class _WatchStatusBadge extends StatelessWidget {
           fontWeight: FontWeight.bold,
           letterSpacing: 1,
         ),
+      ),
+    );
+  }
+}
+
+class _WatchAlertBadge extends StatelessWidget {
+  const _WatchAlertBadge({required this.viewModel});
+  final LiveViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final alert = viewModel.pendingAlert;
+    if (alert == null) return const SizedBox.shrink();
+
+    final isBreak = alert == LiveAlertType.breakSuggested;
+    final color = isBreak ? Colors.tealAccent : Colors.amberAccent;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(isBreak ? Icons.pause_circle : Icons.sports_score, size: 11, color: color),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () async {
+              if (isBreak) {
+                await viewModel.acceptBreakAlert();
+              } else {
+                await viewModel.acceptEndMatchAlert();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacementNamed(
+                    '/summary',
+                    arguments: viewModel.match,
+                  );
+                }
+              }
+            },
+            child: Text(
+              isBreak ? '${l10n.takeBreak} ✔️' : '${l10n.finishMatch} ✔️',
+              style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 5),
+          GestureDetector(
+            onTap: viewModel.dismissPendingAlert,
+            child: const Icon(Icons.close, size: 10, color: Colors.white60),
+          ),
+        ],
       ),
     );
   }

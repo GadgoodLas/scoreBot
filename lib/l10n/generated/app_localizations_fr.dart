@@ -268,4 +268,41 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get save => 'Enregistrer';
+
+  @override
+  String get breakDuration => 'Pause / Mi-temps après';
+
+  @override
+  String get noBreak => 'Sans pause';
+
+  @override
+  String get breakNotificationVocal =>
+      'Cest lheure de la pause ! Prenez une pause.';
+
+  @override
+  String get matchEndNotificationVocal =>
+      'Fin du match ! Le temps réglementaire est écoulé.';
+
+  @override
+  String get breakAlertTitle => 'Pause conseillée';
+
+  @override
+  String get breakAlertMessage =>
+      'La durée avant la pause est atteinte. Voulez-vous suspendre le match ?';
+
+  @override
+  String get matchEndAlertTitle => 'Temps réglementaire écoulé';
+
+  @override
+  String get matchEndAlertMessage =>
+      'La durée du match est terminée. Voulez-vous terminer le match ?';
+
+  @override
+  String get takeBreak => 'Faire la pause';
+
+  @override
+  String get finishMatch => 'Terminer le match';
+
+  @override
+  String get continuePlaying => 'Continuer à jouer';
 }

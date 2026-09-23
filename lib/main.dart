@@ -5,6 +5,7 @@ import 'package:score_bot/data/repositories/match_repository.dart';
 import 'package:score_bot/data/services/audio_service.dart';
 import 'package:score_bot/data/services/gemini_service.dart';
 import 'package:score_bot/data/services/storage_service.dart';
+import 'package:score_bot/data/services/tts_service.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
 import 'package:score_bot/ui/features/live/views/live_view.dart';
@@ -47,6 +48,10 @@ Future<void> main() async {
     ),
   );
 
+  final ttsService = TtsService();
+  await ttsService.init(languageCode: storageService.getLanguageCode());
+  sl.registerSingleton<TtsService>(ttsService);
+
   runApp(const ScoreBotApp());
 }
 
@@ -78,6 +83,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
       _locale = locale;
     });
     sl<StorageService>().saveLanguageCode(locale.languageCode);
+    sl<TtsService>().setLanguage(locale.languageCode);
   }
 
   @override
@@ -109,6 +115,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
             final vm = LiveViewModel(
               matchRepository: sl<MatchRepository>(),
               initialMatch: match,
+              ttsService: sl<TtsService>(),
             );
             // Détecte si on tourne sur une montre (petite fenêtre)
             return _WatchOrPhoneView(viewModel: vm);

@@ -129,6 +129,17 @@
   "skip": "Skip",
   "yes": "Yes",
   "no": "No",
-  "save": "Save"
+  "save": "Save",
+  "breakDuration": "Break / Halftime after",
+  "noBreak": "No break",
+  "breakNotificationVocal": "Break time! Take a break.",
+  "matchEndNotificationVocal": "Full time! Match finished.",
+  "breakAlertTitle": "Break suggested",
+  "breakAlertMessage": "Break time reached. Would you like to pause the match?",
+  "matchEndAlertTitle": "Full time reached",
+  "matchEndAlertMessage": "Match duration completed. Would you like to end the match?",
+  "takeBreak": "Take a break",
+  "finishMatch": "Finish match",
+  "continuePlaying": "Keep playing"
 }
 

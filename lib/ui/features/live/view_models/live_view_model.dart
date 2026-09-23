@@ -6,6 +6,7 @@ import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/data/repositories/match_repository.dart';
 import 'package:score_bot/data/services/audio_service.dart';
+import 'package:score_bot/data/services/tts_service.dart';
 
 /// États de la reconnaissance vocale sur l'écran live.
 enum VoiceState {
@@ -16,20 +17,35 @@ enum VoiceState {
   error,
 }
 
+/// Types d'alertes automatiques en cours de match (pause, fin de temps réglementaire).
+enum LiveAlertType {
+  breakSuggested,
+  matchEndReached,
+}
+
 /// ViewModel de l'écran de match en direct.
 class LiveViewModel extends ChangeNotifier {
   LiveViewModel({
     required MatchRepository matchRepository,
     required GameMatch initialMatch,
+    TtsService? ttsService,
   })  : _repository = matchRepository,
-        _match = initialMatch {
+        _match = initialMatch,
+        _tts = ttsService ?? TtsService() {
     _loadEvents();
     _startChronometer();
   }
 
   final MatchRepository _repository;
+  final TtsService _tts;
   GameMatch _match;
   GameMatch get match => _match;
+
+  LiveAlertType? _pendingAlert;
+  LiveAlertType? get pendingAlert => _pendingAlert;
+
+  bool _breakNotified = false;
+  bool _endNotified = false;
 
   // ─────────────── Chronomètre ───────────────
 
@@ -49,12 +65,65 @@ class LiveViewModel extends ChangeNotifier {
 
   void _startChronometer() {
     _elapsed = DateTime.now().difference(_match.startTime);
+    if (_match.status == GameMatchStatus.live) {
+      _checkTimersAndTriggerAlerts();
+    }
     _chronoTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_match.status == GameMatchStatus.live) {
         _elapsed = DateTime.now().difference(_match.startTime);
+        _checkTimersAndTriggerAlerts();
         notifyListeners();
       }
     });
+  }
+
+  /// Vérifie si le palier de pause ou de fin de match est atteint et diffuse les notifications vocales.
+  void _checkTimersAndTriggerAlerts() {
+    final breakMin = _match.breakDurationMinutes;
+    if (breakMin != null && breakMin > 0 && !_breakNotified) {
+      if (_elapsed.inSeconds >= breakMin * 60) {
+        _breakNotified = true;
+        _pendingAlert = LiveAlertType.breakSuggested;
+        HapticFeedback.heavyImpact();
+        _tts.speak(_repository.languageCode == 'fr'
+            ? "C'est l'heure de la pause ! Prenez une pause."
+            : "Break time! Take a break.");
+        notifyListeners();
+      }
+    }
+
+    if (_match.durationMinutes > 0 && !_endNotified) {
+      if (_elapsed.inSeconds >= _match.durationMinutes * 60) {
+        _endNotified = true;
+        _pendingAlert = LiveAlertType.matchEndReached;
+        HapticFeedback.heavyImpact();
+        _tts.speak(_repository.languageCode == 'fr'
+            ? "Fin du match ! Le temps réglementaire est écoulé."
+            : "Full time! Match finished.");
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Ferme l'alerte visuelle en cours sans modifier l'état du match.
+  void dismissPendingAlert() {
+    _pendingAlert = null;
+    notifyListeners();
+  }
+
+  /// Accepte la suggestion de pause et met le match en pause.
+  Future<void> acceptBreakAlert() async {
+    _pendingAlert = null;
+    _match = await _repository.pauseMatch(_match);
+    notifyListeners();
+  }
+
+  /// Accepte la fin de match et clôture le match.
+  Future<void> acceptEndMatchAlert() async {
+    _pendingAlert = null;
+    _match = await _repository.endMatch(_match);
+    _chronoTimer?.cancel();
+    notifyListeners();
   }
 
   // ─────────────── Événements ───────────────
