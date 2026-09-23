@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/ui/features/summary/views/summary_view.dart';
@@ -200,6 +203,62 @@ class SummaryWatchView extends StatelessWidget {
                   const SizedBox(height: 10),
                 ],
 
+                // ─── Actions Partage / Téléchargement / Copie ───
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton.filledTonal(
+                      onPressed: () => _shareOnWatch(context),
+                      icon: const Icon(Icons.share, size: 16),
+                      tooltip: l10n.shareReport,
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.surface,
+                        foregroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.all(8),
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: () => _downloadOnWatch(context),
+                      icon: const Icon(Icons.download, size: 16),
+                      tooltip: l10n.downloadReport,
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.surface,
+                        foregroundColor: Colors.tealAccent,
+                        padding: const EdgeInsets.all(8),
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: () {
+                        final text = viewModel.generatedReport ?? viewModel.generateShareText();
+                        Clipboard.setData(ClipboardData(text: text));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              l10n.reportCopied,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: AppTheme.surface,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 16),
+                      tooltip: l10n.copyReport,
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.surface,
+                        foregroundColor: Colors.white70,
+                        padding: const EdgeInsets.all(8),
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
                 // ─── Bouton Nouveau match ───
                 SizedBox(
                   width: double.infinity,
@@ -233,6 +292,63 @@ class SummaryWatchView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _shareOnWatch(BuildContext context) async {
+    final text = viewModel.generatedReport ?? viewModel.generateShareText();
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject: 'ScoreBot — ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        Clipboard.setData(ClipboardData(text: text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.reportCopied,
+              style: const TextStyle(fontSize: 10),
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppTheme.surface,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadOnWatch(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final file = await viewModel.saveReportToFile();
+      final filename = file.path.split(Platform.pathSeparator).last;
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.reportDownloaded(filename),
+            style: const TextStyle(fontSize: 10),
+          ),
+          duration: const Duration(seconds: 3),
+          backgroundColor: AppTheme.surface,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Erreur: $e',
+            style: const TextStyle(fontSize: 10),
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 }
 

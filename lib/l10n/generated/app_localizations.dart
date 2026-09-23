@@ -356,6 +356,24 @@ abstract class AppLocalizations {
   /// **'Report copied to clipboard!'**
   String get reportCopied;
 
+  /// No description provided for @shareReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Report'**
+  String get shareReport;
+
+  /// No description provided for @downloadReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Download (.txt)'**
+  String get downloadReport;
+
+  /// No description provided for @reportDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Report saved: {filename}'**
+  String reportDownloaded(String filename);
+
   /// No description provided for @regenerateReport.
   ///
   /// In en, this message translates to:

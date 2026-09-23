@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/game_event.dart';
@@ -253,6 +256,42 @@ class SummaryViewModel extends ChangeNotifier {
     buf.writeln('\nGénéré par ScoreBot 🤖');
     return buf.toString();
   }
+
+  /// Enregistre le rapport sous forme de fichier texte (.txt) et retourne le fichier créé.
+  Future<File> saveReportToFile() async {
+    final text = generatedReport ?? generateShareText();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final sanitizedA = _match.teamA.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim().replaceAll(RegExp(r'\s+'), '_');
+    final sanitizedB = _match.teamB.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim().replaceAll(RegExp(r'\s+'), '_');
+    final filename = 'scorebot_${sanitizedA}_vs_${sanitizedB}_$timestamp.txt';
+
+    if (Platform.isAndroid) {
+      try {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final file = File('${downloadDir.path}/$filename');
+          await file.writeAsString(text);
+          return file;
+        }
+      } catch (_) {
+        // Fallback si permission refusée sur scoped storage
+      }
+    }
+
+    try {
+      final downloadsDir = await getDownloadsDirectory();
+      if (downloadsDir != null && await downloadsDir.exists()) {
+        final file = File('${downloadsDir.path}/$filename');
+        await file.writeAsString(text);
+        return file;
+      }
+    } catch (_) {}
+
+    final docsDir = await getApplicationDocumentsDirectory();
+    final fallbackFile = File('${docsDir.path}/$filename');
+    await fallbackFile.writeAsString(text);
+    return fallbackFile;
+  }
 }
 
 /// Modèle pour les statistiques individuelles d'un joueur pendant un match.
@@ -297,9 +336,14 @@ class SummaryView extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.download, color: AppTheme.primary),
+            onPressed: () => _downloadReport(context),
+            tooltip: l10n.downloadReport,
+          ),
+          IconButton(
             icon: const Icon(Icons.share, color: AppTheme.primary),
             onPressed: () => _shareResult(context),
-            tooltip: l10n.copyReport,
+            tooltip: l10n.shareReport,
           ),
         ],
       ),
@@ -316,7 +360,11 @@ class SummaryView extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // ─── Compte-rendu automatique ───
-                _MatchReportCard(viewModel: viewModel),
+                _MatchReportCard(
+                  viewModel: viewModel,
+                  onShare: () => _shareResult(context),
+                  onDownload: () => _downloadReport(context),
+                ),
                 const SizedBox(height: 16),
 
                 // ─── Stats équipes ───
@@ -392,17 +440,61 @@ class SummaryView extends StatelessWidget {
   }
 
   Future<void> _shareResult(BuildContext context) async {
-    final text = viewModel.generateShareText();
-    // Sur un vrai appareil, utiliser share_plus
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(text, maxLines: 3, overflow: TextOverflow.ellipsis),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
+    final text = viewModel.generatedReport ?? viewModel.generateShareText();
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject: 'ScoreBot — ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
         ),
-      ),
-    );
+      );
+    } catch (_) {
+      if (context.mounted) {
+        Clipboard.setData(ClipboardData(text: text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.reportCopied),
+            backgroundColor: AppTheme.surface,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadReport(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final file = await viewModel.saveReportToFile();
+      final filename = file.path.split(Platform.pathSeparator).last;
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.reportDownloaded(filename)),
+          backgroundColor: AppTheme.surface,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: l10n.shareReport,
+            textColor: AppTheme.primary,
+            onPressed: () {
+              SharePlus.instance.share(
+                ShareParams(
+                  files: [XFile(file.path)],
+                  text: viewModel.generatedReport ?? viewModel.generateShareText(),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 }
 
@@ -500,8 +592,15 @@ class _ScoreBlock extends StatelessWidget {
 }
 
 class _MatchReportCard extends StatelessWidget {
-  const _MatchReportCard({required this.viewModel});
+  const _MatchReportCard({
+    required this.viewModel,
+    required this.onShare,
+    required this.onDownload,
+  });
+
   final SummaryViewModel viewModel;
+  final VoidCallback onShare;
+  final VoidCallback onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -606,9 +705,11 @@ class _MatchReportCard extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            const SizedBox(height: 14),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 TextButton.icon(
                   onPressed: () => viewModel.regenerateReport(),
@@ -617,9 +718,9 @@ class _MatchReportCard extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.textSecondary,
                     textStyle: const TextStyle(fontSize: 12),
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
-                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: report));
@@ -631,19 +732,34 @@ class _MatchReportCard extends StatelessWidget {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.copy, size: 16),
-                  label: const Text('Copier'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.primary,
+                  icon: const Icon(Icons.copy, size: 15),
+                  label: Text(l10n.copyReport),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.textPrimary,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                    textStyle: const TextStyle(fontSize: 12),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () => viewModel.regenerateReport(),
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Régénérer'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.textSecondary,
+                OutlinedButton.icon(
+                  onPressed: onDownload,
+                  icon: const Icon(Icons.download, size: 15),
+                  label: Text(l10n.downloadReport),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.tealAccent,
+                    side: BorderSide(color: Colors.tealAccent.withValues(alpha: 0.4)),
+                    textStyle: const TextStyle(fontSize: 12),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: onShare,
+                  icon: const Icon(Icons.share, size: 15),
+                  label: Text(l10n.shareReport),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.black,
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),

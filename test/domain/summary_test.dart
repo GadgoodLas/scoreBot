@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/match.dart';
@@ -103,6 +105,83 @@ void main() {
       expect(nabil.goals, 0);
       expect(nabil.assists, 1);
       expect(nabil.yellowCards, 1);
+    });
+
+    test('generateShareText produces expected summary format', () {
+      final events = <GameEvent>[];
+      final repo = _FakeMatchRepository(events);
+
+      const teamA = Team(id: 'tA', name: 'Lions', color: 'rouge');
+      const teamB = Team(id: 'tB', name: 'Tigers', color: 'bleu');
+
+      final match = GameMatch(
+        id: 'm1',
+        sport: SportType.football,
+        teamA: teamA,
+        teamB: teamB,
+        status: GameMatchStatus.finished,
+        scoreA: 2,
+        scoreB: 1,
+        startTime: DateTime.now(),
+        durationMinutes: 90,
+      );
+
+      events.add(
+        GoalEvent(
+          id: 'g1',
+          teamId: teamA.id,
+          minute: 10,
+          timestamp: DateTime.now(),
+          scorerName: 'Alex',
+        ),
+      );
+
+      final vm = SummaryViewModel(matchRepository: repo, match: match);
+      final text = vm.generateShareText();
+
+      expect(text, contains('ScoreBot — Résumé du match'));
+      expect(text, contains('Lions 2 — 1 Tigers'));
+      expect(text, contains('Alex'));
+    });
+
+    test('saveReportToFile writes report to file successfully', () async {
+      final events = <GameEvent>[];
+      final repo = _FakeMatchRepository(events);
+
+      const teamA = Team(id: 'tA', name: 'FC Alpha', color: 'rouge');
+      const teamB = Team(id: 'tB', name: 'FC Beta', color: 'bleu');
+
+      final match = GameMatch(
+        id: 'm2',
+        sport: SportType.football,
+        teamA: teamA,
+        teamB: teamB,
+        status: GameMatchStatus.finished,
+        scoreA: 1,
+        scoreB: 0,
+        startTime: DateTime.now(),
+        durationMinutes: 90,
+      );
+
+      final tempDir = await Directory.systemTemp.createTemp('scorebot_report_test_');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall methodCall) async => tempDir.path,
+      );
+
+      try {
+        final vm = SummaryViewModel(matchRepository: repo, match: match);
+        final file = await vm.saveReportToFile();
+
+        expect(await file.exists(), isTrue);
+        final content = await file.readAsString();
+        expect(content, contains('FC Alpha 1 — 0 FC Beta'));
+      } finally {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      }
     });
   });
 }

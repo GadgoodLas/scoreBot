@@ -43,6 +43,16 @@
   "noReportAvailable": "Aucun rapport disponible.",
   "copyReport": "Copier le rapport",
   "reportCopied": "Rapport copié dans le presse-papier !",
+  "shareReport": "Partager le rapport",
+  "downloadReport": "Télécharger (.txt)",
+  "reportDownloaded": "Rapport enregistré : {filename}",
+  "@reportDownloaded": {
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
+  },
   "regenerateReport": "Régénérer",
   "topScorer": "Meilleur buteur : {player} ({points})",
   "stats": "Statistiques",

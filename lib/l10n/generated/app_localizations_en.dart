@@ -144,6 +144,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportCopied => 'Report copied to clipboard!';
 
   @override
+  String get shareReport => 'Share Report';
+
+  @override
+  String get downloadReport => 'Download (.txt)';
+
+  @override
+  String reportDownloaded(String filename) {
+    return 'Report saved: $filename';
+  }
+
+  @override
   String get regenerateReport => 'Regenerate';
 
   @override

@@ -144,6 +144,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportCopied => 'Rapport copié dans le presse-papier !';
 
   @override
+  String get shareReport => 'Partager le rapport';
+
+  @override
+  String get downloadReport => 'Télécharger (.txt)';
+
+  @override
+  String reportDownloaded(String filename) {
+    return 'Rapport enregistré : $filename';
+  }
+
+  @override
   String get regenerateReport => 'Régénérer';
 
   @override

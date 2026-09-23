@@ -60,6 +60,16 @@
   "noReportAvailable": "No report available.",
   "copyReport": "Copy report",
   "reportCopied": "Report copied to clipboard!",
+  "shareReport": "Share Report",
+  "downloadReport": "Download (.txt)",
+  "reportDownloaded": "Report saved: {filename}",
+  "@reportDownloaded": {
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
+  },
   "regenerateReport": "Regenerate",
   "topScorer": "Top scorer: {player} ({points})",
   "@topScorer": {
