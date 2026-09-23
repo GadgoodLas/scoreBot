@@ -3,13 +3,25 @@ import 'package:uuid/uuid.dart';
 import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/data/repositories/match_repository.dart';
+import 'package:score_bot/data/services/tts_service.dart';
 
 /// ViewModel de l'écran de configuration du match.
 class SetupViewModel extends ChangeNotifier {
-  SetupViewModel({required MatchRepository matchRepository})
-      : _repository = matchRepository;
+  SetupViewModel({
+    required MatchRepository matchRepository,
+    TtsService? ttsService,
+  })  : _repository = matchRepository,
+        _ttsService = ttsService {
+    _ttsService?.setCompletionHandler(() {
+      if (_isAnnouncingLineup) {
+        _isAnnouncingLineup = false;
+        notifyListeners();
+      }
+    });
+  }
 
   final MatchRepository _repository;
+  final TtsService? _ttsService;
   final _uuid = const Uuid();
 
   // ─────────────── État ───────────────
@@ -43,6 +55,9 @@ class SetupViewModel extends ChangeNotifier {
 
   bool _isCreating = false;
   bool get isCreating => _isCreating;
+
+  bool _isAnnouncingLineup = false;
+  bool get isAnnouncingLineup => _isAnnouncingLineup;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -198,8 +213,75 @@ class SetupViewModel extends ChangeNotifier {
     return null;
   }
 
+  /// Génère le texte d'annonce vocale des compositions.
+  String generateLineupAnnouncement({
+    required String sportLabel,
+    required String languageCode,
+  }) {
+    final nameA = _teamAName.trim().isEmpty ? 'Équipe A' : _teamAName.trim();
+    final nameB = _teamBName.trim().isEmpty ? 'Équipe B' : _teamBName.trim();
+    final isFr = languageCode.toLowerCase().startsWith('fr');
+
+    if (isFr) {
+      final buffer = StringBuffer('Match de $sportLabel. ');
+      buffer.write('$nameA contre $nameB. ');
+      if (_teamAPlayers.isNotEmpty) {
+        buffer.write('Composition de $nameA : ${_teamAPlayers.join(", ")}. ');
+      }
+      if (_teamBPlayers.isNotEmpty) {
+        buffer.write('Composition de $nameB : ${_teamBPlayers.join(", ")}. ');
+      }
+      buffer.write('Bon match à tous !');
+      return buffer.toString();
+    } else {
+      final buffer = StringBuffer('$sportLabel match. ');
+      buffer.write('$nameA versus $nameB. ');
+      if (_teamAPlayers.isNotEmpty) {
+        buffer.write('Team $nameA lineup: ${_teamAPlayers.join(", ")}. ');
+      }
+      if (_teamBPlayers.isNotEmpty) {
+        buffer.write('Team $nameB lineup: ${_teamBPlayers.join(", ")}. ');
+      }
+      buffer.write('Good luck everyone!');
+      return buffer.toString();
+    }
+  }
+
+  /// Active ou interrompt l'annonce vocale des compositions.
+  Future<void> toggleLineupAnnouncement({
+    required String sportLabel,
+    required String languageCode,
+  }) async {
+    if (_isAnnouncingLineup) {
+      await stopLineupAnnouncement();
+      return;
+    }
+
+    final text = generateLineupAnnouncement(
+      sportLabel: sportLabel,
+      languageCode: languageCode,
+    );
+
+    _isAnnouncingLineup = true;
+    notifyListeners();
+
+    if (_ttsService != null) {
+      await _ttsService.setLanguage(languageCode);
+      await _ttsService.speak(text);
+    }
+  }
+
+  /// Arrête la lecture vocale des compositions si elle est en cours.
+  Future<void> stopLineupAnnouncement() async {
+    if (!_isAnnouncingLineup) return;
+    _isAnnouncingLineup = false;
+    notifyListeners();
+    await _ttsService?.stop();
+  }
+
   /// Crée le match et retourne l'objet [GameMatch] ou null si erreur.
   Future<GameMatch?> startMatch() async {
+    await stopLineupAnnouncement();
     final error = validate();
     if (error != null) {
       _errorMessage = error;
@@ -245,5 +327,11 @@ class SetupViewModel extends ChangeNotifier {
       _isCreating = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    stopLineupAnnouncement();
+    super.dispose();
   }
 }

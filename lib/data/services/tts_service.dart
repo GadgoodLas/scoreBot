@@ -11,9 +11,14 @@ class TtsService {
   bool _isInitialized = false;
   bool _isEnabled = true;
   String _currentLanguage = 'fr-FR';
+  VoidCallback? _onCompletion;
 
   bool get isEnabled => _isEnabled;
   void setEnabled(bool value) => _isEnabled = value;
+
+  void setCompletionHandler(VoidCallback? handler) {
+    _onCompletion = handler;
+  }
 
   /// Initialise la voix et configure le volume, le pitch et le débit.
   Future<void> init({String languageCode = 'fr'}) async {
@@ -24,6 +29,16 @@ class TtsService {
       await _tts.setSpeechRate(0.5);
       await _tts.setVolume(1.0);
       await _tts.setPitch(1.0);
+
+      _tts.setCompletionHandler(() {
+        _onCompletion?.call();
+      });
+      _tts.setCancelHandler(() {
+        _onCompletion?.call();
+      });
+      _tts.setErrorHandler((_) {
+        _onCompletion?.call();
+      });
 
       if (Platform.isIOS) {
         await _tts.setSharedInstance(true);
@@ -70,6 +85,7 @@ class TtsService {
   Future<void> stop() async {
     try {
       await _tts.stop();
+      _onCompletion?.call();
     } catch (e) {
       debugPrint('[TtsService] stop error: $e');
     }

@@ -9,10 +9,19 @@ import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 
 class _FakeTtsService extends TtsService {
   final List<String> spokenMessages = [];
+  bool stopCalled = false;
+
+  @override
+  Future<void> setLanguage(String languageCode) async {}
 
   @override
   Future<void> speak(String text) async {
     spokenMessages.add(text);
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCalled = true;
   }
 }
 
@@ -184,5 +193,87 @@ void main() {
       vm.dispose();
     });
   });
+
+  group('SetupViewModel Lineup Vocal Announcement', () {
+    test('generateLineupAnnouncement in French with and without players', () {
+      final repo = _FakeMatchRepository();
+      final vm = SetupViewModel(matchRepository: repo);
+      vm.setTeamAName('Paris');
+      vm.setTeamBName('Marseille');
+
+      final announcementNoPlayers = vm.generateLineupAnnouncement(
+        sportLabel: 'Football',
+        languageCode: 'fr',
+      );
+      expect(announcementNoPlayers, 'Match de Football. Paris contre Marseille. Bon match à tous !');
+
+      vm.addPlayerToTeamA('Kylian, Achraf');
+      vm.addPlayerToTeamB('Pierre, Amine');
+
+      final announcementWithPlayers = vm.generateLineupAnnouncement(
+        sportLabel: 'Football',
+        languageCode: 'fr',
+      );
+      expect(
+        announcementWithPlayers,
+        'Match de Football. Paris contre Marseille. Composition de Paris : Kylian, Achraf. Composition de Marseille : Pierre, Amine. Bon match à tous !',
+      );
+    });
+
+    test('generateLineupAnnouncement in English', () {
+      final repo = _FakeMatchRepository();
+      final vm = SetupViewModel(matchRepository: repo);
+      vm.setTeamAName('Arsenal');
+      vm.setTeamBName('Chelsea');
+      vm.addPlayerToTeamA('Saka');
+      vm.addPlayerToTeamB('Palmer');
+
+      final announcement = vm.generateLineupAnnouncement(
+        sportLabel: 'Football',
+        languageCode: 'en',
+      );
+      expect(
+        announcement,
+        'Football match. Arsenal versus Chelsea. Team Arsenal lineup: Saka. Team Chelsea lineup: Palmer. Good luck everyone!',
+      );
+    });
+
+    test('toggleLineupAnnouncement speaks message and can be stopped', () async {
+      final repo = _FakeMatchRepository();
+      final tts = _FakeTtsService();
+      final vm = SetupViewModel(matchRepository: repo, ttsService: tts);
+      vm.setTeamAName('Lions');
+      vm.setTeamBName('Tigers');
+
+      expect(vm.isAnnouncingLineup, isFalse);
+
+      await vm.toggleLineupAnnouncement(sportLabel: 'Rugby', languageCode: 'fr');
+      expect(vm.isAnnouncingLineup, isTrue);
+      expect(tts.spokenMessages.length, 1);
+      expect(tts.spokenMessages.first, contains('Match de Rugby. Lions contre Tigers.'));
+
+      // Toggling again stops announcement
+      await vm.toggleLineupAnnouncement(sportLabel: 'Rugby', languageCode: 'fr');
+      expect(vm.isAnnouncingLineup, isFalse);
+      expect(tts.stopCalled, isTrue);
+    });
+
+    test('startMatch stops any active lineup announcement', () async {
+      final repo = _FakeMatchRepository();
+      final tts = _FakeTtsService();
+      final vm = SetupViewModel(matchRepository: repo, ttsService: tts);
+      vm.setTeamAName('Alpha');
+      vm.setTeamBName('Beta');
+
+      await vm.toggleLineupAnnouncement(sportLabel: 'Football', languageCode: 'fr');
+      expect(vm.isAnnouncingLineup, isTrue);
+
+      final match = await vm.startMatch();
+      expect(match, isNotNull);
+      expect(vm.isAnnouncingLineup, isFalse);
+      expect(tts.stopCalled, isTrue);
+    });
+  });
 }
+
 

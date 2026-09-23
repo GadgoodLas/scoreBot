@@ -230,6 +230,11 @@ class _SetupViewState extends State<SetupView> {
                   onAddPlayer: widget.viewModel.addPlayerToTeamB,
                   onRemovePlayer: widget.viewModel.removePlayerFromTeamB,
                 ),
+                const SizedBox(height: 12),
+                _LineupAnnouncementButton(
+                  viewModel: widget.viewModel,
+                  sportLabel: widget.viewModel.selectedSport.label,
+                ),
                 const SizedBox(height: 28),
 
                 // ─── Durée ───
@@ -765,3 +770,53 @@ class _AiStatusCard extends StatelessWidget {
     );
   }
 }
+
+/// Bouton pour déclencher ou interrompre l'annonce vocale des compositions d'équipes.
+class _LineupAnnouncementButton extends StatelessWidget {
+  const _LineupAnnouncementButton({
+    required this.viewModel,
+    required this.sportLabel,
+  });
+
+  final SetupViewModel viewModel;
+  final String sportLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isAnnouncing = viewModel.isAnnouncingLineup;
+    final primaryColor = isAnnouncing ? Colors.amberAccent : AppTheme.primary;
+
+    return OutlinedButton.icon(
+      onPressed: () => viewModel.toggleLineupAnnouncement(
+        sportLabel: sportLabel,
+        languageCode: Localizations.localeOf(context).languageCode,
+      ),
+      icon: Icon(
+        isAnnouncing ? Icons.stop_circle_outlined : Icons.campaign_outlined,
+        color: primaryColor,
+        size: 20,
+      ),
+      label: Text(
+        isAnnouncing ? l10n.stopAnnouncement : l10n.announceLineups,
+        style: TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: primaryColor.withValues(alpha: isAnnouncing ? 0.15 : 0.06),
+        side: BorderSide(
+          color: primaryColor.withValues(alpha: isAnnouncing ? 0.8 : 0.35),
+          width: isAnnouncing ? 1.5 : 1,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+

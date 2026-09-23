@@ -305,4 +305,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get continuePlaying => 'Continuer à jouer';
+
+  @override
+  String get announceLineups => 'Annoncer les compositions';
+
+  @override
+  String get announceLineupsShort => 'Annoncer compos';
+
+  @override
+  String get stopAnnouncement => 'Arrêter l\'annonce';
 }

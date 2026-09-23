@@ -140,6 +140,9 @@
   "matchEndAlertMessage": "Match duration completed. Would you like to end the match?",
   "takeBreak": "Take a break",
   "finishMatch": "Finish match",
-  "continuePlaying": "Keep playing"
+  "continuePlaying": "Keep playing",
+  "announceLineups": "Announce lineups",
+  "announceLineupsShort": "Announce lineups",
+  "stopAnnouncement": "Stop announcement"
 }
 

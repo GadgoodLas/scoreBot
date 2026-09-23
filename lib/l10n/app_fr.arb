@@ -99,6 +99,9 @@
   "matchEndAlertMessage": "La durée du match est terminée. Voulez-vous terminer le match ?",
   "takeBreak": "Faire la pause",
   "finishMatch": "Terminer le match",
-  "continuePlaying": "Continuer à jouer"
+  "continuePlaying": "Continuer à jouer",
+  "announceLineups": "Annoncer les compositions",
+  "announceLineupsShort": "Annoncer compos",
+  "stopAnnouncement": "Arrêter l''annonce"
 }
 

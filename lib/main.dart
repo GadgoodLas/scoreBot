@@ -106,6 +106,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
           builder: (_) => _WatchOrPhoneSetupView(
             viewModel: SetupViewModel(
               matchRepository: sl<MatchRepository>(),
+              ttsService: sl<TtsService>(),
             ),
           ),
         ),

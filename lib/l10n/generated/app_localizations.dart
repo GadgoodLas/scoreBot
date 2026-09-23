@@ -655,6 +655,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep playing'**
   String get continuePlaying;
+
+  /// No description provided for @announceLineups.
+  ///
+  /// In en, this message translates to:
+  /// **'Announce lineups'**
+  String get announceLineups;
+
+  /// No description provided for @announceLineupsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Announce lineups'**
+  String get announceLineupsShort;
+
+  /// No description provided for @stopAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop announcement'**
+  String get stopAnnouncement;
 }
 
 class _AppLocalizationsDelegate

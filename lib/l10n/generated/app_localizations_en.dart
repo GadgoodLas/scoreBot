@@ -303,4 +303,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get continuePlaying => 'Keep playing';
+
+  @override
+  String get announceLineups => 'Announce lineups';
+
+  @override
+  String get announceLineupsShort => 'Announce lineups';
+
+  @override
+  String get stopAnnouncement => 'Stop announcement';
 }

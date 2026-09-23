@@ -183,7 +183,18 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                         ? 'B'
                         : widget.viewModel.teamBName,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
+                  _WatchLineupButton(
+                    isAnnouncing: widget.viewModel.isAnnouncingLineup,
+                    onTap: () => widget.viewModel.toggleLineupAnnouncement(
+                      sportLabel: widget.viewModel.selectedSport.label,
+                      languageCode: Localizations.localeOf(context).languageCode,
+                    ),
+                    label: widget.viewModel.isAnnouncingLineup
+                        ? l10n.stopAnnouncement
+                        : l10n.announceLineupsShort,
+                  ),
+                  const SizedBox(height: 3),
                   InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () => WatchDurationView.show(context, widget.viewModel),
@@ -550,4 +561,59 @@ class _WatchVoiceBadge extends StatelessWidget {
     );
   }
 }
+
+/// Bouton compact pour déclencher ou interrompre l'annonce vocale des compositions sur la montre.
+class _WatchLineupButton extends StatelessWidget {
+  const _WatchLineupButton({
+    required this.isAnnouncing,
+    required this.onTap,
+    required this.label,
+  });
+
+  final bool isAnnouncing;
+  final VoidCallback onTap;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isAnnouncing ? Colors.amberAccent : AppTheme.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isAnnouncing ? 0.2 : 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.withValues(alpha: isAnnouncing ? 0.8 : 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isAnnouncing ? Icons.stop : Icons.volume_up,
+              size: 9,
+              color: color,
+            ),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
