@@ -3,6 +3,7 @@ import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
+import 'package:score_bot/ui/features/setup/widgets/watch_config_view.dart';
 
 /// Vue d'accueil / configuration du match optimisée pour Wear OS (Pixel Watch).
 /// Utilise un PageView vertical en 3 étapes. Chaque page utilise un
@@ -75,14 +76,35 @@ class _SetupWatchViewState extends State<SetupWatchView> {
               // ─── Page 1 : Sport ───
               _WatchScrollPage(
                 children: [
-                  Text(
-                    '⚽ ${l10n.sport.toUpperCase()}',
-                    style: const TextStyle(
-                      color: AppTheme.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '⚽ ${l10n.sport.toUpperCase()}',
+                        style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => WatchConfigView.show(context, widget.viewModel),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.settings,
+                            size: 11,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   _WatchSportGrid(
@@ -143,6 +165,7 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   _WatchVoiceBadge(
                     isLocal: widget.viewModel.isLocalVoiceMode,
                     localLabel: l10n.localVoiceModeBadge,
+                    onTap: () => WatchConfigView.show(context, widget.viewModel),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -464,27 +487,39 @@ class _WatchVoiceBadge extends StatelessWidget {
   const _WatchVoiceBadge({
     required this.isLocal,
     this.localLabel = 'Local',
+    this.onTap,
   });
   final bool isLocal;
   final String localLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final color = isLocal ? Colors.tealAccent : AppTheme.primary;
     final label = isLocal ? '⚡ $localLabel' : '🧠 Gemini';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Icon(Icons.settings, size: 8, color: color.withValues(alpha: 0.7)),
+          ],
         ),
       ),
     );
