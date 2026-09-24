@@ -1,0 +1,49 @@
+# Configuration Dependabot pour ScoreBot
+# Documentation: https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  # ─── Dépendances Flutter / Dart (pub) ───
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "daily" # Vérification quotidienne pour intégrer rapidement les correctifs
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "flutter"
+      - "security"
+    groups:
+      # Regroupe les mises à jour mineures et correctives ensemble pour éviter trop de PRs
+      minor-and-patch:
+        update-types:
+          - "patch"
+          - "minor"
+
+  # ─── Actions GitHub CI/CD ───
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(actions)"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # ─── Dépendances Android / Gradle ───
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(gradle)"
+    labels:
+      - "dependencies"
+      - "android"
