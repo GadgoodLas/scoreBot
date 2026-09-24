@@ -47,7 +47,7 @@ dependencies:
   gap: ^3.0.1
 
   # Environnement variables
-  flutter_dotenv: ^5.2.1
+  flutter_dotenv: ^6.0.1
   share_plus: ^13.3.0
   flutter_tts: ^4.2.5
 
