@@ -103,38 +103,37 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
   Route<dynamic>? _generateRoute(RouteSettings settings) {
     return switch (settings.name) {
       '/' => MaterialPageRoute(
-          builder: (_) => _WatchOrPhoneSetupView(
-            viewModel: SetupViewModel(
-              matchRepository: sl<MatchRepository>(),
-              ttsService: sl<TtsService>(),
+        builder:
+            (_) => _WatchOrPhoneSetupView(
+              viewModel: SetupViewModel(
+                matchRepository: sl<MatchRepository>(),
+                ttsService: sl<TtsService>(),
+              ),
             ),
-          ),
-        ),
+      ),
       '/live' => MaterialPageRoute(
-          builder: (_) {
-            final match = settings.arguments as GameMatch;
-            final vm = LiveViewModel(
-              matchRepository: sl<MatchRepository>(),
-              initialMatch: match,
-              ttsService: sl<TtsService>(),
-            );
-            // Détecte si on tourne sur une montre (petite fenêtre)
-            return _WatchOrPhoneView(viewModel: vm);
-          },
-        ),
+        builder: (_) {
+          final match = settings.arguments as GameMatch;
+          final vm = LiveViewModel(
+            matchRepository: sl<MatchRepository>(),
+            initialMatch: match,
+            ttsService: sl<TtsService>(),
+          );
+          // Détecte si on tourne sur une montre (petite fenêtre)
+          return _WatchOrPhoneView(viewModel: vm);
+        },
+      ),
       '/summary' => MaterialPageRoute(
-          builder: (_) {
-            final match = settings.arguments as GameMatch;
-            final vm = SummaryViewModel(
-              matchRepository: sl<MatchRepository>(),
-              match: match,
-            );
-            return _WatchOrPhoneSummaryView(viewModel: vm);
-          },
-        ),
-      _ => MaterialPageRoute(
-          builder: (_) => const _NotFoundView(),
-        ),
+        builder: (_) {
+          final match = settings.arguments as GameMatch;
+          final vm = SummaryViewModel(
+            matchRepository: sl<MatchRepository>(),
+            match: match,
+          );
+          return _WatchOrPhoneSummaryView(viewModel: vm);
+        },
+      ),
+      _ => MaterialPageRoute(builder: (_) => const _NotFoundView()),
     };
   }
 }

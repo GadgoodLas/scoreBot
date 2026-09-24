@@ -9,9 +9,7 @@ void main() {
         id: 'team-1',
         name: 'Équipe Rouge',
         color: 'rouge',
-        players: [
-          Player(id: 'p1', name: 'Cédric', number: 10),
-        ],
+        players: [Player(id: 'p1', name: 'Cédric', number: 10)],
       );
 
       final map = team.toMap();

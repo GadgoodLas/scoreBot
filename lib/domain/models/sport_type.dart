@@ -125,4 +125,3 @@ enum GameEventType {
   final String label;
   final String emoji;
 }
-

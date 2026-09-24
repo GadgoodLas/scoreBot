@@ -36,7 +36,9 @@ class _WatchConfigViewState extends State<WatchConfigView> {
   @override
   void initState() {
     super.initState();
-    _apiKeyController = TextEditingController(text: widget.viewModel.currentApiKey);
+    _apiKeyController = TextEditingController(
+      text: widget.viewModel.currentApiKey,
+    );
     _selectedEngine = widget.viewModel.voiceEngine;
     _selectedModel = widget.viewModel.currentAiModel;
   }
@@ -122,7 +124,11 @@ class _WatchConfigViewState extends State<WatchConfigView> {
                         color: Colors.white12,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, size: 14, color: Colors.white70),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        size: 14,
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
                   Text(
@@ -142,7 +148,11 @@ class _WatchConfigViewState extends State<WatchConfigView> {
               // ─── Moteur Vocal : Local vs Gemini ───
               Text(
                 l10n.voiceModeConfigTitle,
-                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 6),
@@ -190,12 +200,21 @@ class _WatchConfigViewState extends State<WatchConfigView> {
                         ),
                         child: TextField(
                           controller: _apiKeyController,
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
                           decoration: const InputDecoration(
                             hintText: 'AIzaSy...',
-                            hintStyle: TextStyle(color: Colors.white30, fontSize: 10),
+                            hintStyle: TextStyle(
+                              color: Colors.white30,
+                              fontSize: 10,
+                            ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 10,
+                            ),
                             isDense: true,
                           ),
                         ),
@@ -210,10 +229,16 @@ class _WatchConfigViewState extends State<WatchConfigView> {
                         decoration: BoxDecoration(
                           color: AppTheme.primary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color: AppTheme.primary.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: const Center(
-                          child: Icon(Icons.paste, size: 12, color: AppTheme.primary),
+                          child: Icon(
+                            Icons.paste,
+                            size: 12,
+                            color: AppTheme.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -230,31 +255,35 @@ class _WatchConfigViewState extends State<WatchConfigView> {
                 Wrap(
                   spacing: 4,
                   runSpacing: 4,
-                  children: [
-                    'gemini-2.5-flash',
-                    'gemini-2.0-flash',
-                    'gemini-1.5-flash',
-                  ].map((m) {
-                    final isSel = _selectedModel == m;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedModel = m),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isSel ? AppTheme.primary : Colors.white10,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          m.replaceAll('gemini-', ''),
-                          style: TextStyle(
-                            color: isSel ? Colors.black : Colors.white70,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
+                  children:
+                      [
+                        'gemini-2.5-flash',
+                        'gemini-2.0-flash',
+                        'gemini-1.5-flash',
+                      ].map((m) {
+                        final isSel = _selectedModel == m;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedModel = m),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSel ? AppTheme.primary : Colors.white10,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              m.replaceAll('gemini-', ''),
+                              style: TextStyle(
+                                color: isSel ? Colors.black : Colors.white70,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 6),
 
@@ -269,24 +298,29 @@ class _WatchConfigViewState extends State<WatchConfigView> {
                       border: Border.all(color: Colors.white24),
                     ),
                     child: Center(
-                      child: _isTesting
-                          ? const SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white),
-                            )
-                          : Text(
-                              _testMessage ?? '🧪 ${l10n.testConnection}',
-                              style: TextStyle(
-                                color: _testSuccess == true
-                                    ? Colors.greenAccent
-                                    : _testSuccess == false
-                                        ? Colors.redAccent
-                                        : Colors.white70,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
+                      child:
+                          _isTesting
+                              ? const SizedBox(
+                                width: 10,
+                                height: 10,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : Text(
+                                _testMessage ?? '🧪 ${l10n.testConnection}',
+                                style: TextStyle(
+                                  color:
+                                      _testSuccess == true
+                                          ? Colors.greenAccent
+                                          : _testSuccess == false
+                                          ? Colors.redAccent
+                                          : Colors.white70,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
                     ),
                   ),
                 ),
@@ -296,7 +330,11 @@ class _WatchConfigViewState extends State<WatchConfigView> {
               // ─── Langue ───
               Text(
                 l10n.language,
-                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 6),
@@ -383,7 +421,10 @@ class _WatchChoiceButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+          color:
+              selected
+                  ? color.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected ? color : Colors.white12,
@@ -409,4 +450,3 @@ class _WatchChoiceButton extends StatelessWidget {
     );
   }
 }
-

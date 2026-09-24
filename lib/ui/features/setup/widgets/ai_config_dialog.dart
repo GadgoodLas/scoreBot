@@ -60,7 +60,8 @@ class AiConfigDialog extends StatefulWidget {
   final String initialApiKey;
   final String initialModel;
   final String initialVoiceEngine;
-  final Future<void> Function(String apiKey, String model, String voiceEngine) onSave;
+  final Future<void> Function(String apiKey, String model, String voiceEngine)
+  onSave;
   final Future<bool> Function(String apiKey, String model) onTestConnection;
   final bool isOnboarding;
   final VoidCallback? onDismissOnboarding;
@@ -70,23 +71,30 @@ class AiConfigDialog extends StatefulWidget {
     required String initialApiKey,
     required String initialModel,
     String initialVoiceEngine = 'local',
-    required Future<void> Function(String apiKey, String model, String voiceEngine) onSave,
-    required Future<bool> Function(String apiKey, String model) onTestConnection,
+    required Future<void> Function(
+      String apiKey,
+      String model,
+      String voiceEngine,
+    )
+    onSave,
+    required Future<bool> Function(String apiKey, String model)
+    onTestConnection,
     bool isOnboarding = false,
     VoidCallback? onDismissOnboarding,
   }) {
     return showDialog<void>(
       context: context,
       barrierDismissible: !isOnboarding,
-      builder: (ctx) => AiConfigDialog(
-        initialApiKey: initialApiKey,
-        initialModel: initialModel,
-        initialVoiceEngine: initialVoiceEngine,
-        onSave: onSave,
-        onTestConnection: onTestConnection,
-        isOnboarding: isOnboarding,
-        onDismissOnboarding: onDismissOnboarding,
-      ),
+      builder:
+          (ctx) => AiConfigDialog(
+            initialApiKey: initialApiKey,
+            initialModel: initialModel,
+            initialVoiceEngine: initialVoiceEngine,
+            onSave: onSave,
+            onTestConnection: onTestConnection,
+            isOnboarding: isOnboarding,
+            onDismissOnboarding: onDismissOnboarding,
+          ),
     );
   }
 
@@ -135,9 +143,10 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
     super.dispose();
   }
 
-  String get _effectiveModel => _selectedModelId == 'custom'
-      ? _customModelController.text.trim()
-      : _selectedModelId;
+  String get _effectiveModel =>
+      _selectedModelId == 'custom'
+          ? _customModelController.text.trim()
+          : _selectedModelId;
 
   Future<void> _handleTest() async {
     final key = _apiKeyController.text.trim();
@@ -288,7 +297,10 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                   ),
                   if (!widget.isOnboarding)
                     IconButton(
-                      icon: const Icon(Icons.close, color: AppTheme.textSecondary),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppTheme.textSecondary,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                 ],
@@ -335,7 +347,9 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                   decoration: BoxDecoration(
                     color: AppTheme.background,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppTheme.primary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,20 +398,31 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                     hintStyle: const TextStyle(color: Colors.white24),
                     filled: true,
                     fillColor: AppTheme.background,
-                    prefixIcon: const Icon(Icons.key, color: AppTheme.primary, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.key,
+                      color: AppTheme.primary,
+                      size: 20,
+                    ),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: Icon(
-                            _obscureKey ? Icons.visibility : Icons.visibility_off,
+                            _obscureKey
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: AppTheme.textSecondary,
                             size: 20,
                           ),
-                          onPressed: () => setState(() => _obscureKey = !_obscureKey),
+                          onPressed:
+                              () => setState(() => _obscureKey = !_obscureKey),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.paste, color: AppTheme.textSecondary, size: 20),
+                          icon: const Icon(
+                            Icons.paste,
+                            color: AppTheme.textSecondary,
+                            size: 20,
+                          ),
                           tooltip: 'Coller depuis le presse-papier',
                           onPressed: () async {
                             final data = await Clipboard.getData('text/plain');
@@ -414,7 +439,10 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -435,7 +463,10 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.background,
                     borderRadius: BorderRadius.circular(12),
@@ -446,32 +477,36 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                       value: _selectedModelId,
                       isExpanded: true,
                       dropdownColor: AppTheme.surface,
-                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                      items: kRecommendedAiModels.map((opt) {
-                        return DropdownMenuItem<String>(
-                          value: opt.id,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                opt.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimary,
-                                ),
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 14,
+                      ),
+                      items:
+                          kRecommendedAiModels.map((opt) {
+                            return DropdownMenuItem<String>(
+                              value: opt.id,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    opt.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    opt.description,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                opt.description,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setState(() => _selectedModelId = val);
@@ -485,13 +520,20 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: _customModelController,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 13,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'ex: gemini-2.5-pro, gemini-exp-1206...',
                       hintStyle: const TextStyle(color: Colors.white24),
                       filled: true,
                       fillColor: AppTheme.background,
-                      prefixIcon: const Icon(Icons.code, color: AppTheme.primary, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.code,
+                        color: AppTheme.primary,
+                        size: 20,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -508,11 +550,16 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.4)),
+                      border: Border.all(
+                        color: Colors.greenAccent.withValues(alpha: 0.4),
+                      ),
                     ),
                     child: Text(
                       _testSuccessMessage!,
-                      style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -523,11 +570,16 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.4),
+                      ),
                     ),
                     child: Text(
                       _testErrorMessage!,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -536,19 +588,24 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                 // Bouton Tester
                 OutlinedButton.icon(
                   onPressed: _isTesting ? null : _handleTest,
-                  icon: _isTesting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.network_check, size: 18),
-                  label: Text(_isTesting ? l10n.testingConnection : l10n.testConnection),
+                  icon:
+                      _isTesting
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.network_check, size: 18),
+                  label: Text(
+                    _isTesting ? l10n.testingConnection : l10n.testConnection,
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primary,
                     side: const BorderSide(color: AppTheme.primary),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ],
@@ -566,7 +623,10 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                         },
                         child: Text(
                           l10n.skip,
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),
@@ -578,18 +638,29 @@ class _AiConfigDialogState extends State<AiConfigDialog> {
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                            )
-                          : Text(
-                              isLocal ? '⚡ ${l10n.activateNoAi}' : '🧠 ${l10n.saveAndActivateAi}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
+                      child:
+                          _isSaving
+                              ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.black,
+                                ),
+                              )
+                              : Text(
+                                isLocal
+                                    ? '⚡ ${l10n.activateNoAi}'
+                                    : '🧠 ${l10n.saveAndActivateAi}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
                     ),
                   ),
                 ],
@@ -623,9 +694,10 @@ class _EngineCard extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primary.withValues(alpha: 0.15)
-              : AppTheme.background,
+          color:
+              isSelected
+                  ? AppTheme.primary.withValues(alpha: 0.15)
+                  : AppTheme.background,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppTheme.primary : Colors.white12,
@@ -646,7 +718,10 @@ class _EngineCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+              ),
             ),
           ],
         ),

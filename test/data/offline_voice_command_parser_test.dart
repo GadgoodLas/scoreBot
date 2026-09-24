@@ -39,14 +39,26 @@ void main() {
 
   group('OfflineVoiceCommandParser - Contrôle du match', () {
     test('detects pause keywords', () {
-      for (final phrase in ['pause', 'temps mort', 'mets en pause', 'arrete le chrono', 'stop']) {
+      for (final phrase in [
+        'pause',
+        'temps mort',
+        'mets en pause',
+        'arrete le chrono',
+        'stop',
+      ]) {
         final result = parser.parse(rawText: phrase, match: testMatch);
         expect(result.matchControl, 'pause', reason: 'Failed for: $phrase');
       }
     });
 
     test('detects resume keywords', () {
-      for (final phrase in ['reprends', 'reprendre', 'play', 'relance', "c'est reparti"]) {
+      for (final phrase in [
+        'reprends',
+        'reprendre',
+        'play',
+        'relance',
+        "c'est reparti",
+      ]) {
         final result = parser.parse(rawText: phrase, match: testMatch);
         expect(result.matchControl, 'resume', reason: 'Failed for: $phrase');
       }
@@ -69,10 +81,24 @@ void main() {
 
   group('OfflineVoiceCommandParser - Corrections / Annulations', () {
     test('detects undo / correction keywords', () {
-      for (final phrase in ['annule', 'annule le but', 'pas but', 'erreur', 'retour en arrière']) {
+      for (final phrase in [
+        'annule',
+        'annule le but',
+        'pas but',
+        'erreur',
+        'retour en arrière',
+      ]) {
         final result = parser.parse(rawText: phrase, match: testMatch);
-        expect(result.type, GameEventType.correction, reason: 'Failed for: $phrase');
-        expect(result.correctionAction, 'undo_last', reason: 'Failed for: $phrase');
+        expect(
+          result.type,
+          GameEventType.correction,
+          reason: 'Failed for: $phrase',
+        );
+        expect(
+          result.correctionAction,
+          'undo_last',
+          reason: 'Failed for: $phrase',
+        );
       }
     });
   });
@@ -86,7 +112,10 @@ void main() {
     });
 
     test('parses basic goal for team B using color', () {
-      final result = parser.parse(rawText: 'but pour les bleus', match: testMatch);
+      final result = parser.parse(
+        rawText: 'but pour les bleus',
+        match: testMatch,
+      );
       expect(result.type, GameEventType.goal);
       expect(result.teamName, 'Équipe B');
       expect(result.points, 1);
@@ -134,7 +163,10 @@ void main() {
     });
 
     test('parses plus un / +1 as a point', () {
-      final result = parser.parse(rawText: '+1 pour équipe B', match: testMatch);
+      final result = parser.parse(
+        rawText: '+1 pour équipe B',
+        match: testMatch,
+      );
       expect(result.type, GameEventType.goal);
       expect(result.teamName, 'Équipe B');
       expect(result.points, 1);
@@ -162,13 +194,19 @@ void main() {
     });
 
     test('parses foul and penalty', () {
-      final foulResult = parser.parse(rawText: 'faute de Karim', match: testMatch);
+      final foulResult = parser.parse(
+        rawText: 'faute de Karim',
+        match: testMatch,
+      );
       expect(foulResult.type, GameEventType.foul);
       expect(foulResult.playerName, 'Karim');
       expect(foulResult.teamName, 'Équipe B');
       expect(foulResult.isPenalty, isFalse);
 
-      final penaltyResult = parser.parse(rawText: 'penalty pour équipe A', match: testMatch);
+      final penaltyResult = parser.parse(
+        rawText: 'penalty pour équipe A',
+        match: testMatch,
+      );
       expect(penaltyResult.type, GameEventType.foul);
       expect(penaltyResult.teamName, 'Équipe A');
       expect(penaltyResult.isPenalty, isTrue);
@@ -177,23 +215,65 @@ void main() {
 
   group('OfflineVoiceCommandParser - English Commands', () {
     test('detects English match controls', () {
-      expect(parser.parse(rawText: 'pause', match: testMatch).matchControl, 'pause');
-      expect(parser.parse(rawText: 'timeout', match: testMatch).matchControl, 'pause');
-      expect(parser.parse(rawText: 'stop the clock', match: testMatch).matchControl, 'pause');
-      expect(parser.parse(rawText: 'resume', match: testMatch).matchControl, 'resume');
-      expect(parser.parse(rawText: 'continue', match: testMatch).matchControl, 'resume');
-      expect(parser.parse(rawText: 'half time', match: testMatch).matchControl, 'halftime');
-      expect(parser.parse(rawText: 'halftime', match: testMatch).matchControl, 'halftime');
-      expect(parser.parse(rawText: 'end match', match: testMatch).matchControl, 'end_match');
-      expect(parser.parse(rawText: 'end game', match: testMatch).matchControl, 'end_match');
-      expect(parser.parse(rawText: 'final whistle', match: testMatch).matchControl, 'end_match');
+      expect(
+        parser.parse(rawText: 'pause', match: testMatch).matchControl,
+        'pause',
+      );
+      expect(
+        parser.parse(rawText: 'timeout', match: testMatch).matchControl,
+        'pause',
+      );
+      expect(
+        parser.parse(rawText: 'stop the clock', match: testMatch).matchControl,
+        'pause',
+      );
+      expect(
+        parser.parse(rawText: 'resume', match: testMatch).matchControl,
+        'resume',
+      );
+      expect(
+        parser.parse(rawText: 'continue', match: testMatch).matchControl,
+        'resume',
+      );
+      expect(
+        parser.parse(rawText: 'half time', match: testMatch).matchControl,
+        'halftime',
+      );
+      expect(
+        parser.parse(rawText: 'halftime', match: testMatch).matchControl,
+        'halftime',
+      );
+      expect(
+        parser.parse(rawText: 'end match', match: testMatch).matchControl,
+        'end_match',
+      );
+      expect(
+        parser.parse(rawText: 'end game', match: testMatch).matchControl,
+        'end_match',
+      );
+      expect(
+        parser.parse(rawText: 'final whistle', match: testMatch).matchControl,
+        'end_match',
+      );
     });
 
     test('detects English undo and cancel keywords', () {
-      expect(parser.parse(rawText: 'undo', match: testMatch).type, GameEventType.correction);
-      expect(parser.parse(rawText: 'cancel last goal', match: testMatch).type, GameEventType.correction);
-      expect(parser.parse(rawText: 'no goal', match: testMatch).type, GameEventType.correction);
-      expect(parser.parse(rawText: 'mistake', match: testMatch).type, GameEventType.correction);
+      expect(
+        parser.parse(rawText: 'undo', match: testMatch).type,
+        GameEventType.correction,
+      );
+      expect(
+        parser.parse(rawText: 'cancel last goal', match: testMatch).type,
+        GameEventType.correction,
+      );
+      expect(
+        parser.parse(rawText: 'no goal', match: testMatch).type,
+        GameEventType.correction,
+      );
+      expect(
+        parser.parse(rawText: 'mistake', match: testMatch).type,
+        GameEventType.correction,
+      );
     });
 
     test('parses English goals and assists', () {
@@ -201,7 +281,10 @@ void main() {
       expect(goalTeamA.type, GameEventType.goal);
       expect(goalTeamA.teamName, 'Équipe A');
 
-      final goalByScorer = parser.parse(rawText: 'goal by Stephane', match: testMatch);
+      final goalByScorer = parser.parse(
+        rawText: 'goal by Stephane',
+        match: testMatch,
+      );
       expect(goalByScorer.type, GameEventType.goal);
       expect(goalByScorer.playerName, 'Stéphane');
       expect(goalByScorer.teamName, 'Équipe A');
@@ -215,13 +298,19 @@ void main() {
       expect(goalWithAssist.secondaryPlayerName, 'Karim');
       expect(goalWithAssist.teamName, 'Équipe B');
 
-      final threePointer = parser.parse(rawText: 'three points for team B', match: testMatch);
+      final threePointer = parser.parse(
+        rawText: 'three points for team B',
+        match: testMatch,
+      );
       expect(threePointer.type, GameEventType.goal);
       expect(threePointer.points, 3);
     });
 
     test('parses English cards and fouls', () {
-      final yellow = parser.parse(rawText: 'yellow card for Stephane', match: testMatch);
+      final yellow = parser.parse(
+        rawText: 'yellow card for Stephane',
+        match: testMatch,
+      );
       expect(yellow.type, GameEventType.yellowCard);
       expect(yellow.playerName, 'Stéphane');
 

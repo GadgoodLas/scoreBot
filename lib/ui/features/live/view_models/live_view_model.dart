@@ -9,19 +9,10 @@ import 'package:score_bot/data/services/audio_service.dart';
 import 'package:score_bot/data/services/tts_service.dart';
 
 /// États de la reconnaissance vocale sur l'écran live.
-enum VoiceState {
-  idle,
-  recording,
-  processing,
-  success,
-  error,
-}
+enum VoiceState { idle, recording, processing, success, error }
 
 /// Types d'alertes automatiques en cours de match (pause, fin de temps réglementaire).
-enum LiveAlertType {
-  breakSuggested,
-  matchEndReached,
-}
+enum LiveAlertType { breakSuggested, matchEndReached }
 
 /// ViewModel de l'écran de match en direct.
 class LiveViewModel extends ChangeNotifier {
@@ -29,9 +20,9 @@ class LiveViewModel extends ChangeNotifier {
     required MatchRepository matchRepository,
     required GameMatch initialMatch,
     TtsService? ttsService,
-  })  : _repository = matchRepository,
-        _match = initialMatch,
-        _tts = ttsService ?? TtsService() {
+  }) : _repository = matchRepository,
+       _match = initialMatch,
+       _tts = ttsService ?? TtsService() {
     _loadEvents();
     _startChronometer();
   }
@@ -85,9 +76,11 @@ class LiveViewModel extends ChangeNotifier {
         _breakNotified = true;
         _pendingAlert = LiveAlertType.breakSuggested;
         HapticFeedback.heavyImpact();
-        _tts.speak(_repository.languageCode == 'fr'
-            ? "C'est l'heure de la pause ! Prenez une pause."
-            : "Break time! Take a break.");
+        _tts.speak(
+          _repository.languageCode == 'fr'
+              ? "C'est l'heure de la pause ! Prenez une pause."
+              : "Break time! Take a break.",
+        );
         notifyListeners();
       }
     }
@@ -97,9 +90,11 @@ class LiveViewModel extends ChangeNotifier {
         _endNotified = true;
         _pendingAlert = LiveAlertType.matchEndReached;
         HapticFeedback.heavyImpact();
-        _tts.speak(_repository.languageCode == 'fr'
-            ? "Fin du match ! Le temps réglementaire est écoulé."
-            : "Full time! Match finished.");
+        _tts.speak(
+          _repository.languageCode == 'fr'
+              ? "Fin du match ! Le temps réglementaire est écoulé."
+              : "Full time! Match finished.",
+        );
         notifyListeners();
       }
     }
@@ -132,8 +127,7 @@ class LiveViewModel extends ChangeNotifier {
   List<GameEvent> get events => List.unmodifiable(_events);
 
   /// Événements triés du plus récent au plus ancien (pour le feed).
-  List<GameEvent> get recentEvents =>
-      _events.reversed.toList();
+  List<GameEvent> get recentEvents => _events.reversed.toList();
 
   void _loadEvents() {
     _events = _repository.getEvents(_match.id);

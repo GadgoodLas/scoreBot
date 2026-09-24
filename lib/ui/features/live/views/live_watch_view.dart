@@ -61,8 +61,11 @@ class LiveWatchView extends StatelessWidget {
                               ],
 
                               // Statut match si non live
-                              if (viewModel.match.status != GameMatchStatus.live) ...[
-                                _WatchStatusBadge(status: viewModel.match.status),
+                              if (viewModel.match.status !=
+                                  GameMatchStatus.live) ...[
+                                _WatchStatusBadge(
+                                  status: viewModel.match.status,
+                                ),
                                 const SizedBox(height: 2),
                               ],
 
@@ -88,10 +91,13 @@ class LiveWatchView extends StatelessWidget {
                                     color: Colors.redAccent,
                                     teamName: viewModel.match.teamA.name,
                                     onTap: () => viewModel.incrementScoreA(),
-                                    onDoubleTap: () => viewModel.decrementScoreA(),
+                                    onDoubleTap:
+                                        () => viewModel.decrementScoreA(),
                                   ),
                                   const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 8),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
                                     child: Text(
                                       ':',
                                       style: TextStyle(
@@ -106,7 +112,8 @@ class LiveWatchView extends StatelessWidget {
                                     color: Colors.blueAccent,
                                     teamName: viewModel.match.teamB.name,
                                     onTap: () => viewModel.incrementScoreB(),
-                                    onDoubleTap: () => viewModel.decrementScoreB(),
+                                    onDoubleTap:
+                                        () => viewModel.decrementScoreB(),
                                   ),
                                 ],
                               ),
@@ -120,18 +127,32 @@ class LiveWatchView extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: viewModel.isVoiceReady
-                                      ? (viewModel.isLocalVoiceMode
-                                          ? Colors.tealAccent.withValues(alpha: 0.15)
-                                          : AppTheme.primary.withValues(alpha: 0.15))
-                                      : Colors.amber.withValues(alpha: 0.15),
+                                  color:
+                                      viewModel.isVoiceReady
+                                          ? (viewModel.isLocalVoiceMode
+                                              ? Colors.tealAccent.withValues(
+                                                alpha: 0.15,
+                                              )
+                                              : AppTheme.primary.withValues(
+                                                alpha: 0.15,
+                                              ))
+                                          : Colors.amber.withValues(
+                                            alpha: 0.15,
+                                          ),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: viewModel.isVoiceReady
-                                        ? (viewModel.isLocalVoiceMode
-                                            ? Colors.tealAccent.withValues(alpha: 0.4)
-                                            : AppTheme.primary.withValues(alpha: 0.4))
-                                        : Colors.amber.withValues(alpha: 0.4),
+                                    color:
+                                        viewModel.isVoiceReady
+                                            ? (viewModel.isLocalVoiceMode
+                                                ? Colors.tealAccent.withValues(
+                                                  alpha: 0.4,
+                                                )
+                                                : AppTheme.primary.withValues(
+                                                  alpha: 0.4,
+                                                ))
+                                            : Colors.amber.withValues(
+                                              alpha: 0.4,
+                                            ),
                                   ),
                                 ),
                                 child: Row(
@@ -144,25 +165,29 @@ class LiveWatchView extends StatelessWidget {
                                               : Icons.mic)
                                           : Icons.mic_off,
                                       size: 12,
-                                      color: viewModel.isVoiceReady
-                                          ? (viewModel.isLocalVoiceMode
-                                              ? Colors.tealAccent
-                                              : AppTheme.primary)
-                                          : Colors.amberAccent,
+                                      color:
+                                          viewModel.isVoiceReady
+                                              ? (viewModel.isLocalVoiceMode
+                                                  ? Colors.tealAccent
+                                                  : AppTheme.primary)
+                                              : Colors.amberAccent,
                                     ),
                                     const SizedBox(width: 3),
                                     Text(
                                       viewModel.isVoiceReady
                                           ? (viewModel.isLocalVoiceMode
                                               ? '⚡ ${AppLocalizations.of(context)!.localVoiceModeBadge}'
-                                              : AppLocalizations.of(context)!.tapToSpeak)
+                                              : AppLocalizations.of(
+                                                context,
+                                              )!.tapToSpeak)
                                           : 'IA non configurée',
                                       style: TextStyle(
-                                        color: viewModel.isVoiceReady
-                                            ? (viewModel.isLocalVoiceMode
-                                                ? Colors.tealAccent
-                                                : AppTheme.primary)
-                                            : Colors.amberAccent,
+                                        color:
+                                            viewModel.isVoiceReady
+                                                ? (viewModel.isLocalVoiceMode
+                                                    ? Colors.tealAccent
+                                                    : AppTheme.primary)
+                                                : Colors.amberAccent,
                                         fontSize: 9,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -174,7 +199,10 @@ class LiveWatchView extends StatelessWidget {
                               const SizedBox(height: 4),
 
                               // ─── Boutons de contrôle du match ───
-                              _WatchMatchControls(viewModel: viewModel, context: context),
+                              _WatchMatchControls(
+                                viewModel: viewModel,
+                                context: context,
+                              ),
                             ],
                           ),
                         ),
@@ -199,10 +227,7 @@ class LiveWatchView extends StatelessWidget {
 
 /// Boutons Pause/Reprendre et Terminer le match sur la montre.
 class _WatchMatchControls extends StatelessWidget {
-  const _WatchMatchControls({
-    required this.viewModel,
-    required this.context,
-  });
+  const _WatchMatchControls({required this.viewModel, required this.context});
 
   final LiveViewModel viewModel;
   final BuildContext context;
@@ -211,67 +236,76 @@ class _WatchMatchControls extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.grey[900],
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Colors.white12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.flag, color: Colors.redAccent, size: 20),
-              const SizedBox(height: 6),
-              Text(
-                l10n.endMatchDialogTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.grey[900],
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: Colors.white12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Bouton Annuler / Non (croix grise)
-                  GestureDetector(
-                    onTap: () => Navigator.of(ctx).pop(false),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                  const Icon(Icons.flag, color: Colors.redAccent, size: 20),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.endMatchDialogTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(width: 14),
-                  // Bouton Confirmer / Oui (validation rouge)
-                  GestureDetector(
-                    onTap: () => Navigator.of(ctx).pop(true),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Bouton Annuler / Non (croix grise)
+                      GestureDetector(
+                        onTap: () => Navigator.of(ctx).pop(false),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white70,
+                            size: 18,
+                          ),
+                        ),
                       ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 20),
-                    ),
+                      const SizedBox(width: 14),
+                      // Bouton Confirmer / Oui (validation rouge)
+                      GestureDetector(
+                        onTap: () => Navigator.of(ctx).pop(true),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
 
     if (confirmed == true) {
@@ -420,111 +454,113 @@ class _WatchVoiceOverlay extends StatelessWidget {
           children: [
             switch (state) {
               VoiceState.recording => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.redAccent.withValues(alpha: 0.2),
-                        border: Border.all(color: Colors.redAccent, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.mic,
-                        color: Colors.redAccent,
-                        size: 32,
-                      ),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.redAccent.withValues(alpha: 0.2),
+                      border: Border.all(color: Colors.redAccent, width: 2),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Écoute (${viewModel.recordingSeconds}s)...',
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Tap pour envoyer',
-                      style: TextStyle(color: Colors.white60, fontSize: 10),
-                    ),
-                  ],
-                ),
-              VoiceState.processing => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        color: viewModel.isLocalVoiceMode
-                            ? Colors.tealAccent
-                            : Colors.orangeAccent,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      viewModel.isLocalVoiceMode
-                          ? 'Analyse Locale...'
-                          : 'Analyse Gemini...',
-                      style: TextStyle(
-                        color: viewModel.isLocalVoiceMode
-                            ? Colors.tealAccent
-                            : Colors.orangeAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              VoiceState.success => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.greenAccent,
-                      size: 32,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      viewModel.lastTranscription?.isNotEmpty == true
-                          ? viewModel.lastTranscription!
-                          : 'Validé !',
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.greenAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              VoiceState.error => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
+                    child: const Icon(
+                      Icons.mic,
                       color: Colors.redAccent,
                       size: 32,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      viewModel.lastError ?? 'Non reconnu',
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Écoute (${viewModel.recordingSeconds}s)...',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Tap pour envoyer',
+                    style: TextStyle(color: Colors.white60, fontSize: 10),
+                  ),
+                ],
+              ),
+              VoiceState.processing => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color:
+                          viewModel.isLocalVoiceMode
+                              ? Colors.tealAccent
+                              : Colors.orangeAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    viewModel.isLocalVoiceMode
+                        ? 'Analyse Locale...'
+                        : 'Analyse Gemini...',
+                    style: TextStyle(
+                      color:
+                          viewModel.isLocalVoiceMode
+                              ? Colors.tealAccent
+                              : Colors.orangeAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              VoiceState.success => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.check_circle,
+                    color: Colors.greenAccent,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    viewModel.lastTranscription?.isNotEmpty == true
+                        ? viewModel.lastTranscription!
+                        : 'Validé !',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              VoiceState.error => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.redAccent,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    viewModel.lastError ?? 'Non reconnu',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
               VoiceState.idle => const SizedBox.shrink(),
             },
           ],
@@ -543,8 +579,14 @@ class _WatchStatusBadge extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final (text, color) = switch (status) {
       GameMatchStatus.paused => ('⏸ ${l10n.matchPaused}', Colors.orangeAccent),
-      GameMatchStatus.halftime => ('⏱ ${l10n.matchHalftime}', Colors.amberAccent),
-      GameMatchStatus.finished => ('🏁 ${l10n.matchFinished}', Colors.greenAccent),
+      GameMatchStatus.halftime => (
+        '⏱ ${l10n.matchHalftime}',
+        Colors.amberAccent,
+      ),
+      GameMatchStatus.finished => (
+        '🏁 ${l10n.matchFinished}',
+        Colors.greenAccent,
+      ),
       _ => ('', Colors.transparent),
     };
 
@@ -593,7 +635,11 @@ class _WatchAlertBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isBreak ? Icons.pause_circle : Icons.sports_score, size: 11, color: color),
+          Icon(
+            isBreak ? Icons.pause_circle : Icons.sports_score,
+            size: 11,
+            color: color,
+          ),
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () async {

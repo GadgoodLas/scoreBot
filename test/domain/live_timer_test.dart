@@ -122,76 +122,85 @@ void main() {
   });
 
   group('LiveViewModel Timer Alerts & Vocal TTS Notifications', () {
-    test('triggers break vocal notification when elapsed exceeds break duration', () async {
-      final repo = _FakeMatchRepository(languageCode: 'fr');
-      final tts = _FakeTtsService();
+    test(
+      'triggers break vocal notification when elapsed exceeds break duration',
+      () async {
+        final repo = _FakeMatchRepository(languageCode: 'fr');
+        final tts = _FakeTtsService();
 
-      // Match started 30 minutes ago, with break configured at 25 minutes
-      final match = GameMatch(
-        id: 'm-live-1',
-        sport: SportType.football,
-        teamA: const Team(id: 'a', name: 'A'),
-        teamB: const Team(id: 'b', name: 'B'),
-        status: GameMatchStatus.live,
-        scoreA: 0,
-        scoreB: 0,
-        startTime: DateTime.now().subtract(const Duration(minutes: 30)),
-        durationMinutes: 90,
-        breakDurationMinutes: 25,
-      );
+        // Match started 30 minutes ago, with break configured at 25 minutes
+        final match = GameMatch(
+          id: 'm-live-1',
+          sport: SportType.football,
+          teamA: const Team(id: 'a', name: 'A'),
+          teamB: const Team(id: 'b', name: 'B'),
+          status: GameMatchStatus.live,
+          scoreA: 0,
+          scoreB: 0,
+          startTime: DateTime.now().subtract(const Duration(minutes: 30)),
+          durationMinutes: 90,
+          breakDurationMinutes: 25,
+        );
 
-      final vm = LiveViewModel(
-        matchRepository: repo,
-        initialMatch: match,
-        ttsService: tts,
-      );
+        final vm = LiveViewModel(
+          matchRepository: repo,
+          initialMatch: match,
+          ttsService: tts,
+        );
 
-      // Allow timer loop or call internal check
-      expect(vm.pendingAlert, LiveAlertType.breakSuggested);
-      expect(tts.spokenMessages, contains("C'est l'heure de la pause ! Prenez une pause."));
+        // Allow timer loop or call internal check
+        expect(vm.pendingAlert, LiveAlertType.breakSuggested);
+        expect(
+          tts.spokenMessages,
+          contains("C'est l'heure de la pause ! Prenez une pause."),
+        );
 
-      // Accepting break pauses the match
-      await vm.acceptBreakAlert();
-      expect(vm.pendingAlert, isNull);
-      expect(vm.match.status, GameMatchStatus.paused);
+        // Accepting break pauses the match
+        await vm.acceptBreakAlert();
+        expect(vm.pendingAlert, isNull);
+        expect(vm.match.status, GameMatchStatus.paused);
 
-      vm.dispose();
-    });
+        vm.dispose();
+      },
+    );
 
-    test('triggers match end vocal notification when elapsed exceeds duration', () async {
-      final repo = _FakeMatchRepository(languageCode: 'en');
-      final tts = _FakeTtsService();
+    test(
+      'triggers match end vocal notification when elapsed exceeds duration',
+      () async {
+        final repo = _FakeMatchRepository(languageCode: 'en');
+        final tts = _FakeTtsService();
 
-      // Match started 95 minutes ago, total duration 90 minutes
-      final match = GameMatch(
-        id: 'm-live-2',
-        sport: SportType.football,
-        teamA: const Team(id: 'a', name: 'A'),
-        teamB: const Team(id: 'b', name: 'B'),
-        status: GameMatchStatus.live,
-        scoreA: 1,
-        scoreB: 1,
-        startTime: DateTime.now().subtract(const Duration(minutes: 95)),
-        durationMinutes: 90,
-        breakDurationMinutes: 45,
-      );
+        // Match started 95 minutes ago, total duration 90 minutes
+        final match = GameMatch(
+          id: 'm-live-2',
+          sport: SportType.football,
+          teamA: const Team(id: 'a', name: 'A'),
+          teamB: const Team(id: 'b', name: 'B'),
+          status: GameMatchStatus.live,
+          scoreA: 1,
+          scoreB: 1,
+          startTime: DateTime.now().subtract(const Duration(minutes: 95)),
+          durationMinutes: 90,
+          breakDurationMinutes: 45,
+        );
 
-      final vm = LiveViewModel(
-        matchRepository: repo,
-        initialMatch: match,
-        ttsService: tts,
-      );
+        final vm = LiveViewModel(
+          matchRepository: repo,
+          initialMatch: match,
+          ttsService: tts,
+        );
 
-      expect(vm.pendingAlert, LiveAlertType.matchEndReached);
-      expect(tts.spokenMessages, contains('Full time! Match finished.'));
+        expect(vm.pendingAlert, LiveAlertType.matchEndReached);
+        expect(tts.spokenMessages, contains('Full time! Match finished.'));
 
-      // Accepting end closes match
-      await vm.acceptEndMatchAlert();
-      expect(vm.pendingAlert, isNull);
-      expect(vm.match.status, GameMatchStatus.finished);
+        // Accepting end closes match
+        await vm.acceptEndMatchAlert();
+        expect(vm.pendingAlert, isNull);
+        expect(vm.match.status, GameMatchStatus.finished);
 
-      vm.dispose();
-    });
+        vm.dispose();
+      },
+    );
   });
 
   group('SetupViewModel Lineup Vocal Announcement', () {
@@ -205,7 +214,10 @@ void main() {
         sportLabel: 'Football',
         languageCode: 'fr',
       );
-      expect(announcementNoPlayers, 'Match de Football. Paris contre Marseille. Bon match à tous !');
+      expect(
+        announcementNoPlayers,
+        'Match de Football. Paris contre Marseille. Bon match à tous !',
+      );
 
       vm.addPlayerToTeamA('Kylian, Achraf');
       vm.addPlayerToTeamB('Pierre, Amine');
@@ -238,25 +250,37 @@ void main() {
       );
     });
 
-    test('toggleLineupAnnouncement speaks message and can be stopped', () async {
-      final repo = _FakeMatchRepository();
-      final tts = _FakeTtsService();
-      final vm = SetupViewModel(matchRepository: repo, ttsService: tts);
-      vm.setTeamAName('Lions');
-      vm.setTeamBName('Tigers');
+    test(
+      'toggleLineupAnnouncement speaks message and can be stopped',
+      () async {
+        final repo = _FakeMatchRepository();
+        final tts = _FakeTtsService();
+        final vm = SetupViewModel(matchRepository: repo, ttsService: tts);
+        vm.setTeamAName('Lions');
+        vm.setTeamBName('Tigers');
 
-      expect(vm.isAnnouncingLineup, isFalse);
+        expect(vm.isAnnouncingLineup, isFalse);
 
-      await vm.toggleLineupAnnouncement(sportLabel: 'Rugby', languageCode: 'fr');
-      expect(vm.isAnnouncingLineup, isTrue);
-      expect(tts.spokenMessages.length, 1);
-      expect(tts.spokenMessages.first, contains('Match de Rugby. Lions contre Tigers.'));
+        await vm.toggleLineupAnnouncement(
+          sportLabel: 'Rugby',
+          languageCode: 'fr',
+        );
+        expect(vm.isAnnouncingLineup, isTrue);
+        expect(tts.spokenMessages.length, 1);
+        expect(
+          tts.spokenMessages.first,
+          contains('Match de Rugby. Lions contre Tigers.'),
+        );
 
-      // Toggling again stops announcement
-      await vm.toggleLineupAnnouncement(sportLabel: 'Rugby', languageCode: 'fr');
-      expect(vm.isAnnouncingLineup, isFalse);
-      expect(tts.stopCalled, isTrue);
-    });
+        // Toggling again stops announcement
+        await vm.toggleLineupAnnouncement(
+          sportLabel: 'Rugby',
+          languageCode: 'fr',
+        );
+        expect(vm.isAnnouncingLineup, isFalse);
+        expect(tts.stopCalled, isTrue);
+      },
+    );
 
     test('startMatch stops any active lineup announcement', () async {
       final repo = _FakeMatchRepository();
@@ -265,7 +289,10 @@ void main() {
       vm.setTeamAName('Alpha');
       vm.setTeamBName('Beta');
 
-      await vm.toggleLineupAnnouncement(sportLabel: 'Football', languageCode: 'fr');
+      await vm.toggleLineupAnnouncement(
+        sportLabel: 'Football',
+        languageCode: 'fr',
+      );
       expect(vm.isAnnouncingLineup, isTrue);
 
       final match = await vm.startMatch();
@@ -275,5 +302,3 @@ void main() {
     });
   });
 }
-
-

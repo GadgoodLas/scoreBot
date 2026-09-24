@@ -15,8 +15,8 @@ class SummaryViewModel extends ChangeNotifier {
   SummaryViewModel({
     required MatchRepository matchRepository,
     required GameMatch match,
-  })  : _matchRepository = matchRepository,
-        _match = match {
+  }) : _matchRepository = matchRepository,
+       _match = match {
     _events = matchRepository.getEvents(match.id);
     _generateAutomaticReport();
   }
@@ -43,7 +43,8 @@ class SummaryViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       _generatedReport = await _matchRepository.generateMatchReport(_match);
-      _isAiReport = !_matchRepository.isLocalVoiceMode && _matchRepository.isAiConfigured;
+      _isAiReport =
+          !_matchRepository.isLocalVoiceMode && _matchRepository.isAiConfigured;
     } catch (_) {
       _generatedReport = generateShareText();
       _isAiReport = false;
@@ -75,22 +76,22 @@ class SummaryViewModel extends ChangeNotifier {
       .where((e) => e.teamId == teamId)
       .fold(0, (sum, e) => sum + e.points);
 
-  int yellowCardsForTeam(String teamId) => _events
-      .whereType<CardEvent>()
-      .where((e) =>
-          e.teamId == teamId && e.type == GameEventType.yellowCard)
-      .length;
+  int yellowCardsForTeam(String teamId) =>
+      _events
+          .whereType<CardEvent>()
+          .where(
+            (e) => e.teamId == teamId && e.type == GameEventType.yellowCard,
+          )
+          .length;
 
-  int redCardsForTeam(String teamId) => _events
-      .whereType<CardEvent>()
-      .where((e) =>
-          e.teamId == teamId && e.type == GameEventType.redCard)
-      .length;
+  int redCardsForTeam(String teamId) =>
+      _events
+          .whereType<CardEvent>()
+          .where((e) => e.teamId == teamId && e.type == GameEventType.redCard)
+          .length;
 
-  int foulsForTeam(String teamId) => _events
-      .whereType<FoulEvent>()
-      .where((e) => e.teamId == teamId)
-      .length;
+  int foulsForTeam(String teamId) =>
+      _events.whereType<FoulEvent>().where((e) => e.teamId == teamId).length;
 
   // ─────────────── Stats par joueur ───────────────
 
@@ -102,8 +103,7 @@ class SummaryViewModel extends ChangeNotifier {
         map[e.scorerName!] = (map[e.scorerName!] ?? 0) + e.points;
       }
     }
-    return map.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    return map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
   }
 
   /// Top passeurs.
@@ -114,8 +114,7 @@ class SummaryViewModel extends ChangeNotifier {
         map[e.assistName!] = (map[e.assistName!] ?? 0) + 1;
       }
     }
-    return map.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    return map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
   }
 
   /// Statistiques détaillées de chaque joueur pour une équipe donnée.
@@ -140,9 +139,13 @@ class SummaryViewModel extends ChangeNotifier {
         if (e.assistName != null && e.assistName!.trim().isNotEmpty) {
           knownPlayerNames.add(e.assistName!.trim());
         }
-      } else if (e is CardEvent && e.playerName != null && e.playerName!.trim().isNotEmpty) {
+      } else if (e is CardEvent &&
+          e.playerName != null &&
+          e.playerName!.trim().isNotEmpty) {
         knownPlayerNames.add(e.playerName!.trim());
-      } else if (e is FoulEvent && e.playerName != null && e.playerName!.trim().isNotEmpty) {
+      } else if (e is FoulEvent &&
+          e.playerName != null &&
+          e.playerName!.trim().isNotEmpty) {
         knownPlayerNames.add(e.playerName!.trim());
       }
     }
@@ -171,14 +174,16 @@ class SummaryViewModel extends ChangeNotifier {
         }
       }
 
-      stats.add(PlayerMatchStats(
-        playerName: name,
-        teamId: teamId,
-        goals: goals,
-        assists: assists,
-        yellowCards: yellows,
-        redCards: reds,
-      ));
+      stats.add(
+        PlayerMatchStats(
+          playerName: name,
+          teamId: teamId,
+          goals: goals,
+          assists: assists,
+          yellowCards: yellows,
+          redCards: reds,
+        ),
+      );
     }
 
     stats.sort((a, b) {
@@ -201,21 +206,22 @@ class SummaryViewModel extends ChangeNotifier {
     final buf = StringBuffer();
     buf.writeln('⚽ ScoreBot — Résumé du match');
     buf.writeln('${_match.sport.emoji} ${_match.sport.label}');
-    buf.writeln(
-        '${_match.teamA.name} $scoreA — $scoreB ${_match.teamB.name}');
+    buf.writeln('${_match.teamA.name} $scoreA — $scoreB ${_match.teamB.name}');
     buf.writeln('');
 
     for (final event in _events) {
-      final teamName = event.teamId == _match.teamA.id
-          ? _match.teamA.name
-          : _match.teamB.name;
+      final teamName =
+          event.teamId == _match.teamA.id
+              ? _match.teamA.name
+              : _match.teamB.name;
 
       final desc = switch (event) {
         GoalEvent(:final scorerName, :final assistName) =>
           '${event.type.emoji} ${event.minute}\' ${scorerName ?? "But"}${assistName != null ? ' (assist: $assistName)' : ''} — $teamName',
         CardEvent(:final playerName) =>
           '${event.type.emoji} ${event.minute}\' ${playerName ?? '?'} — $teamName',
-        _ => '${event.type.emoji} ${event.minute}\' ${event.type.label} — $teamName',
+        _ =>
+          '${event.type.emoji} ${event.minute}\' ${event.type.label} — $teamName',
       };
 
       buf.writeln(desc);
@@ -231,7 +237,9 @@ class SummaryViewModel extends ChangeNotifier {
           if (p.yellowCards > 0) '${p.yellowCards} 🟨',
           if (p.redCards > 0) '${p.redCards} 🟥',
         ];
-        buf.writeln('- ${p.playerName}${details.isNotEmpty ? " (${details.join(', ')})" : ''}');
+        buf.writeln(
+          '- ${p.playerName}${details.isNotEmpty ? " (${details.join(', ')})" : ''}',
+        );
       }
     }
 
@@ -245,12 +253,16 @@ class SummaryViewModel extends ChangeNotifier {
           if (p.yellowCards > 0) '${p.yellowCards} 🟨',
           if (p.redCards > 0) '${p.redCards} 🟥',
         ];
-        buf.writeln('- ${p.playerName}${details.isNotEmpty ? " (${details.join(', ')})" : ''}');
+        buf.writeln(
+          '- ${p.playerName}${details.isNotEmpty ? " (${details.join(', ')})" : ''}',
+        );
       }
     }
 
     if (topScorers.isNotEmpty) {
-      buf.writeln('\n🏅 Meilleur buteur : ${topScorers.first.key} (${topScorers.first.value} but(s))');
+      buf.writeln(
+        '\n🏅 Meilleur buteur : ${topScorers.first.key} (${topScorers.first.value} but(s))',
+      );
     }
 
     buf.writeln('\nGénéré par ScoreBot 🤖');
@@ -261,8 +273,14 @@ class SummaryViewModel extends ChangeNotifier {
   Future<File> saveReportToFile() async {
     final text = generatedReport ?? generateShareText();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final sanitizedA = _match.teamA.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim().replaceAll(RegExp(r'\s+'), '_');
-    final sanitizedB = _match.teamB.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim().replaceAll(RegExp(r'\s+'), '_');
+    final sanitizedA = _match.teamA.name
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
+    final sanitizedB = _match.teamB.name
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
     final filename = 'scorebot_${sanitizedA}_vs_${sanitizedB}_$timestamp.txt';
 
     if (Platform.isAndroid) {
@@ -414,7 +432,9 @@ class SummaryView extends StatelessWidget {
                 // ─── Bouton Nouveau match ───
                 ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/', (route) => false);
                   },
                   icon: const Icon(Icons.sports_soccer),
                   label: const Text(
@@ -445,7 +465,8 @@ class SummaryView extends StatelessWidget {
       await SharePlus.instance.share(
         ShareParams(
           text: text,
-          subject: 'ScoreBot — ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
+          subject:
+              'ScoreBot — ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
         ),
       );
     } catch (_) {
@@ -479,7 +500,9 @@ class SummaryView extends StatelessWidget {
               SharePlus.instance.share(
                 ShareParams(
                   files: [XFile(file.path)],
-                  text: viewModel.generatedReport ?? viewModel.generateShareText(),
+                  text:
+                      viewModel.generatedReport ??
+                      viewModel.generateShareText(),
                 ),
               );
             },
@@ -506,9 +529,8 @@ class _FinalScoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isDraw = viewModel.scoreA == viewModel.scoreB;
-    final winnerTitle = isDraw
-        ? '🤝 ${l10n.draw} !'
-        : '🏆 ${l10n.winner(viewModel.winner)}';
+    final winnerTitle =
+        isDraw ? '🤝 ${l10n.draw} !' : '🏆 ${l10n.winner(viewModel.winner)}';
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -615,9 +637,10 @@ class _MatchReportCard extends StatelessWidget {
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isAi
-              ? AppTheme.primary.withValues(alpha: 0.4)
-              : Colors.tealAccent.withValues(alpha: 0.3),
+          color:
+              isAi
+                  ? AppTheme.primary.withValues(alpha: 0.4)
+                  : Colors.tealAccent.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -644,10 +667,12 @@ class _MatchReportCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (isAi ? AppTheme.primary : Colors.tealAccent).withValues(alpha: 0.15),
+                  color: (isAi ? AppTheme.primary : Colors.tealAccent)
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: (isAi ? AppTheme.primary : Colors.tealAccent).withValues(alpha: 0.4),
+                    color: (isAi ? AppTheme.primary : Colors.tealAccent)
+                        .withValues(alpha: 0.4),
                   ),
                 ),
                 child: Row(
@@ -736,7 +761,9 @@ class _MatchReportCard extends StatelessWidget {
                   label: Text(l10n.copyReport),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.textPrimary,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.25),
+                    ),
                     textStyle: const TextStyle(fontSize: 12),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -747,7 +774,9 @@ class _MatchReportCard extends StatelessWidget {
                   label: Text(l10n.downloadReport),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.tealAccent,
-                    side: BorderSide(color: Colors.tealAccent.withValues(alpha: 0.4)),
+                    side: BorderSide(
+                      color: Colors.tealAccent.withValues(alpha: 0.4),
+                    ),
                     textStyle: const TextStyle(fontSize: 12),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -759,7 +788,10 @@ class _MatchReportCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.black,
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -867,7 +899,10 @@ class _StatRow extends StatelessWidget {
             child: Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
             ),
           ),
           Expanded(
@@ -918,13 +953,17 @@ class _StatsList extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          ...entries.take(5).map(
+          ...entries
+              .take(5)
+              .map(
                 (entry) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(
                     children: [
-                      Text('👤 ${entry.key}',
-                          style: const TextStyle(color: AppTheme.textPrimary)),
+                      Text(
+                        '👤 ${entry.key}',
+                        style: const TextStyle(color: AppTheme.textPrimary),
+                      ),
                       const Spacer(),
                       Text(
                         '${entry.value} $unit',
@@ -1007,14 +1046,12 @@ class _EventTimeline extends StatelessWidget {
   }
 
   String _describeEvent(GameEvent event, GameMatch match) {
-    final team = event.teamId == match.teamA.id
-        ? match.teamA.name
-        : match.teamB.name;
+    final team =
+        event.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
     return switch (event) {
       GoalEvent(:final scorerName, :final assistName) =>
         '${scorerName ?? 'But'} ${assistName != null ? '(assist: $assistName)' : ''} — $team',
-      CardEvent(:final playerName) =>
-        '${playerName ?? '?'} — $team',
+      CardEvent(:final playerName) => '${playerName ?? '?'} — $team',
       SubstitutionEvent(:final playerOutName, :final playerInName) =>
         '${playerOutName ?? '?'} → ${playerInName ?? '?'} — $team',
       _ => '${event.type.label} — $team',
@@ -1070,35 +1107,47 @@ class _TeamPlayersStatsCard extends StatelessWidget {
             ...stats.map((p) {
               final badges = <Widget>[];
               if (p.goals > 0) {
-                badges.add(_StatBadge(
-                  label: '⚽ ${p.goals} but${p.goals > 1 ? "s" : ""}',
-                  color: Colors.greenAccent,
-                ));
+                badges.add(
+                  _StatBadge(
+                    label: '⚽ ${p.goals} but${p.goals > 1 ? "s" : ""}',
+                    color: Colors.greenAccent,
+                  ),
+                );
               }
               if (p.assists > 0) {
-                badges.add(_StatBadge(
-                  label: '🅰️ ${p.assists} assist${p.assists > 1 ? "s" : ""}',
-                  color: Colors.cyanAccent,
-                ));
+                badges.add(
+                  _StatBadge(
+                    label: '🅰️ ${p.assists} assist${p.assists > 1 ? "s" : ""}',
+                    color: Colors.cyanAccent,
+                  ),
+                );
               }
               if (p.yellowCards > 0) {
-                badges.add(_StatBadge(
-                  label: '🟨 ${p.yellowCards}',
-                  color: Colors.amberAccent,
-                ));
+                badges.add(
+                  _StatBadge(
+                    label: '🟨 ${p.yellowCards}',
+                    color: Colors.amberAccent,
+                  ),
+                );
               }
               if (p.redCards > 0) {
-                badges.add(_StatBadge(
-                  label: '🟥 ${p.redCards}',
-                  color: Colors.redAccent,
-                ));
+                badges.add(
+                  _StatBadge(
+                    label: '🟥 ${p.redCards}',
+                    color: Colors.redAccent,
+                  ),
+                );
               }
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Row(
                   children: [
-                    const Icon(Icons.person, size: 16, color: AppTheme.textSecondary),
+                    const Icon(
+                      Icons.person,
+                      size: 16,
+                      color: AppTheme.textSecondary,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -1115,7 +1164,10 @@ class _TeamPlayersStatsCard extends StatelessWidget {
                     else
                       const Text(
                         '0 but',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
                   ],
                 ),

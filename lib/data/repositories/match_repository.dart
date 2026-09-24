@@ -41,11 +41,11 @@ class MatchRepository {
     required StorageService storageService,
     LocalSpeechService? localSpeechService,
     OfflineVoiceCommandParser? offlineParser,
-  })  : _audio = audioService,
-        _gemini = geminiService,
-        _storage = storageService,
-        _localSpeech = localSpeechService ?? LocalSpeechService(),
-        _offlineParser = offlineParser ?? const OfflineVoiceCommandParser();
+  }) : _audio = audioService,
+       _gemini = geminiService,
+       _storage = storageService,
+       _localSpeech = localSpeechService ?? LocalSpeechService(),
+       _offlineParser = offlineParser ?? const OfflineVoiceCommandParser();
 
   final AudioService _audio;
   final GeminiService _gemini;
@@ -136,9 +136,10 @@ class MatchRepository {
 
   /// Pause / reprend le match.
   Future<GameMatch> togglePause(GameMatch match) async {
-    final newStatus = match.status == GameMatchStatus.live
-        ? GameMatchStatus.paused
-        : GameMatchStatus.live;
+    final newStatus =
+        match.status == GameMatchStatus.live
+            ? GameMatchStatus.paused
+            : GameMatchStatus.live;
     final updated = match.copyWith(status: newStatus);
     await _storage.saveMatch(updated);
     return updated;
@@ -201,28 +202,29 @@ class MatchRepository {
     final buf = StringBuffer();
 
     // Titre & Épilogue
-    final winnerText = isFrench
-        ? (match.scoreA > match.scoreB
-            ? '🏆 Victoire de ${match.teamA.name} face à ${match.teamB.name} !'
-            : (match.scoreB > match.scoreA
-                ? '🏆 Victoire de ${match.teamB.name} face à ${match.teamA.name} !'
-                : '🤝 Match nul entre ${match.teamA.name} et ${match.teamB.name} !'))
-        : (match.scoreA > match.scoreB
-            ? '🏆 Victory for ${match.teamA.name} against ${match.teamB.name}!'
-            : (match.scoreB > match.scoreA
-                ? '🏆 Victory for ${match.teamB.name} against ${match.teamA.name}!'
-                : '🤝 Draw between ${match.teamA.name} and ${match.teamB.name}!'));
+    final winnerText =
+        isFrench
+            ? (match.scoreA > match.scoreB
+                ? '🏆 Victoire de ${match.teamA.name} face à ${match.teamB.name} !'
+                : (match.scoreB > match.scoreA
+                    ? '🏆 Victoire de ${match.teamB.name} face à ${match.teamA.name} !'
+                    : '🤝 Match nul entre ${match.teamA.name} et ${match.teamB.name} !'))
+            : (match.scoreA > match.scoreB
+                ? '🏆 Victory for ${match.teamA.name} against ${match.teamB.name}!'
+                : (match.scoreB > match.scoreA
+                    ? '🏆 Victory for ${match.teamB.name} against ${match.teamA.name}!'
+                    : '🤝 Draw between ${match.teamA.name} and ${match.teamB.name}!'));
 
     buf.writeln(winnerText);
     buf.writeln('');
     buf.writeln(
       isFrench
           ? 'Au terme d\'une confrontation disputée de ${match.sport.label}, '
-            '${match.teamA.name} et ${match.teamB.name} se quittent sur le score final de '
-            '${match.scoreA} à ${match.scoreB}.'
+              '${match.teamA.name} et ${match.teamB.name} se quittent sur le score final de '
+              '${match.scoreA} à ${match.scoreB}.'
           : 'At the end of a hard-fought ${match.sport.label} game, '
-            '${match.teamA.name} and ${match.teamB.name} finish with a final score of '
-            '${match.scoreA} - ${match.scoreB}.',
+              '${match.teamA.name} and ${match.teamB.name} finish with a final score of '
+              '${match.scoreA} - ${match.scoreB}.',
     );
     buf.writeln('');
 
@@ -231,32 +233,51 @@ class MatchRepository {
     final cards = events.whereType<CardEvent>().toList();
     final fouls = events.whereType<FoulEvent>().toList();
 
-    buf.writeln(isFrench ? '⏱️ Faits marquants de la rencontre :' : '⏱️ Match Highlights:');
+    buf.writeln(
+      isFrench
+          ? '⏱️ Faits marquants de la rencontre :'
+          : '⏱️ Match Highlights:',
+    );
     if (events.isEmpty) {
-      buf.writeln(isFrench ? '• Match calme sans incident ni but notable.' : '• Quiet match with no notable incidents.');
+      buf.writeln(
+        isFrench
+            ? '• Match calme sans incident ni but notable.'
+            : '• Quiet match with no notable incidents.',
+      );
     } else {
       for (final e in events) {
-        final team = e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
+        final team =
+            e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
         if (e is GoalEvent) {
           final scorer = e.scorerName ?? (isFrench ? 'But' : 'Goal');
-          final assist = e.assistName != null
-              ? (isFrench ? ' (passe décisive : ${e.assistName})' : ' (assist: ${e.assistName})')
-              : '';
-          buf.writeln(isFrench
-              ? '• ${e.minute}\' : ⚽ $scorer fait trembler les filets pour $team$assist.'
-              : '• ${e.minute}\' : ⚽ $scorer scores for $team$assist.');
+          final assist =
+              e.assistName != null
+                  ? (isFrench
+                      ? ' (passe décisive : ${e.assistName})'
+                      : ' (assist: ${e.assistName})')
+                  : '';
+          buf.writeln(
+            isFrench
+                ? '• ${e.minute}\' : ⚽ $scorer fait trembler les filets pour $team$assist.'
+                : '• ${e.minute}\' : ⚽ $scorer scores for $team$assist.',
+          );
         } else if (e is CardEvent) {
           final player = e.playerName ?? (isFrench ? 'Un joueur' : 'A player');
-          final cardType = e.type == GameEventType.yellowCard
-              ? (isFrench ? '🟨 Carton jaune' : '🟨 Yellow card')
-              : (isFrench ? '🟥 Carton rouge' : '🟥 Red card');
-          buf.writeln(isFrench
-              ? '• ${e.minute}\' : $cardType adressé à $player ($team).'
-              : '• ${e.minute}\' : $cardType given to $player ($team).');
+          final cardType =
+              e.type == GameEventType.yellowCard
+                  ? (isFrench ? '🟨 Carton jaune' : '🟨 Yellow card')
+                  : (isFrench ? '🟥 Carton rouge' : '🟥 Red card');
+          buf.writeln(
+            isFrench
+                ? '• ${e.minute}\' : $cardType adressé à $player ($team).'
+                : '• ${e.minute}\' : $cardType given to $player ($team).',
+          );
         } else if (e is FoulEvent) {
-          buf.writeln(isFrench
-              ? '• ${e.minute}\' : ⚠️ Faute signalée pour ${e.playerName ?? "un joueur"} ($team).'
-              : '• ${e.minute}\' : ⚠️ Foul called on ${e.playerName ?? "a player"} ($team).');
+          buf.writeln(
+            isFrench
+                ? '• ${e.minute}\' : ⚠️ Faute signalée pour ${e.playerName ?? "un joueur"} ($team).'
+                : '• ${e.minute}\' : ⚠️ Foul called on ${e.playerName ?? "a player"} ($team).',
+          );
         }
       }
     }
@@ -267,30 +288,47 @@ class MatchRepository {
     final assistCounts = <String, int>{};
     for (final g in goals) {
       if (g.scorerName != null && g.scorerName!.isNotEmpty) {
-        scorerCounts[g.scorerName!] = (scorerCounts[g.scorerName!] ?? 0) + g.points;
+        scorerCounts[g.scorerName!] =
+            (scorerCounts[g.scorerName!] ?? 0) + g.points;
       }
       if (g.assistName != null && g.assistName!.isNotEmpty) {
         assistCounts[g.assistName!] = (assistCounts[g.assistName!] ?? 0) + 1;
       }
     }
 
-    buf.writeln(isFrench ? '⭐ Distinctions & statistiques clés :' : '⭐ Key Awards & Statistics:');
+    buf.writeln(
+      isFrench
+          ? '⭐ Distinctions & statistiques clés :'
+          : '⭐ Key Awards & Statistics:',
+    );
     if (scorerCounts.isNotEmpty) {
-      final bestScorer = (scorerCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
-      buf.writeln(isFrench
-          ? '• Homme du match : ${bestScorer.key} avec ${bestScorer.value} réalisation(s).'
-          : '• Player of the match: ${bestScorer.key} with ${bestScorer.value} point(s).');
+      final bestScorer =
+          (scorerCounts.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value)))
+              .first;
+      buf.writeln(
+        isFrench
+            ? '• Homme du match : ${bestScorer.key} avec ${bestScorer.value} réalisation(s).'
+            : '• Player of the match: ${bestScorer.key} with ${bestScorer.value} point(s).',
+      );
     }
     if (assistCounts.isNotEmpty) {
-      final bestAssister = (assistCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
-      buf.writeln(isFrench
-          ? '• Meilleur passeur : ${bestAssister.key} (${bestAssister.value} passe(s)).'
-          : '• Top playmaker: ${bestAssister.key} (${bestAssister.value} assist(s)).');
+      final bestAssister =
+          (assistCounts.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value)))
+              .first;
+      buf.writeln(
+        isFrench
+            ? '• Meilleur passeur : ${bestAssister.key} (${bestAssister.value} passe(s)).'
+            : '• Top playmaker: ${bestAssister.key} (${bestAssister.value} assist(s)).',
+      );
     }
     if (cards.isNotEmpty || fouls.isNotEmpty) {
-      buf.writeln(isFrench
-          ? '• Bilan arbitral : ${cards.length} carton(s) et ${fouls.length} faute(s) signalée(s).'
-          : '• Disciplinary summary: ${cards.length} card(s) and ${fouls.length} foul(s).');
+      buf.writeln(
+        isFrench
+            ? '• Bilan arbitral : ${cards.length} carton(s) et ${fouls.length} faute(s) signalée(s).'
+            : '• Disciplinary summary: ${cards.length} card(s) and ${fouls.length} foul(s).',
+      );
     }
 
     return buf.toString();
@@ -373,15 +411,9 @@ class MatchRepository {
         fallbackTranscription: 'Commande vocale',
       );
     } on AudioException catch (e) {
-      return VoiceCommandResult(
-        transcription: '',
-        errorMessage: e.message,
-      );
+      return VoiceCommandResult(transcription: '', errorMessage: e.message);
     } on GeminiException catch (e) {
-      return VoiceCommandResult(
-        transcription: '',
-        errorMessage: e.message,
-      );
+      return VoiceCommandResult(transcription: '', errorMessage: e.message);
     } catch (e) {
       return VoiceCommandResult(
         transcription: '',
@@ -407,10 +439,7 @@ class MatchRepository {
 
     // Mode Gemini avec fallback automatique vers parseur hors-ligne si réseau/quota indisponible
     try {
-      final parsed = await _gemini.parseTextCommand(
-        text: text,
-        match: match,
-      );
+      final parsed = await _gemini.parseTextCommand(text: text, match: match);
       return _processParsedCommand(
         parsed: parsed,
         match: match,
@@ -418,17 +447,15 @@ class MatchRepository {
       );
     } on GeminiException catch (e) {
       final fallbackParsed = _offlineParser.parse(rawText: text, match: match);
-      if (fallbackParsed.type != GameEventType.unknown || fallbackParsed.matchControl != null) {
+      if (fallbackParsed.type != GameEventType.unknown ||
+          fallbackParsed.matchControl != null) {
         return _processParsedCommand(
           parsed: fallbackParsed,
           match: match,
           fallbackTranscription: text,
         );
       }
-      return VoiceCommandResult(
-        transcription: text,
-        errorMessage: e.message,
-      );
+      return VoiceCommandResult(transcription: text, errorMessage: e.message);
     } catch (e) {
       return VoiceCommandResult(
         transcription: text,
@@ -443,9 +470,12 @@ class MatchRepository {
     required GameMatch match,
     required String fallbackTranscription,
   }) async {
-    final transcription = parsed.transcription.isNotEmpty
-        ? parsed.transcription
-        : (fallbackTranscription.isNotEmpty ? fallbackTranscription : 'Commande vocale');
+    final transcription =
+        parsed.transcription.isNotEmpty
+            ? parsed.transcription
+            : (fallbackTranscription.isNotEmpty
+                ? fallbackTranscription
+                : 'Commande vocale');
 
     if (parsed.matchControl != null) {
       return VoiceCommandResult(
@@ -457,9 +487,10 @@ class MatchRepository {
     if (parsed.type == GameEventType.unknown) {
       return VoiceCommandResult(
         transcription: transcription,
-        errorMessage: parsed.transcription.isNotEmpty
-            ? 'Événement non reconnu : "${parsed.transcription}"'
-            : 'Aucune parole claire détectée. Réessayez.',
+        errorMessage:
+            parsed.transcription.isNotEmpty
+                ? 'Événement non reconnu : "${parsed.transcription}"'
+                : 'Aucune parole claire détectée. Réessayez.',
       );
     }
 
@@ -487,10 +518,7 @@ class MatchRepository {
 
     await _storage.saveEvent(match.id, event);
 
-    return VoiceCommandResult(
-      transcription: transcription,
-      event: event,
-    );
+    return VoiceCommandResult(transcription: transcription, event: event);
   }
 
   // ─────────────── EVENTS ───────────────
@@ -517,7 +545,11 @@ class MatchRepository {
   // ─────────────── SCORE ───────────────
 
   /// Ajoute 1 point (ou n points) au score d'une équipe via un GoalEvent.
-  Future<GameMatch> addPoint(GameMatch match, String teamId, {int points = 1}) async {
+  Future<GameMatch> addPoint(
+    GameMatch match,
+    String teamId, {
+    int points = 1,
+  }) async {
     final event = GoalEvent(
       id: _uuid.v4(),
       teamId: teamId,
@@ -689,63 +721,67 @@ class MatchRepository {
     required GameMatch match,
   }) {
     final normScorer = _normalizePlayerName(parsed.playerName, teamId, match);
-    final normAssist = _normalizePlayerName(parsed.secondaryPlayerName, teamId, match);
+    final normAssist = _normalizePlayerName(
+      parsed.secondaryPlayerName,
+      teamId,
+      match,
+    );
 
     return switch (parsed.type) {
       GameEventType.goal => GoalEvent(
-          id: id,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-          scorerName: normScorer,
-          assistName: normAssist,
-          isPenalty: parsed.isPenalty,
-          points: parsed.points ?? 1,
-        ),
+        id: id,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+        scorerName: normScorer,
+        assistName: normAssist,
+        isPenalty: parsed.isPenalty,
+        points: parsed.points ?? 1,
+      ),
       GameEventType.yellowCard || GameEventType.redCard => CardEvent(
-          id: id,
-          type: parsed.type,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-          playerName: normScorer,
-        ),
+        id: id,
+        type: parsed.type,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+        playerName: normScorer,
+      ),
       GameEventType.foul => FoulEvent(
-          id: id,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-          playerName: normScorer,
-        ),
+        id: id,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+        playerName: normScorer,
+      ),
       GameEventType.timeout => TimeoutEvent(
-          id: id,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-        ),
+        id: id,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+      ),
       GameEventType.substitution => SubstitutionEvent(
-          id: id,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-          playerOutName: normScorer,
-          playerInName: normAssist,
-        ),
+        id: id,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+        playerOutName: normScorer,
+        playerInName: normAssist,
+      ),
       GameEventType.correction => CorrectionEvent(
-          id: id,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-          action: parsed.correctionAction ?? 'undo_last',
-        ),
+        id: id,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+        action: parsed.correctionAction ?? 'undo_last',
+      ),
       _ => GenericEvent(
-          id: id,
-          type: parsed.type,
-          teamId: teamId,
-          minute: minute,
-          timestamp: timestamp,
-          notes: parsed.notes,
-        ),
+        id: id,
+        type: parsed.type,
+        teamId: teamId,
+        minute: minute,
+        timestamp: timestamp,
+        notes: parsed.notes,
+      ),
     };
   }
 

@@ -91,7 +91,9 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
-                        onTap: () => WatchConfigView.show(context, widget.viewModel),
+                        onTap:
+                            () =>
+                                WatchConfigView.show(context, widget.viewModel),
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
@@ -150,9 +152,15 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _WatchNavButton(icon: Icons.arrow_upward, onTap: _prevPage),
+                      _WatchNavButton(
+                        icon: Icons.arrow_upward,
+                        onTap: _prevPage,
+                      ),
                       const SizedBox(width: 10),
-                      _WatchNavButton(icon: Icons.arrow_downward, onTap: _nextPage),
+                      _WatchNavButton(
+                        icon: Icons.arrow_downward,
+                        onTap: _nextPage,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -166,7 +174,8 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   _WatchVoiceBadge(
                     isLocal: widget.viewModel.isLocalVoiceMode,
                     localLabel: l10n.localVoiceModeBadge,
-                    onTap: () => WatchConfigView.show(context, widget.viewModel),
+                    onTap:
+                        () => WatchConfigView.show(context, widget.viewModel),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -176,30 +185,39 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   ),
                   const SizedBox(height: 2),
                   _WatchTeamRow(
-                    teamA: widget.viewModel.teamAName.isEmpty
-                        ? 'A'
-                        : widget.viewModel.teamAName,
-                    teamB: widget.viewModel.teamBName.isEmpty
-                        ? 'B'
-                        : widget.viewModel.teamBName,
+                    teamA:
+                        widget.viewModel.teamAName.isEmpty
+                            ? 'A'
+                            : widget.viewModel.teamAName,
+                    teamB:
+                        widget.viewModel.teamBName.isEmpty
+                            ? 'B'
+                            : widget.viewModel.teamBName,
                   ),
                   const SizedBox(height: 3),
                   _WatchLineupButton(
                     isAnnouncing: widget.viewModel.isAnnouncingLineup,
-                    onTap: () => widget.viewModel.toggleLineupAnnouncement(
-                      sportLabel: widget.viewModel.selectedSport.label,
-                      languageCode: Localizations.localeOf(context).languageCode,
-                    ),
-                    label: widget.viewModel.isAnnouncingLineup
-                        ? l10n.stopAnnouncement
-                        : l10n.announceLineupsShort,
+                    onTap:
+                        () => widget.viewModel.toggleLineupAnnouncement(
+                          sportLabel: widget.viewModel.selectedSport.label,
+                          languageCode:
+                              Localizations.localeOf(context).languageCode,
+                        ),
+                    label:
+                        widget.viewModel.isAnnouncingLineup
+                            ? l10n.stopAnnouncement
+                            : l10n.announceLineupsShort,
                   ),
                   const SizedBox(height: 3),
                   InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    onTap: () => WatchDurationView.show(context, widget.viewModel),
+                    onTap:
+                        () => WatchDurationView.show(context, widget.viewModel),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -208,16 +226,27 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.timer_outlined, size: 10, color: AppTheme.primary),
+                          const Icon(
+                            Icons.timer_outlined,
+                            size: 10,
+                            color: AppTheme.primary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             widget.viewModel.breakDurationMinutes != null
                                 ? '${widget.viewModel.durationMinutes}m (Pause: ${widget.viewModel.breakDurationMinutes}m)'
                                 : '${widget.viewModel.durationMinutes}m (${l10n.noBreak})',
-                            style: const TextStyle(color: Colors.white70, fontSize: 9),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 9,
+                            ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.edit, size: 9, color: Colors.white38),
+                          const Icon(
+                            Icons.edit,
+                            size: 9,
+                            color: Colors.white38,
+                          ),
                         ],
                       ),
                     ),
@@ -226,7 +255,10 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                   if (widget.viewModel.errorMessage != null) ...[
                     Text(
                       widget.viewModel.errorMessage!,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 9),
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 9,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
@@ -308,10 +340,7 @@ class _WatchPageIndicator extends StatelessWidget {
 
 /// Grille de sports compacte pour la montre.
 class _WatchSportGrid extends StatelessWidget {
-  const _WatchSportGrid({
-    required this.selectedSport,
-    required this.onSelect,
-  });
+  const _WatchSportGrid({required this.selectedSport, required this.onSelect});
 
   final SportType selectedSport;
   final void Function(SportType) onSelect;
@@ -322,42 +351,45 @@ class _WatchSportGrid extends StatelessWidget {
       spacing: 5,
       runSpacing: 5,
       alignment: WrapAlignment.center,
-      children: SportType.values.map((sport) {
-        final isSelected = selectedSport == sport;
-        return GestureDetector(
-          onTap: () => onSelect(sport),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: 48,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.primary.withValues(alpha: 0.2)
-                  : Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? AppTheme.primary : Colors.white12,
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(sport.emoji, style: const TextStyle(fontSize: 13)),
-                Text(
-                  sport.label,
-                  style: TextStyle(
-                    color: isSelected ? AppTheme.primary : Colors.white60,
-                    fontSize: 7,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      children:
+          SportType.values.map((sport) {
+            final isSelected = selectedSport == sport;
+            return GestureDetector(
+              onTap: () => onSelect(sport),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 48,
+                height: 36,
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? AppTheme.primary.withValues(alpha: 0.2)
+                          : Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected ? AppTheme.primary : Colors.white12,
+                    width: isSelected ? 1.5 : 1,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(sport.emoji, style: const TextStyle(fontSize: 13)),
+                    Text(
+                      sport.label,
+                      style: TextStyle(
+                        color: isSelected ? AppTheme.primary : Colors.white60,
+                        fontSize: 7,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 }
@@ -387,8 +419,7 @@ class _WatchTextField extends StatelessWidget {
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white30, fontSize: 10),
         isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         filled: true,
         fillColor: color.withValues(alpha: 0.08),
         enabledBorder: OutlineInputBorder(
@@ -491,28 +522,30 @@ class _WatchStartButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
         decoration: BoxDecoration(
-          color: isCreating
-              ? AppTheme.primary.withValues(alpha: 0.4)
-              : AppTheme.primary,
+          color:
+              isCreating
+                  ? AppTheme.primary.withValues(alpha: 0.4)
+                  : AppTheme.primary,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: isCreating
-            ? const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.black,
+        child:
+            isCreating
+                ? const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.black,
+                  ),
+                )
+                : Text(
+                  '🚀 $label',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
-              )
-            : Text(
-                '🚀 $label',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
       ),
     );
   }
@@ -615,5 +648,3 @@ class _WatchLineupButton extends StatelessWidget {
     );
   }
 }
-
-

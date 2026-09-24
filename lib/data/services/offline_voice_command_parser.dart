@@ -141,9 +141,16 @@ class OfflineVoiceCommandParser {
 
   // ─────────────── DÉTECTION CARTONS ───────────────
 
-  ParsedVoiceCommand? _detectCardEvent(String text, String norm, GameMatch match) {
+  ParsedVoiceCommand? _detectCardEvent(
+    String text,
+    String norm,
+    GameMatch match,
+  ) {
     final isYellow = norm.contains('jaune') || norm.contains('yellow');
-    final isRed = (norm.contains('rouge') || norm.contains('red card') || norm.contains('red')) &&
+    final isRed =
+        (norm.contains('rouge') ||
+            norm.contains('red card') ||
+            norm.contains('red')) &&
         !norm.contains('equipe rouge') &&
         !norm.contains('les rouges') &&
         !norm.contains('red team');
@@ -169,7 +176,11 @@ class OfflineVoiceCommandParser {
 
   // ─────────────── DÉTECTION FAUTES ───────────────
 
-  ParsedVoiceCommand? _detectFoulEvent(String text, String norm, GameMatch match) {
+  ParsedVoiceCommand? _detectFoulEvent(
+    String text,
+    String norm,
+    GameMatch match,
+  ) {
     final isFoul = norm.contains('faute') || norm.contains('foul');
     final isPenalty = norm.contains('penalty') || norm.contains('penaltie');
 
@@ -192,8 +203,13 @@ class OfflineVoiceCommandParser {
 
   // ─────────────── DÉTECTION BUTS & POINTS ───────────────
 
-  ParsedVoiceCommand? _detectGoalEvent(String text, String norm, GameMatch match) {
-    final isGoalKeyword = norm.contains('but') ||
+  ParsedVoiceCommand? _detectGoalEvent(
+    String text,
+    String norm,
+    GameMatch match,
+  ) {
+    final isGoalKeyword =
+        norm.contains('but') ||
         norm.contains('goal') ||
         norm.contains('panier') ||
         norm.contains('basket') ||
@@ -225,7 +241,10 @@ class OfflineVoiceCommandParser {
 
     // Si un buteur ou un mot-clé de but/point est présent
     if (isGoalKeyword || scorer != null) {
-      final finalTeam = team ?? (scorer != null ? _findTeamForPlayer(scorer, match) : null) ?? match.teamA.name;
+      final finalTeam =
+          team ??
+          (scorer != null ? _findTeamForPlayer(scorer, match) : null) ??
+          match.teamA.name;
 
       return ParsedVoiceCommand(
         transcription: text,
@@ -244,7 +263,9 @@ class OfflineVoiceCommandParser {
 
   String? _detectAssist(String norm, GameMatch match, {String? excludePlayer}) {
     // Patterns : "assist [nom]", "assisted by [nom]", "pass from [nom]", "passe de [nom]", "passe [nom]"
-    final assistRegex = RegExp(r'(?:assisted by|assiste par|assist by|assist|pass from|passe de|passeur|passe)\s+([a-z0-9à-ÿ]+)');
+    final assistRegex = RegExp(
+      r'(?:assisted by|assiste par|assist by|assist|pass from|passe de|passeur|passe)\s+([a-z0-9à-ÿ]+)',
+    );
     final matchRegex = assistRegex.firstMatch(norm);
 
     if (matchRegex != null) {
@@ -252,7 +273,8 @@ class OfflineVoiceCommandParser {
       if (rawCandidate != null) {
         // Chercher parmi les joueurs enregistrés
         for (final p in [...match.teamA.players, ...match.teamB.players]) {
-          if (_normalize(p.name) == rawCandidate || _normalize(p.name).contains(rawCandidate)) {
+          if (_normalize(p.name) == rawCandidate ||
+              _normalize(p.name).contains(rawCandidate)) {
             if (p.name != excludePlayer) return p.name;
           }
         }
@@ -266,8 +288,16 @@ class OfflineVoiceCommandParser {
   // ─────────────── DÉTECTION DU NOMBRE DE POINTS ───────────────
 
   int _detectPoints(String norm) {
-    if (norm.contains('3 points') || norm.contains('trois points') || norm.contains('three points')) return 3;
-    if (norm.contains('2 points') || norm.contains('deux points') || norm.contains('two points')) return 2;
+    if (norm.contains('3 points') ||
+        norm.contains('trois points') ||
+        norm.contains('three points')) {
+      return 3;
+    }
+    if (norm.contains('2 points') ||
+        norm.contains('deux points') ||
+        norm.contains('two points')) {
+      return 2;
+    }
     return 1;
   }
 
@@ -309,13 +339,15 @@ class OfflineVoiceCommandParser {
       final teamANorm = _normalize(match.teamA.name);
       final teamBNorm = _normalize(match.teamB.name);
 
-      final isExplicitTeamA = _containsWord(norm, 'equipe a') ||
+      final isExplicitTeamA =
+          _containsWord(norm, 'equipe a') ||
           _containsWord(norm, 'team a') ||
           _containsWord(norm, 'equipe 1') ||
           _containsWord(norm, 'team 1') ||
           (teamANorm.isNotEmpty && _containsWord(norm, teamANorm));
 
-      final isExplicitTeamB = _containsWord(norm, 'equipe b') ||
+      final isExplicitTeamB =
+          _containsWord(norm, 'equipe b') ||
           _containsWord(norm, 'team b') ||
           _containsWord(norm, 'equipe 2') ||
           _containsWord(norm, 'team 2') ||
@@ -348,9 +380,30 @@ class OfflineVoiceCommandParser {
         final candidate = byMatch.group(1);
         // Ne pas prendre les mots de liaison / stopwords
         const stopWords = [
-          'equipe', 'team', 'les', 'le', 'la', 'un', 'une', 'des', 'the', 'a', 'an',
-          'ce', 'mon', 'son', 'qui', 'est', 'il', 'elle', 'nous', 'vous', 'ils', 'elles',
-          'match', 'game'
+          'equipe',
+          'team',
+          'les',
+          'le',
+          'la',
+          'un',
+          'une',
+          'des',
+          'the',
+          'a',
+          'an',
+          'ce',
+          'mon',
+          'son',
+          'qui',
+          'est',
+          'il',
+          'elle',
+          'nous',
+          'vous',
+          'ils',
+          'elles',
+          'match',
+          'game',
         ];
         if (candidate != null && !stopWords.contains(candidate)) {
           matchedPlayer = candidate[0].toUpperCase() + candidate.substring(1);

@@ -62,8 +62,9 @@ class StorageService {
   List<GameMatch> listMatches() {
     _assertInitialized();
     return _matchesBox.values
-        .map((json) =>
-            GameMatch.fromMap(jsonDecode(json) as Map<String, dynamic>))
+        .map(
+          (json) => GameMatch.fromMap(jsonDecode(json) as Map<String, dynamic>),
+        )
         .toList()
       ..sort((a, b) => b.startTime.compareTo(a.startTime));
   }
@@ -72,9 +73,10 @@ class StorageService {
   Future<void> deleteMatch(String matchId) async {
     _assertInitialized();
     await _matchesBox.delete(matchId);
-    final eventsToDelete = _eventsBox.keys
-        .where((key) => (key as String).startsWith('${matchId}_'))
-        .toList();
+    final eventsToDelete =
+        _eventsBox.keys
+            .where((key) => (key as String).startsWith('${matchId}_'))
+            .toList();
     await _eventsBox.deleteAll(eventsToDelete);
   }
 
@@ -96,9 +98,7 @@ class StorageService {
         .where((key) => (key as String).startsWith(prefix))
         .map((key) {
           final json = _eventsBox.get(key)!;
-          return GameEvent.fromMap(
-            jsonDecode(json) as Map<String, dynamic>,
-          );
+          return GameEvent.fromMap(jsonDecode(json) as Map<String, dynamic>);
         })
         .toList()
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -149,13 +149,18 @@ class StorageService {
   /// Marque l'onboarding IA comme vu.
   Future<void> setAiOnboardingSeen([bool seen = true]) async {
     _assertInitialized();
-    await _settingsBox.put(_SettingKeys.hasSeenOnboarding, seen ? 'true' : 'false');
+    await _settingsBox.put(
+      _SettingKeys.hasSeenOnboarding,
+      seen ? 'true' : 'false',
+    );
   }
 
   /// Vérifie si l'IA est configurée avec une clé valide.
   bool isAiConfigured() {
     final key = getApiKey();
-    return key != null && key.isNotEmpty && !key.contains('your_gemini_api_key');
+    return key != null &&
+        key.isNotEmpty &&
+        !key.contains('your_gemini_api_key');
   }
 
   /// Récupère le moteur vocal actif : 'local' ou 'gemini'.
@@ -172,7 +177,10 @@ class StorageService {
   /// Enregistre le moteur vocal choisi ('local' ou 'gemini').
   Future<void> saveVoiceEngine(String engine) async {
     _assertInitialized();
-    await _settingsBox.put(_SettingKeys.voiceEngine, engine.trim().toLowerCase());
+    await _settingsBox.put(
+      _SettingKeys.voiceEngine,
+      engine.trim().toLowerCase(),
+    );
   }
 
   /// Indique si le mode vocal actif est le mode local (sans IA).

@@ -42,15 +42,15 @@ class _SetupViewState extends State<SetupView> {
       initialVoiceEngine: widget.viewModel.voiceEngine,
       isOnboarding: isOnboarding,
       onDismissOnboarding: () => widget.viewModel.dismissAiOnboarding(),
-      onSave: (apiKey, model, voiceEngine) => widget.viewModel.saveAiConfig(
-        apiKey: apiKey,
-        model: model,
-        voiceEngine: voiceEngine,
-      ),
-      onTestConnection: (apiKey, model) => widget.viewModel.testAiConnection(
-        apiKey: apiKey,
-        model: model,
-      ),
+      onSave:
+          (apiKey, model, voiceEngine) => widget.viewModel.saveAiConfig(
+            apiKey: apiKey,
+            model: model,
+            voiceEngine: voiceEngine,
+          ),
+      onTestConnection:
+          (apiKey, model) =>
+              widget.viewModel.testAiConnection(apiKey: apiKey, model: model),
     );
   }
 
@@ -109,7 +109,11 @@ class _SetupViewState extends State<SetupView> {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    const Icon(Icons.arrow_drop_down, color: Colors.white60, size: 16),
+                    const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white60,
+                      size: 16,
+                    ),
                   ],
                 ),
               ),
@@ -117,28 +121,35 @@ class _SetupViewState extends State<SetupView> {
                 ScoreBotApp.setLocale(context, Locale(lang));
                 widget.viewModel.setLanguageCode(lang);
               },
-              itemBuilder: (ctx) => [
-                const PopupMenuItem(
-                  value: 'en',
-                  child: Row(
-                    children: [
-                      Text('🇬🇧'),
-                      SizedBox(width: 8),
-                      Text('English', style: TextStyle(color: AppTheme.textPrimary)),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'fr',
-                  child: Row(
-                    children: [
-                      Text('🇫🇷'),
-                      SizedBox(width: 8),
-                      Text('Français', style: TextStyle(color: AppTheme.textPrimary)),
-                    ],
-                  ),
-                ),
-              ],
+              itemBuilder:
+                  (ctx) => [
+                    const PopupMenuItem(
+                      value: 'en',
+                      child: Row(
+                        children: [
+                          Text('🇬🇧'),
+                          SizedBox(width: 8),
+                          Text(
+                            'English',
+                            style: TextStyle(color: AppTheme.textPrimary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'fr',
+                      child: Row(
+                        children: [
+                          Text('🇫🇷'),
+                          SizedBox(width: 8),
+                          Text(
+                            'Français',
+                            style: TextStyle(color: AppTheme.textPrimary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
             ),
           ),
           const SizedBox(width: 6),
@@ -152,7 +163,8 @@ class _SetupViewState extends State<SetupView> {
                   children: [
                     Icon(
                       Icons.auto_awesome,
-                      color: isConfigured ? AppTheme.primary : Colors.amberAccent,
+                      color:
+                          isConfigured ? AppTheme.primary : Colors.amberAccent,
                     ),
                     if (!isConfigured)
                       Positioned(
@@ -250,7 +262,9 @@ class _SetupViewState extends State<SetupView> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Text(
                       widget.viewModel.errorMessage!,
@@ -263,9 +277,10 @@ class _SetupViewState extends State<SetupView> {
 
                 // ─── Bouton démarrer ───
                 ElevatedButton(
-                  onPressed: widget.viewModel.isCreating
-                      ? null
-                      : () => _startMatch(context),
+                  onPressed:
+                      widget.viewModel.isCreating
+                          ? null
+                          : () => _startMatch(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.black,
@@ -274,19 +289,20 @@ class _SetupViewState extends State<SetupView> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: widget.viewModel.isCreating
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          '🚀 ${l10n.startMatch}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                  child:
+                      widget.viewModel.isCreating
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : Text(
+                            '🚀 ${l10n.startMatch}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
                 ),
               ],
             ),
@@ -301,10 +317,7 @@ class _SetupViewState extends State<SetupView> {
     FocusScope.of(context).unfocus();
     final match = await widget.viewModel.startMatch();
     if (match != null && mounted) {
-      navigator.pushReplacementNamed(
-        '/live',
-        arguments: match,
-      );
+      navigator.pushReplacementNamed('/live', arguments: match);
     }
   }
 }
@@ -336,34 +349,40 @@ class _SportSelector extends StatelessWidget {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: SportType.values.map((sport) {
-        final isSelected = viewModel.selectedSport == sport;
-        return GestureDetector(
-          onTap: () => viewModel.selectSport(sport),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.primary.withValues(alpha: 0.2)
-                  : AppTheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? AppTheme.primary : AppTheme.divider,
-                width: isSelected ? 2 : 1,
+      children:
+          SportType.values.map((sport) {
+            final isSelected = viewModel.selectedSport == sport;
+            return GestureDetector(
+              onTap: () => viewModel.selectSport(sport),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? AppTheme.primary.withValues(alpha: 0.2)
+                          : AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? AppTheme.primary : AppTheme.divider,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Text(
+                  '${sport.emoji} ${sport.label}',
+                  style: TextStyle(
+                    color:
+                        isSelected ? AppTheme.primary : AppTheme.textSecondary,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              '${sport.emoji} ${sport.label}',
-              style: TextStyle(
-                color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-                fontWeight:
-                    isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 }
@@ -460,9 +479,10 @@ class _DurationSlider extends StatelessWidget {
                   ? l10n.durationMinutes(viewModel.breakDurationMinutes!)
                   : l10n.noBreak,
               style: TextStyle(
-                color: viewModel.breakDurationMinutes != null
-                    ? Colors.tealAccent
-                    : Colors.white38,
+                color:
+                    viewModel.breakDurationMinutes != null
+                        ? Colors.tealAccent
+                        : Colors.white38,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
@@ -471,7 +491,10 @@ class _DurationSlider extends StatelessWidget {
         ),
         if (viewModel.breakDurationMinutes != null)
           Slider(
-            value: viewModel.breakDurationMinutes!.toDouble().clamp(5.0, maxBreak.toDouble()),
+            value: viewModel.breakDurationMinutes!.toDouble().clamp(
+              5.0,
+              maxBreak.toDouble(),
+            ),
             min: 5,
             max: maxBreak.toDouble(),
             divisions: (maxBreak - 5).clamp(1, 50),
@@ -497,12 +520,18 @@ class _DurationSlider extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               ChoiceChip(
-                label: Text('Mi-temps (${(viewModel.durationMinutes / 2).round()} min)',
-                    style: const TextStyle(fontSize: 11)),
-                selected: viewModel.breakDurationMinutes == (viewModel.durationMinutes / 2).round(),
+                label: Text(
+                  'Mi-temps (${(viewModel.durationMinutes / 2).round()} min)',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                selected:
+                    viewModel.breakDurationMinutes ==
+                    (viewModel.durationMinutes / 2).round(),
                 onSelected: (selected) {
                   if (selected) {
-                    viewModel.setBreakDuration((viewModel.durationMinutes / 2).round());
+                    viewModel.setBreakDuration(
+                      (viewModel.durationMinutes / 2).round(),
+                    );
                   }
                 },
                 selectedColor: Colors.tealAccent.withValues(alpha: 0.3),
@@ -620,7 +649,10 @@ class _PlayersSectionState extends State<_PlayersSection> {
                 child: TextField(
                   controller: _controller,
                   onSubmitted: (_) => _submit(),
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 13,
+                  ),
                   decoration: InputDecoration(
                     hintText: l10n.addPlayerHint,
                     hintStyle: const TextStyle(
@@ -668,7 +700,10 @@ class _PlayersSectionState extends State<_PlayersSection> {
                   onDeleted: () => widget.onRemovePlayer(index),
                   deleteIconColor: Colors.white70,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 0,
+                  ),
                 );
               }),
             ),
@@ -681,10 +716,7 @@ class _PlayersSectionState extends State<_PlayersSection> {
 
 /// Carte indiquant l'état d'activation du modèle IA et du mode vocal.
 class _AiStatusCard extends StatelessWidget {
-  const _AiStatusCard({
-    required this.viewModel,
-    required this.onConfigure,
-  });
+  const _AiStatusCard({required this.viewModel, required this.onConfigure});
 
   final SetupViewModel viewModel;
   final VoidCallback onConfigure;
@@ -696,26 +728,27 @@ class _AiStatusCard extends StatelessWidget {
     final isConfigured = viewModel.isAiConfigured;
     final modelName = viewModel.currentAiModel;
 
-    final (icon, title, subtitle, color) = isLocal
-        ? (
-            Icons.offline_bolt,
-            l10n.aiStatusLocal,
-            l10n.aiStatusLocalSub,
-            AppTheme.primary,
-          )
-        : isConfigured
+    final (icon, title, subtitle, color) =
+        isLocal
             ? (
-                Icons.auto_awesome,
-                l10n.aiStatusGemini,
-                l10n.aiStatusGeminiSub(modelName),
-                AppTheme.primary,
-              )
+              Icons.offline_bolt,
+              l10n.aiStatusLocal,
+              l10n.aiStatusLocalSub,
+              AppTheme.primary,
+            )
+            : isConfigured
+            ? (
+              Icons.auto_awesome,
+              l10n.aiStatusGemini,
+              l10n.aiStatusGeminiSub(modelName),
+              AppTheme.primary,
+            )
             : (
-                Icons.mic_off_outlined,
-                l10n.aiStatusUnconfigured,
-                l10n.aiStatusUnconfiguredSub,
-                Colors.amberAccent,
-              );
+              Icons.mic_off_outlined,
+              l10n.aiStatusUnconfigured,
+              l10n.aiStatusUnconfiguredSub,
+              Colors.amberAccent,
+            );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -788,10 +821,11 @@ class _LineupAnnouncementButton extends StatelessWidget {
     final primaryColor = isAnnouncing ? Colors.amberAccent : AppTheme.primary;
 
     return OutlinedButton.icon(
-      onPressed: () => viewModel.toggleLineupAnnouncement(
-        sportLabel: sportLabel,
-        languageCode: Localizations.localeOf(context).languageCode,
-      ),
+      onPressed:
+          () => viewModel.toggleLineupAnnouncement(
+            sportLabel: sportLabel,
+            languageCode: Localizations.localeOf(context).languageCode,
+          ),
       icon: Icon(
         isAnnouncing ? Icons.stop_circle_outlined : Icons.campaign_outlined,
         color: primaryColor,
@@ -806,17 +840,16 @@ class _LineupAnnouncementButton extends StatelessWidget {
         ),
       ),
       style: OutlinedButton.styleFrom(
-        backgroundColor: primaryColor.withValues(alpha: isAnnouncing ? 0.15 : 0.06),
+        backgroundColor: primaryColor.withValues(
+          alpha: isAnnouncing ? 0.15 : 0.06,
+        ),
         side: BorderSide(
           color: primaryColor.withValues(alpha: isAnnouncing ? 0.8 : 0.35),
           width: isAnnouncing ? 1.5 : 1,
         ),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
-

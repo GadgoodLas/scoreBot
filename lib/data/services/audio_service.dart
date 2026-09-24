@@ -7,12 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 /// États possibles de l'enregistrement audio.
-enum RecordingState {
-  idle,
-  starting,
-  recording,
-  processing,
-}
+enum RecordingState { idle, starting, recording, processing }
 
 /// Service de gestion du microphone et de l'enregistrement audio.
 /// Compatible Web, Android, iOS et Windows.
@@ -105,7 +100,8 @@ class AudioService {
 
     // Assurer une durée minimale d'enregistrement (au moins 500ms)
     if (_recordingStartTime != null) {
-      final elapsedMs = DateTime.now().difference(_recordingStartTime!).inMilliseconds;
+      final elapsedMs =
+          DateTime.now().difference(_recordingStartTime!).inMilliseconds;
       if (elapsedMs < 500) {
         await Future.delayed(Duration(milliseconds: 500 - elapsedMs));
       }

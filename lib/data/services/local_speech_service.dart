@@ -6,7 +6,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 /// Utilise le moteur de reconnaissance vocale natif d'Android et d'iOS sans connexion cloud.
 class LocalSpeechService {
   LocalSpeechService({stt.SpeechToText? speech})
-      : _speech = speech ?? stt.SpeechToText();
+    : _speech = speech ?? stt.SpeechToText();
 
   final stt.SpeechToText _speech;
   bool _isInitialized = false;
@@ -42,7 +42,9 @@ class LocalSpeechService {
     if (!_isInitialized) {
       final available = await init();
       if (!available) {
-        throw StateError('Le moteur de reconnaissance vocale local n\'est pas disponible.');
+        throw StateError(
+          'Le moteur de reconnaissance vocale local n\'est pas disponible.',
+        );
       }
     }
 

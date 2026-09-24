@@ -62,36 +62,36 @@ class GoalEvent extends GameEvent {
 
   @override
   List<Object?> get props => [
-        ...super.props,
-        scorerName,
-        assistName,
-        isPenalty,
-        points,
-      ];
+    ...super.props,
+    scorerName,
+    assistName,
+    isPenalty,
+    points,
+  ];
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-        'scorerName': scorerName,
-        'assistName': assistName,
-        'isPenalty': isPenalty,
-        'points': points,
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+    'scorerName': scorerName,
+    'assistName': assistName,
+    'isPenalty': isPenalty,
+    'points': points,
+  };
 
   factory GoalEvent.fromMap(Map<String, dynamic> map) => GoalEvent(
-        id: map['id'] as String,
-        teamId: map['teamId'] as String,
-        minute: map['minute'] as int,
-        timestamp: DateTime.parse(map['timestamp'] as String),
-        scorerName: map['scorerName'] as String?,
-        assistName: map['assistName'] as String?,
-        isPenalty: map['isPenalty'] as bool? ?? false,
-        points: map['points'] as int? ?? 1,
-      );
+    id: map['id'] as String,
+    teamId: map['teamId'] as String,
+    minute: map['minute'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+    scorerName: map['scorerName'] as String?,
+    assistName: map['assistName'] as String?,
+    isPenalty: map['isPenalty'] as bool? ?? false,
+    points: map['points'] as int? ?? 1,
+  );
 }
 
 /// Carton jaune ou rouge.
@@ -105,8 +105,8 @@ class CardEvent extends GameEvent {
     this.playerName,
     this.reason,
   }) : assert(
-          type == GameEventType.yellowCard || type == GameEventType.redCard,
-        );
+         type == GameEventType.yellowCard || type == GameEventType.redCard,
+       );
 
   final String? playerName;
   final String? reason;
@@ -116,24 +116,24 @@ class CardEvent extends GameEvent {
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-        'playerName': playerName,
-        'reason': reason,
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+    'playerName': playerName,
+    'reason': reason,
+  };
 
   factory CardEvent.fromMap(Map<String, dynamic> map) => CardEvent(
-        id: map['id'] as String,
-        type: GameEventType.values.firstWhere((t) => t.name == map['type']),
-        teamId: map['teamId'] as String,
-        minute: map['minute'] as int,
-        timestamp: DateTime.parse(map['timestamp'] as String),
-        playerName: map['playerName'] as String?,
-        reason: map['reason'] as String?,
-      );
+    id: map['id'] as String,
+    type: GameEventType.values.firstWhere((t) => t.name == map['type']),
+    teamId: map['teamId'] as String,
+    minute: map['minute'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+    playerName: map['playerName'] as String?,
+    reason: map['reason'] as String?,
+  );
 }
 
 /// Faute.
@@ -153,21 +153,21 @@ class FoulEvent extends GameEvent {
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-        'playerName': playerName,
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+    'playerName': playerName,
+  };
 
   factory FoulEvent.fromMap(Map<String, dynamic> map) => FoulEvent(
-        id: map['id'] as String,
-        teamId: map['teamId'] as String,
-        minute: map['minute'] as int,
-        timestamp: DateTime.parse(map['timestamp'] as String),
-        playerName: map['playerName'] as String?,
-      );
+    id: map['id'] as String,
+    teamId: map['teamId'] as String,
+    minute: map['minute'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+    playerName: map['playerName'] as String?,
+  );
 }
 
 /// Temps mort.
@@ -181,19 +181,19 @@ class TimeoutEvent extends GameEvent {
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory TimeoutEvent.fromMap(Map<String, dynamic> map) => TimeoutEvent(
-        id: map['id'] as String,
-        teamId: map['teamId'] as String,
-        minute: map['minute'] as int,
-        timestamp: DateTime.parse(map['timestamp'] as String),
-      );
+    id: map['id'] as String,
+    teamId: map['teamId'] as String,
+    minute: map['minute'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+  );
 }
 
 /// Remplacement de joueur.
@@ -215,14 +215,14 @@ class SubstitutionEvent extends GameEvent {
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-        'playerOutName': playerOutName,
-        'playerInName': playerInName,
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+    'playerOutName': playerOutName,
+    'playerInName': playerInName,
+  };
 
   factory SubstitutionEvent.fromMap(Map<String, dynamic> map) =>
       SubstitutionEvent(
@@ -255,23 +255,23 @@ class CorrectionEvent extends GameEvent {
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-        'action': action,
-        'targetEventId': targetEventId,
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+    'action': action,
+    'targetEventId': targetEventId,
+  };
 
   factory CorrectionEvent.fromMap(Map<String, dynamic> map) => CorrectionEvent(
-        id: map['id'] as String,
-        teamId: map['teamId'] as String,
-        minute: map['minute'] as int,
-        timestamp: DateTime.parse(map['timestamp'] as String),
-        action: map['action'] as String? ?? 'undo_last',
-        targetEventId: map['targetEventId'] as String?,
-      );
+    id: map['id'] as String,
+    teamId: map['teamId'] as String,
+    minute: map['minute'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+    action: map['action'] as String? ?? 'undo_last',
+    targetEventId: map['targetEventId'] as String?,
+  );
 }
 
 /// Événement générique pour les types non structurés.
@@ -292,24 +292,23 @@ class GenericEvent extends GameEvent {
 
   @override
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'type': type.name,
-        'teamId': teamId,
-        'minute': minute,
-        'timestamp': timestamp.toIso8601String(),
-        'notes': notes,
-      };
+    'id': id,
+    'type': type.name,
+    'teamId': teamId,
+    'minute': minute,
+    'timestamp': timestamp.toIso8601String(),
+    'notes': notes,
+  };
 
   factory GenericEvent.fromMap(Map<String, dynamic> map) => GenericEvent(
-        id: map['id'] as String,
-        type: GameEventType.values.firstWhere(
-          (t) => t.name == map['type'],
-          orElse: () => GameEventType.unknown,
-        ),
-        teamId: map['teamId'] as String,
-        minute: map['minute'] as int,
-        timestamp: DateTime.parse(map['timestamp'] as String),
-        notes: map['notes'] as String?,
-      );
+    id: map['id'] as String,
+    type: GameEventType.values.firstWhere(
+      (t) => t.name == map['type'],
+      orElse: () => GameEventType.unknown,
+    ),
+    teamId: map['teamId'] as String,
+    minute: map['minute'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+    notes: map['notes'] as String?,
+  );
 }
-

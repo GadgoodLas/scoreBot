@@ -96,15 +96,15 @@ void _openAiSettings(BuildContext context, LiveViewModel viewModel) {
     initialVoiceEngine: viewModel.voiceEngine,
     initialApiKey: viewModel.currentApiKey,
     initialModel: viewModel.currentAiModel,
-    onSave: (apiKey, model, voiceEngine) => viewModel.saveAiConfig(
-      apiKey: apiKey,
-      model: model,
-      voiceEngine: voiceEngine,
-    ),
-    onTestConnection: (apiKey, model) => viewModel.testAiConnection(
-      apiKey: apiKey,
-      model: model,
-    ),
+    onSave:
+        (apiKey, model, voiceEngine) => viewModel.saveAiConfig(
+          apiKey: apiKey,
+          model: model,
+          voiceEngine: voiceEngine,
+        ),
+    onTestConnection:
+        (apiKey, model) =>
+            viewModel.testAiConnection(apiKey: apiKey, model: model),
   );
 }
 
@@ -143,115 +143,117 @@ class _MatchHeader extends StatelessWidget {
                         ? Icons.auto_awesome
                         : Icons.warning_amber_rounded),
                 size: 20,
-                color: viewModel.isLocalVoiceMode
-                    ? Colors.tealAccent
-                    : (viewModel.isAiConfigured
-                        ? AppTheme.primary
-                        : Colors.amberAccent),
+                color:
+                    viewModel.isLocalVoiceMode
+                        ? Colors.tealAccent
+                        : (viewModel.isAiConfigured
+                            ? AppTheme.primary
+                            : Colors.amberAccent),
               ),
-              tooltip: viewModel.isLocalVoiceMode
-                  ? 'Mode vocal : Local (Sans IA)'
-                  : (viewModel.isAiConfigured
-                      ? 'Modèle IA : ${viewModel.currentAiModel}'
-                      : 'Configurer l\'IA / Mode vocal'),
+              tooltip:
+                  viewModel.isLocalVoiceMode
+                      ? 'Mode vocal : Local (Sans IA)'
+                      : (viewModel.isAiConfigured
+                          ? 'Modèle IA : ${viewModel.currentAiModel}'
+                          : 'Configurer l\'IA / Mode vocal'),
               onPressed: () => _openAiSettings(context, viewModel),
             ),
           ),
           Column(
             children: [
-          // Chronomètre
-          Text(
-            viewModel.elapsedFormatted,
-            style: const TextStyle(
-              color: AppTheme.primary,
-              fontSize: 20,
-              fontWeight: FontWeight.w300,
-              letterSpacing: 4,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${match.sport.emoji} ${match.sport.label} • ${viewModel.currentMinute}\'',
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Score
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => viewModel.incrementScoreA(),
-                  onDoubleTap: () => viewModel.decrementScoreA(),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    children: [
-                      Text(
-                        match.teamA.name,
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${viewModel.scoreA}',
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 56,
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
+              // Chronomètre
+              Text(
+                viewModel.elapsedFormatted,
+                style: const TextStyle(
+                  color: AppTheme.primary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w300,
+                  letterSpacing: 4,
+                  fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
-              const Text(
-                '—',
-                style: TextStyle(
+              const SizedBox(height: 4),
+              Text(
+                '${match.sport.emoji} ${match.sport.label} • ${viewModel.currentMinute}\'',
+                style: const TextStyle(
                   color: AppTheme.textSecondary,
-                  fontSize: 32,
+                  fontSize: 12,
                 ),
               ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => viewModel.incrementScoreB(),
-                  onDoubleTap: () => viewModel.decrementScoreB(),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    children: [
-                      Text(
-                        match.teamB.name,
-                        style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 16),
+
+              // Score
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => viewModel.incrementScoreA(),
+                      onDoubleTap: () => viewModel.decrementScoreA(),
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        children: [
+                          Text(
+                            match.teamA.name,
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${viewModel.scoreA}',
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 56,
+                              fontWeight: FontWeight.bold,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${viewModel.scoreB}',
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 56,
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  const Text(
+                    '—',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 32,
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => viewModel.incrementScoreB(),
+                      onDoubleTap: () => viewModel.decrementScoreB(),
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        children: [
+                          Text(
+                            match.teamB.name,
+                            style: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${viewModel.scoreB}',
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 56,
+                              fontWeight: FontWeight.bold,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
         ],
       ),
     );
@@ -286,7 +288,11 @@ class _LiveAlertBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(isBreak ? Icons.pause_circle : Icons.timer_off, color: color, size: 22),
+              Icon(
+                isBreak ? Icons.pause_circle : Icons.timer_off,
+                color: color,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -339,15 +345,24 @@ class _LiveAlertBanner extends StatelessWidget {
                     }
                   }
                 },
-                icon: Icon(isBreak ? Icons.pause : Icons.sports_score, size: 14),
+                icon: Icon(
+                  isBreak ? Icons.pause : Icons.sports_score,
+                  size: 14,
+                ),
                 label: Text(
                   isBreak ? l10n.takeBreak : l10n.finishMatch,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   minimumSize: const Size(0, 32),
                 ),
               ),
@@ -370,8 +385,14 @@ class _StatusBanner extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final (text, color) = switch (status) {
       GameMatchStatus.paused => ('⏸ ${l10n.matchPaused}', Colors.orangeAccent),
-      GameMatchStatus.halftime => ('⏱ ${l10n.matchHalftime}', Colors.amberAccent),
-      GameMatchStatus.finished => ('🏁 ${l10n.matchFinished}', Colors.greenAccent),
+      GameMatchStatus.halftime => (
+        '⏱ ${l10n.matchHalftime}',
+        Colors.amberAccent,
+      ),
+      GameMatchStatus.finished => (
+        '🏁 ${l10n.matchFinished}',
+        Colors.greenAccent,
+      ),
       _ => ('', Colors.transparent),
     };
 
@@ -427,10 +448,7 @@ class _EventFeed extends StatelessWidget {
       reverse: false,
       itemCount: events.length,
       itemBuilder: (context, index) {
-        return _EventTile(
-          event: events[index],
-          match: viewModel.match,
-        );
+        return _EventTile(event: events[index], match: viewModel.match);
       },
     );
   }
@@ -444,12 +462,10 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final teamName = event.teamId == match.teamA.id
-        ? match.teamA.name
-        : match.teamB.name;
-    final teamColor = event.teamId == match.teamA.id
-        ? Colors.redAccent
-        : Colors.blueAccent;
+    final teamName =
+        event.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
+    final teamColor =
+        event.teamId == match.teamA.id ? Colors.redAccent : Colors.blueAccent;
 
     final description = _buildDescription();
 
@@ -498,16 +514,13 @@ class _EventTile extends StatelessWidget {
 
   String _buildDescription() {
     return switch (event) {
-      GoalEvent(:final scorerName, :final assistName, :final isPenalty) =>
-        [
-          if (scorerName != null) scorerName,
-          if (assistName != null) '(assist: $assistName)',
-          if (isPenalty) '⚠️ penalty',
-        ].join(' '),
-      CardEvent(:final playerName, :final type) =>
-        playerName ?? type.label,
-      FoulEvent(:final playerName) =>
-        playerName ?? 'Faute',
+      GoalEvent(:final scorerName, :final assistName, :final isPenalty) => [
+        if (scorerName != null) scorerName,
+        if (assistName != null) '(assist: $assistName)',
+        if (isPenalty) '⚠️ penalty',
+      ].join(' '),
+      CardEvent(:final playerName, :final type) => playerName ?? type.label,
+      FoulEvent(:final playerName) => playerName ?? 'Faute',
       SubstitutionEvent(:final playerOutName, :final playerInName) =>
         '${playerOutName ?? '?'} → ${playerInName ?? '?'}',
       CorrectionEvent() => 'Correction / annulation',
@@ -529,25 +542,25 @@ class _VoiceFeedback extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       child: switch (viewModel.voiceState) {
         VoiceState.recording => _FeedbackBanner(
-            key: const ValueKey('recording'),
-            message: '🎙 Enregistrement...',
-            color: Colors.redAccent,
-          ),
+          key: const ValueKey('recording'),
+          message: '🎙 Enregistrement...',
+          color: Colors.redAccent,
+        ),
         VoiceState.processing => _FeedbackBanner(
-            key: const ValueKey('processing'),
-            message: '⚙️ Analyse en cours...',
-            color: Colors.orangeAccent,
-          ),
+          key: const ValueKey('processing'),
+          message: '⚙️ Analyse en cours...',
+          color: Colors.orangeAccent,
+        ),
         VoiceState.success => _FeedbackBanner(
-            key: const ValueKey('success'),
-            message: '✅ ${viewModel.lastTranscription ?? 'Événement enregistré'}',
-            color: Colors.greenAccent,
-          ),
+          key: const ValueKey('success'),
+          message: '✅ ${viewModel.lastTranscription ?? 'Événement enregistré'}',
+          color: Colors.greenAccent,
+        ),
         VoiceState.error => _FeedbackBanner(
-            key: const ValueKey('error'),
-            message: '❌ ${viewModel.lastError ?? 'Erreur'}',
-            color: Colors.redAccent,
-          ),
+          key: const ValueKey('error'),
+          message: '❌ ${viewModel.lastError ?? 'Erreur'}',
+          color: Colors.redAccent,
+        ),
         VoiceState.idle => const SizedBox.shrink(key: ValueKey('idle')),
       },
     );
@@ -596,24 +609,25 @@ class _MicButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRecording = viewModel.voiceState == VoiceState.recording;
     final isProcessing = viewModel.voiceState == VoiceState.processing;
-    final isDisabled = isProcessing ||
-        viewModel.match.status != GameMatchStatus.live;
+    final isDisabled =
+        isProcessing || viewModel.match.status != GameMatchStatus.live;
 
     final isReady = viewModel.isVoiceReady;
     final isLocal = viewModel.isLocalVoiceMode;
     final hintText = switch (viewModel.voiceState) {
       VoiceState.recording =>
         '🔴 Enregistrement (${viewModel.recordingSeconds}s)... Cliquez pour envoyer',
-      VoiceState.processing => isLocal
-          ? '⚡ Analyse locale...'
-          : '⚙️ Analyse par Gemini...',
+      VoiceState.processing =>
+        isLocal ? '⚡ Analyse locale...' : '⚙️ Analyse par Gemini...',
       VoiceState.success => '✅ Événement pris en compte',
-      VoiceState.error => viewModel.lastError ?? '❌ Réessayez ou utilisez le clavier ⌨️',
-      VoiceState.idle => isReady
-          ? (isLocal
-              ? '🎙️ Mode Sans IA (Local) : dictez ou ⌨️ saisissez'
-              : '🎙️ Cliquez pour dicter (ou ⌨️ pour saisir)')
-          : '⚠️ Mode vocal non configuré (cliquez pour activer)',
+      VoiceState.error =>
+        viewModel.lastError ?? '❌ Réessayez ou utilisez le clavier ⌨️',
+      VoiceState.idle =>
+        isReady
+            ? (isLocal
+                ? '🎙️ Mode Sans IA (Local) : dictez ou ⌨️ saisissez'
+                : '🎙️ Cliquez pour dicter (ou ⌨️ pour saisir)')
+            : '⚠️ Mode vocal non configuré (cliquez pour activer)',
     };
 
     return Padding(
@@ -626,55 +640,60 @@ class _MicButton extends StatelessWidget {
             children: [
               const SizedBox(width: 48), // Pour centrer le micro
               GestureDetector(
-                onTap: isDisabled
-                    ? null
-                    : () {
-                        if (!isReady) {
-                          _openAiSettings(context, viewModel);
-                        } else {
-                          viewModel.toggleListening();
-                        }
-                      },
+                onTap:
+                    isDisabled
+                        ? null
+                        : () {
+                          if (!isReady) {
+                            _openAiSettings(context, viewModel);
+                          } else {
+                            viewModel.toggleListening();
+                          }
+                        },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: isRecording ? 84 : 70,
                   height: isRecording ? 84 : 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDisabled
-                        ? AppTheme.surface
-                        : isRecording
+                    color:
+                        isDisabled
+                            ? AppTheme.surface
+                            : isRecording
                             ? Colors.redAccent
                             : isReady
-                                ? (isLocal ? Colors.tealAccent : AppTheme.primary)
-                                : Colors.amber.shade700,
-                    boxShadow: isRecording
-                        ? [
-                            BoxShadow(
-                              color: Colors.redAccent.withValues(alpha: 0.5),
-                              blurRadius: 20,
-                              spreadRadius: 4,
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: (isReady
-                                      ? (isLocal ? Colors.tealAccent : AppTheme.primary)
-                                      : Colors.amber)
-                                  .withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                            ),
-                          ],
+                            ? (isLocal ? Colors.tealAccent : AppTheme.primary)
+                            : Colors.amber.shade700,
+                    boxShadow:
+                        isRecording
+                            ? [
+                              BoxShadow(
+                                color: Colors.redAccent.withValues(alpha: 0.5),
+                                blurRadius: 20,
+                                spreadRadius: 4,
+                              ),
+                            ]
+                            : [
+                              BoxShadow(
+                                color: (isReady
+                                        ? (isLocal
+                                            ? Colors.tealAccent
+                                            : AppTheme.primary)
+                                        : Colors.amber)
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ],
                   ),
                   child: Icon(
                     isProcessing
                         ? Icons.hourglass_top
                         : isRecording
-                            ? Icons.stop
-                            : isReady
-                                ? (isLocal ? Icons.offline_bolt : Icons.mic)
-                                : Icons.mic_off,
+                        ? Icons.stop
+                        : isReady
+                        ? (isLocal ? Icons.offline_bolt : Icons.mic)
+                        : Icons.mic_off,
                     color: isDisabled ? AppTheme.textSecondary : Colors.black,
                     size: 32,
                   ),
@@ -685,15 +704,16 @@ class _MicButton extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.keyboard, color: AppTheme.textSecondary),
                 tooltip: 'Saisir du texte',
-                onPressed: isDisabled
-                    ? null
-                    : () {
-                        if (!isReady) {
-                          _openAiSettings(context, viewModel);
-                        } else {
-                          _showTextInputDialog(context);
-                        }
-                      },
+                onPressed:
+                    isDisabled
+                        ? null
+                        : () {
+                          if (!isReady) {
+                            _openAiSettings(context, viewModel);
+                          } else {
+                            _showTextInputDialog(context);
+                          }
+                        },
               ),
             ],
           ),
@@ -701,13 +721,14 @@ class _MicButton extends StatelessWidget {
           Text(
             hintText,
             style: TextStyle(
-              color: isRecording
-                  ? Colors.redAccent
-                  : isProcessing
+              color:
+                  isRecording
+                      ? Colors.redAccent
+                      : isProcessing
                       ? Colors.orangeAccent
                       : isReady
-                          ? (isLocal ? Colors.tealAccent : AppTheme.textSecondary)
-                          : Colors.amberAccent,
+                      ? (isLocal ? Colors.tealAccent : AppTheme.textSecondary)
+                      : Colors.amberAccent,
               fontSize: 12,
               fontWeight: isRecording ? FontWeight.bold : FontWeight.normal,
             ),
@@ -721,44 +742,45 @@ class _MicButton extends StatelessWidget {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text(
-          '⌨️ Saisir un événement',
-          style: TextStyle(color: AppTheme.textPrimary, fontSize: 18),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: AppTheme.textPrimary),
-          decoration: const InputDecoration(
-            hintText: 'Ex: "But équipe rouge par Cédric"',
-            hintStyle: TextStyle(color: AppTheme.textSecondary),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: AppTheme.surface,
+            title: const Text(
+              '⌨️ Saisir un événement',
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 18),
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
+                hintText: 'Ex: "But équipe rouge par Cédric"',
+                hintStyle: TextStyle(color: AppTheme.textSecondary),
+              ),
+              onSubmitted: (val) {
+                if (val.trim().isNotEmpty) {
+                  Navigator.of(ctx).pop();
+                  viewModel.sendTextCommand(val);
+                }
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final text = controller.text.trim();
+                  if (text.isNotEmpty) {
+                    Navigator.of(ctx).pop();
+                    viewModel.sendTextCommand(text);
+                  }
+                },
+                child: const Text('Envoyer'),
+              ),
+            ],
           ),
-          onSubmitted: (val) {
-            if (val.trim().isNotEmpty) {
-              Navigator.of(ctx).pop();
-              viewModel.sendTextCommand(val);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                Navigator.of(ctx).pop();
-                viewModel.sendTextCommand(text);
-              }
-            },
-            child: const Text('Envoyer'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -814,10 +836,10 @@ class _MatchControls extends StatelessWidget {
             _ControlButton(
               icon: Icons.bar_chart,
               label: l10n.stats,
-              onTap: () => Navigator.of(context).pushNamed(
-                '/summary',
-                arguments: viewModel.match,
-              ),
+              onTap:
+                  () => Navigator.of(
+                    context,
+                  ).pushNamed('/summary', arguments: viewModel.match),
             ),
         ],
       ),
@@ -828,30 +850,31 @@ class _MatchControls extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: Text(
-          l10n.endMatchDialogTitle,
-          style: const TextStyle(color: AppTheme.textPrimary),
-        ),
-        content: Text(
-          l10n.endMatchDialogContent,
-          style: const TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: AppTheme.surface,
+            title: Text(
+              l10n.endMatchDialogTitle,
+              style: const TextStyle(color: AppTheme.textPrimary),
             ),
-            child: Text(l10n.confirm),
+            content: Text(
+              l10n.endMatchDialogContent,
+              style: const TextStyle(color: AppTheme.textSecondary),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                ),
+                child: Text(l10n.confirm),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -886,14 +909,10 @@ class _ControlButton extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(color: color, fontSize: 11),
-            ),
+            Text(label, style: TextStyle(color: color, fontSize: 11)),
           ],
         ),
       ),
     );
   }
 }
-

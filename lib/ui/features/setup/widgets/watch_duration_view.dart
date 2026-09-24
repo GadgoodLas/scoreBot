@@ -78,16 +78,18 @@ class _WatchDurationViewState extends State<WatchDurationView> {
                 children: [
                   _WatchCircleButton(
                     icon: Icons.remove,
-                    onTap: _duration > 10
-                        ? () {
-                            setState(() {
-                              _duration -= 5;
-                              if (_breakDuration != null && _breakDuration! >= _duration) {
-                                _breakDuration = (_duration / 2).round();
-                              }
-                            });
-                          }
-                        : null,
+                    onTap:
+                        _duration > 10
+                            ? () {
+                              setState(() {
+                                _duration -= 5;
+                                if (_breakDuration != null &&
+                                    _breakDuration! >= _duration) {
+                                  _breakDuration = (_duration / 2).round();
+                                }
+                              });
+                            }
+                            : null,
                   ),
                   SizedBox(
                     width: 68,
@@ -103,13 +105,14 @@ class _WatchDurationViewState extends State<WatchDurationView> {
                   ),
                   _WatchCircleButton(
                     icon: Icons.add,
-                    onTap: _duration < 180
-                        ? () {
-                            setState(() {
-                              _duration += 5;
-                            });
-                          }
-                        : null,
+                    onTap:
+                        _duration < 180
+                            ? () {
+                              setState(() {
+                                _duration += 5;
+                              });
+                            }
+                            : null,
                   ),
                 ],
               ),
@@ -121,7 +124,11 @@ class _WatchDurationViewState extends State<WatchDurationView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.pause_circle_outline, size: 12, color: Colors.tealAccent),
+                  const Icon(
+                    Icons.pause_circle_outline,
+                    size: 12,
+                    color: Colors.tealAccent,
+                  ),
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
@@ -161,10 +168,15 @@ class _WatchDurationViewState extends State<WatchDurationView> {
                   SizedBox(
                     width: 68,
                     child: Text(
-                      _breakDuration != null ? '$_breakDuration min' : l10n.noBreak,
+                      _breakDuration != null
+                          ? '$_breakDuration min'
+                          : l10n.noBreak,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: _breakDuration != null ? Colors.tealAccent : Colors.white38,
+                        color:
+                            _breakDuration != null
+                                ? Colors.tealAccent
+                                : Colors.white38,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -222,7 +234,10 @@ class _WatchDurationViewState extends State<WatchDurationView> {
                   icon: const Icon(Icons.check, size: 13),
                   label: Text(
                     l10n.save,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
@@ -256,9 +271,10 @@ class _WatchCircleButton extends StatelessWidget {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          color: onTap != null
-              ? Colors.white.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.05),
+          color:
+              onTap != null
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.05),
           shape: BoxShape.circle,
           border: Border.all(
             color: onTap != null ? Colors.white24 : Colors.transparent,
@@ -292,9 +308,10 @@ class _WatchDurationChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: selected
-              ? Colors.tealAccent.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.08),
+          color:
+              selected
+                  ? Colors.tealAccent.withValues(alpha: 0.25)
+                  : Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: selected ? Colors.tealAccent : Colors.transparent,
@@ -312,4 +329,3 @@ class _WatchDurationChip extends StatelessWidget {
     );
   }
 }
-

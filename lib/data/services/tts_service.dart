@@ -42,14 +42,11 @@ class TtsService {
 
       if (Platform.isIOS) {
         await _tts.setSharedInstance(true);
-        await _tts.setIosAudioCategory(
-          IosTextToSpeechAudioCategory.playback,
-          [
-            IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-            IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-            IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-          ],
-        );
+        await _tts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
+          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+        ]);
       }
       _isInitialized = true;
     } catch (e) {
@@ -91,4 +88,3 @@ class TtsService {
     }
   }
 }
-

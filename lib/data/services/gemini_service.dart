@@ -70,9 +70,9 @@ class GeminiService {
     StorageService? storageService,
     String? apiKey,
     String? preferredModel,
-  })  : _storageService = storageService,
-        _explicitApiKey = apiKey,
-        _preferredModel = preferredModel ?? '';
+  }) : _storageService = storageService,
+       _explicitApiKey = apiKey,
+       _preferredModel = preferredModel ?? '';
 
   final StorageService? _storageService;
   String? _explicitApiKey;
@@ -166,9 +166,7 @@ class GeminiService {
           ],
         },
       ],
-      'generationConfig': {
-        'maxOutputTokens': 5,
-      },
+      'generationConfig': {'maxOutputTokens': 5},
     });
 
     try {
@@ -187,17 +185,25 @@ class GeminiService {
       if (response.statusCode == 400) {
         throw const GeminiException('Clé API ou modèle invalide (Erreur 400).');
       } else if (response.statusCode == 403) {
-        throw const GeminiException('Accès refusé. Vérifiez votre clé API (Erreur 403).');
+        throw const GeminiException(
+          'Accès refusé. Vérifiez votre clé API (Erreur 403).',
+        );
       } else if (response.statusCode == 404) {
-        throw GeminiException('Le modèle "$cleanModel" est introuvable (Erreur 404).');
+        throw GeminiException(
+          'Le modèle "$cleanModel" est introuvable (Erreur 404).',
+        );
       } else if (response.statusCode == 429) {
         // En cas de 429, la clé est reconnue même si le quota instantané est atteint
         return true;
       } else {
-        throw GeminiException('Erreur de validation (${response.statusCode}) : ${response.body}');
+        throw GeminiException(
+          'Erreur de validation (${response.statusCode}) : ${response.body}',
+        );
       }
     } on TimeoutException {
-      throw const GeminiException('Délai d\'attente dépassé (Timeout). Vérifiez votre connexion.');
+      throw const GeminiException(
+        'Délai d\'attente dépassé (Timeout). Vérifiez votre connexion.',
+      );
     } catch (e) {
       if (e is GeminiException) rethrow;
       throw GeminiException('Impossible de contacter Gemini : $e');
@@ -230,10 +236,7 @@ class GeminiService {
         {
           'parts': [
             {
-              'inlineData': {
-                'mimeType': mimeType,
-                'data': base64Audio,
-              }
+              'inlineData': {'mimeType': mimeType, 'data': base64Audio},
             },
             {
               'text':
@@ -308,7 +311,8 @@ class GeminiService {
     final isFrench = language == 'fr';
     final eventsSummary = StringBuffer();
     for (final e in events) {
-      final team = e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
+      final team =
+          e.teamId == match.teamA.id ? match.teamA.name : match.teamB.name;
       final desc = switch (e) {
         GoalEvent(:final scorerName, :final assistName, :final points) =>
           isFrench
@@ -322,13 +326,17 @@ class GeminiService {
           isFrench
               ? '${e.minute}\' : Faute de $playerName ($team)'
               : '${e.minute}\' : Foul by $playerName ($team)',
-        _ => isFrench ? '${e.minute}\' : ${e.type.label} ($team)' : '${e.minute}\' : ${e.type.label} ($team)',
+        _ =>
+          isFrench
+              ? '${e.minute}\' : ${e.type.label} ($team)'
+              : '${e.minute}\' : ${e.type.label} ($team)',
       };
       eventsSummary.writeln('- $desc');
     }
 
-    final prompt = isFrench
-        ? '''
+    final prompt =
+        isFrench
+            ? '''
 Tu es un journaliste sportif passionné et rigoureux.
 Rédige un compte-rendu vivant, fluide et captivant du match suivant en français (entre 120 et 200 mots).
 Structure le texte avec :
@@ -346,7 +354,7 @@ ${eventsSummary.isNotEmpty ? eventsSummary.toString() : "- Aucun événement maj
 
 Rédige directement le compte-rendu en texte brut soigné avec quelques sauts de ligne et émojis adaptés.
 '''
-        : '''
+            : '''
 You are a passionate, professional sports journalist.
 Write a vibrant, fluid and engaging post-match report in English (between 120 and 200 words).
 Structure the text with:
@@ -369,25 +377,27 @@ Write the report directly as clean plain text with spacing and relevant emojis.
       'contents': [
         {
           'parts': [
-            {'text': prompt}
-          ]
-        }
+            {'text': prompt},
+          ],
+        },
       ],
-      'generationConfig': {
-        'temperature': 0.7,
-      },
+      'generationConfig': {'temperature': 0.7},
     });
 
     final currentKey = apiKey;
     for (final model in candidateModels) {
-      final uri = Uri.parse('$_baseUrl/models/$model:generateContent?key=$currentKey');
+      final uri = Uri.parse(
+        '$_baseUrl/models/$model:generateContent?key=$currentKey',
+      );
       for (int attempt = 1; attempt <= 2; attempt++) {
         try {
-          final response = await http.post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: body,
-          ).timeout(const Duration(seconds: 15));
+          final response = await http
+              .post(
+                uri,
+                headers: {'Content-Type': 'application/json'},
+                body: body,
+              )
+              .timeout(const Duration(seconds: 15));
 
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -414,7 +424,9 @@ Write the report directly as clean plain text with spacing and relevant emojis.
       }
     }
 
-    throw const GeminiException('Impossible de générer le rapport avec les modèles disponibles');
+    throw const GeminiException(
+      'Impossible de générer le rapport avec les modèles disponibles',
+    );
   }
 
   /// Exécute l'appel API avec retry exponentiel sur 429/503 et bascule de modèle.
@@ -424,16 +436,20 @@ Write the report directly as clean plain text with spacing and relevant emojis.
     final currentKey = apiKey;
 
     for (final model in candidateModels) {
-      final uri = Uri.parse('$_baseUrl/models/$model:generateContent?key=$currentKey');
+      final uri = Uri.parse(
+        '$_baseUrl/models/$model:generateContent?key=$currentKey',
+      );
 
       // Jusqu'à 2 essais par modèle (retry après 800ms en cas de 429/503)
       for (int attempt = 1; attempt <= 2; attempt++) {
         try {
-          final response = await http.post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: requestBody,
-          ).timeout(const Duration(seconds: 12));
+          final response = await http
+              .post(
+                uri,
+                headers: {'Content-Type': 'application/json'},
+                body: requestBody,
+              )
+              .timeout(const Duration(seconds: 12));
 
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -458,7 +474,9 @@ Write the report directly as clean plain text with spacing and relevant emojis.
 
           // Si 404 (Modèle non disponible) ou 500/502/504 (Erreur temporaire)
           if (response.statusCode == 404 || response.statusCode >= 500) {
-            lastException = GeminiException('Modèle $model indisponible (${response.statusCode})');
+            lastException = GeminiException(
+              'Modèle $model indisponible (${response.statusCode})',
+            );
             break; // Passer au modèle suivant
           }
 
@@ -468,7 +486,8 @@ Write the report directly as clean plain text with spacing and relevant emojis.
             'Erreur API ($model: ${response.statusCode}) : $errorBody',
           );
         } catch (e) {
-          if (e is GeminiException && e.message.contains('Erreur API ($model: 400)')) {
+          if (e is GeminiException &&
+              e.message.contains('Erreur API ($model: 400)')) {
             rethrow;
           }
           lastException = e is Exception ? e : Exception(e.toString());
@@ -560,7 +579,8 @@ Si la commande demande de gérer le chronomètre ou l'état du match :
       'properties': {
         'transcription': {
           'type': 'STRING',
-          'description': 'Transcription textuelle exacte de la voix en français',
+          'description':
+              'Transcription textuelle exacte de la voix en français',
         },
         'type': {
           'type': 'STRING',
@@ -577,7 +597,8 @@ Si la commande demande de gérer le chronomètre ou l'état du match :
         },
         'secondary_player': {
           'type': 'STRING',
-          'description': 'Nom du joueur secondaire (passeur, remplaçant entrant...)',
+          'description':
+              'Nom du joueur secondaire (passeur, remplaçant entrant...)',
         },
         'minute': {
           'type': 'INTEGER',
@@ -597,7 +618,8 @@ Si la commande demande de gérer le chronomètre ou l'état du match :
         },
         'match_control': {
           'type': 'STRING',
-          'description': 'Contrôle match : "pause", "resume", "halftime", "end_match"',
+          'description':
+              'Contrôle match : "pause", "resume", "halftime", "end_match"',
         },
         'notes': {
           'type': 'STRING',
@@ -610,8 +632,7 @@ Si la commande demande de gérer le chronomètre ou l'état du match :
 
   /// Extrait le texte de la réponse Gemini.
   String _extractText(Map<String, dynamic> data) {
-    final candidates =
-        data['candidates'] as List<dynamic>? ?? [];
+    final candidates = data['candidates'] as List<dynamic>? ?? [];
     if (candidates.isEmpty) {
       throw const GeminiException('Aucune réponse générée par l\'IA');
     }

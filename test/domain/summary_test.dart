@@ -40,9 +40,7 @@ void main() {
         id: 'team-b',
         name: 'Équipe B',
         color: 'bleu',
-        players: [
-          Player(id: 'p3', name: 'Karim'),
-        ],
+        players: [Player(id: 'p3', name: 'Karim')],
       );
 
       final match = GameMatch(
@@ -163,12 +161,14 @@ void main() {
         durationMinutes: 90,
       );
 
-      final tempDir = await Directory.systemTemp.createTemp('scorebot_report_test_');
+      final tempDir = await Directory.systemTemp.createTemp(
+        'scorebot_report_test_',
+      );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('plugins.flutter.io/path_provider'),
-        (MethodCall methodCall) async => tempDir.path,
-      );
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            (MethodCall methodCall) async => tempDir.path,
+          );
 
       try {
         final vm = SummaryViewModel(matchRepository: repo, match: match);

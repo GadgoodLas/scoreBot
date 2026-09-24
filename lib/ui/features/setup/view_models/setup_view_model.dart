@@ -10,8 +10,8 @@ class SetupViewModel extends ChangeNotifier {
   SetupViewModel({
     required MatchRepository matchRepository,
     TtsService? ttsService,
-  })  : _repository = matchRepository,
-        _ttsService = ttsService {
+  }) : _repository = matchRepository,
+       _ttsService = ttsService {
     _ttsService?.setCompletionHandler(() {
       if (_isAnnouncingLineup) {
         _isAnnouncingLineup = false;
@@ -118,12 +118,12 @@ class SetupViewModel extends ChangeNotifier {
 
   void selectSport(SportType sport) {
     _selectedSport = sport;
-    _durationMinutes = sport.matchDurationMinutes > 0
-        ? sport.matchDurationMinutes
-        : 90;
-    _breakDurationMinutes = sport.hasHalftime && _durationMinutes > 0
-        ? (_durationMinutes / 2).round()
-        : null;
+    _durationMinutes =
+        sport.matchDurationMinutes > 0 ? sport.matchDurationMinutes : 90;
+    _breakDurationMinutes =
+        sport.hasHalftime && _durationMinutes > 0
+            ? (_durationMinutes / 2).round()
+            : null;
     notifyListeners();
   }
 
@@ -185,7 +185,8 @@ class SetupViewModel extends ChangeNotifier {
 
   void setDuration(int minutes) {
     _durationMinutes = minutes;
-    if (_breakDurationMinutes != null && _breakDurationMinutes! >= _durationMinutes) {
+    if (_breakDurationMinutes != null &&
+        _breakDurationMinutes! >= _durationMinutes) {
       _breakDurationMinutes = (_durationMinutes / 2).round();
     }
     notifyListeners();
@@ -298,17 +299,19 @@ class SetupViewModel extends ChangeNotifier {
         id: _uuid.v4(),
         name: _teamAName.trim(),
         color: _teamAColor.trim(),
-        players: _teamAPlayers
-            .map((name) => Player(id: _uuid.v4(), name: name))
-            .toList(),
+        players:
+            _teamAPlayers
+                .map((name) => Player(id: _uuid.v4(), name: name))
+                .toList(),
       );
       final teamB = Team(
         id: _uuid.v4(),
         name: _teamBName.trim(),
         color: _teamBColor.trim(),
-        players: _teamBPlayers
-            .map((name) => Player(id: _uuid.v4(), name: name))
-            .toList(),
+        players:
+            _teamBPlayers
+                .map((name) => Player(id: _uuid.v4(), name: name))
+                .toList(),
       );
 
       final match = await _repository.createMatch(

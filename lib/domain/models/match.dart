@@ -18,12 +18,7 @@ class Player extends Equatable {
   @override
   List<Object?> get props => [id, name, number, position];
 
-  Player copyWith({
-    String? id,
-    String? name,
-    int? number,
-    String? position,
-  }) {
+  Player copyWith({String? id, String? name, int? number, String? position}) {
     return Player(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -33,22 +28,21 @@ class Player extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'number': number,
-        'position': position,
-      };
+    'id': id,
+    'name': name,
+    'number': number,
+    'position': position,
+  };
 
   factory Player.fromMap(Map<String, dynamic> map) => Player(
-        id: map['id'] as String,
-        name: map['name'] as String,
-        number: map['number'] as int?,
-        position: map['position'] as String?,
-      );
+    id: map['id'] as String,
+    name: map['name'] as String,
+    number: map['number'] as int?,
+    position: map['position'] as String?,
+  );
 
   /// Représentation courte pour les prompts Gemini.
-  String get shortLabel =>
-      number != null ? '#$number $name' : name;
+  String get shortLabel => number != null ? '#$number $name' : name;
 }
 
 /// Représente une équipe dans un match.
@@ -83,20 +77,21 @@ class Team extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'color': color,
-        'players': players.map((p) => p.toMap()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'color': color,
+    'players': players.map((p) => p.toMap()).toList(),
+  };
 
   factory Team.fromMap(Map<String, dynamic> map) => Team(
-        id: map['id'] as String,
-        name: map['name'] as String,
-        color: map['color'] as String?,
-        players: (map['players'] as List<dynamic>? ?? [])
+    id: map['id'] as String,
+    name: map['name'] as String,
+    color: map['color'] as String?,
+    players:
+        (map['players'] as List<dynamic>? ?? [])
             .map((p) => Player.fromMap(p as Map<String, dynamic>))
             .toList(),
-      );
+  );
 }
 
 /// Statut d'un match.
@@ -138,9 +133,18 @@ class GameMatch extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, sport, teamA, teamB, status,
-        scoreA, scoreB, startTime, endTime, durationMinutes, breakDurationMinutes,
-      ];
+    id,
+    sport,
+    teamA,
+    teamB,
+    status,
+    scoreA,
+    scoreB,
+    startTime,
+    endTime,
+    durationMinutes,
+    breakDurationMinutes,
+  ];
 
   /// Retourne l'équipe correspondant à l'id donné.
   Team? teamById(String teamId) {
@@ -183,39 +187,41 @@ class GameMatch extends Equatable {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
-      breakDurationMinutes: clearBreakDuration
-          ? null
-          : (breakDurationMinutes ?? this.breakDurationMinutes),
+      breakDurationMinutes:
+          clearBreakDuration
+              ? null
+              : (breakDurationMinutes ?? this.breakDurationMinutes),
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'sport': sport.name,
-        'teamA': teamA.toMap(),
-        'teamB': teamB.toMap(),
-        'status': status.name,
-        'scoreA': scoreA,
-        'scoreB': scoreB,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime?.toIso8601String(),
-        'durationMinutes': durationMinutes,
-        'breakDurationMinutes': breakDurationMinutes,
-      };
+    'id': id,
+    'sport': sport.name,
+    'teamA': teamA.toMap(),
+    'teamB': teamB.toMap(),
+    'status': status.name,
+    'scoreA': scoreA,
+    'scoreB': scoreB,
+    'startTime': startTime.toIso8601String(),
+    'endTime': endTime?.toIso8601String(),
+    'durationMinutes': durationMinutes,
+    'breakDurationMinutes': breakDurationMinutes,
+  };
 
   factory GameMatch.fromMap(Map<String, dynamic> map) => GameMatch(
-        id: map['id'] as String,
-        sport: SportType.values.firstWhere((s) => s.name == map['sport']),
-        teamA: Team.fromMap(map['teamA'] as Map<String, dynamic>),
-        teamB: Team.fromMap(map['teamB'] as Map<String, dynamic>),
-        status: GameMatchStatus.values.firstWhere((s) => s.name == map['status']),
-        scoreA: map['scoreA'] as int,
-        scoreB: map['scoreB'] as int,
-        startTime: DateTime.parse(map['startTime'] as String),
-        endTime: map['endTime'] != null
+    id: map['id'] as String,
+    sport: SportType.values.firstWhere((s) => s.name == map['sport']),
+    teamA: Team.fromMap(map['teamA'] as Map<String, dynamic>),
+    teamB: Team.fromMap(map['teamB'] as Map<String, dynamic>),
+    status: GameMatchStatus.values.firstWhere((s) => s.name == map['status']),
+    scoreA: map['scoreA'] as int,
+    scoreB: map['scoreB'] as int,
+    startTime: DateTime.parse(map['startTime'] as String),
+    endTime:
+        map['endTime'] != null
             ? DateTime.parse(map['endTime'] as String)
             : null,
-        durationMinutes: map['durationMinutes'] as int? ?? 90,
-        breakDurationMinutes: map['breakDurationMinutes'] as int?,
-      );
+    durationMinutes: map['durationMinutes'] as int? ?? 90,
+    breakDurationMinutes: map['breakDurationMinutes'] as int?,
+  );
 }
