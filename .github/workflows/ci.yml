@@ -16,7 +16,24 @@ permissions:
   pull-requests: write
 
 jobs:
-  # ─── Étape 1 : Qualité du code, Formatage & Tests ───
+  # ─── Étape 1 : Détection de fuite de secrets (Gitleaks) ───
+  secret_leak_detection:
+    name: Secret Leak Detection (Gitleaks)
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft != true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── Étape 2 : Qualité du code, Traductions, Formatage & Tests ───
   code_quality_and_tests:
     name: Code Quality & Unit Tests
     runs-on: ubuntu-latest
@@ -48,6 +65,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify localization integrity (flutter gen-l10n)
+        run: |
+          flutter gen-l10n
+          git diff --exit-code lib/l10n/generated/
+
       - name: Verify code formatting (dart format)
         run: dart format --output=none --set-exit-if-changed .
 
@@ -57,7 +79,7 @@ jobs:
       - name: Run automated tests (flutter test)
         run: flutter test --coverage
 
-  # ─── Étape 2 : Vérification de la Compilation (Phone & Watch) ───
+  # ─── Étape 3 : Vérification de la Compilation (Phone & Watch) ───
   compilation_check:
     name: Build Verification (Phone & Watch)
     runs-on: ubuntu-latest
@@ -95,10 +117,10 @@ jobs:
       - name: Build Android Watch APK (Compilation check)
         run: flutter build apk --flavor watch --debug
 
-  # ─── Étape 3 : Fusion Automatique (Auto-Merge) ───
+  # ─── Étape 4 : Fusion Automatique (Auto-Merge) ───
   auto_merge:
     name: Auto-Merge Pull Request
-    needs: [code_quality_and_tests, compilation_check]
+    needs: [secret_leak_detection, code_quality_and_tests, compilation_check]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' &&
@@ -114,7 +136,7 @@ jobs:
 
       - name: Auto-Approve & Enable Auto-Merge
         run: |
-          echo "All checks (Quality, Tests, Compilation) passed successfully!"
+          echo "All checks (Secrets, Quality, Translations, Tests, Compilation) passed successfully!"
           echo "Approving PR #${{ github.event.pull_request.number }}..."
           gh pr review --approve "$PR_URL"
           echo "Enabling auto-merge (squash)..."
