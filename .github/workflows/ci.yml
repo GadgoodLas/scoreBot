@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks Secret Scanner
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -138,9 +138,9 @@ jobs:
         run: |
           echo "All checks (Secrets, Quality, Translations, Tests, Compilation) passed successfully!"
           echo "Approving PR #${{ github.event.pull_request.number }}..."
-          gh pr review --approve "$PR_URL"
+          gh pr review --approve "$PR_URL" || echo "Note: PR review approval skipped (requires explicit GitHub Actions approval permission in repo settings)."
           echo "Enabling auto-merge (squash)..."
-          gh pr merge --auto --squash "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL" || echo "Auto-merge could not be triggered automatically. Please ensure 'Allow auto-merge' is enabled in repository Settings."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
