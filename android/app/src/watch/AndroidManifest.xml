@@ -2,7 +2,8 @@
     <!-- Required for Wear OS form factor in Google Play Store -->
     <uses-feature android:name="android.hardware.type.watch" />
 
-    <application>
+    <application
+        android:allowBackup="false">
         <!-- Standalone Wear OS app: does not require a phone companion app -->
         <meta-data
             android:name="com.google.android.wearable.standalone"

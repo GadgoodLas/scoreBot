@@ -1,0 +1,51 @@
+name: MobSF Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  mobsf_scan:
+    name: MobSF Static Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install MobSF Scan
+        run: pip install mobsfscan
+
+      - name: Run MobSF Static Analysis (SARIF)
+        run: |
+          mobsfscan --sarif -o mobsf-results.sarif --no-fail android lib
+
+      - name: Run MobSF Static Analysis (JSON & Console Report)
+        run: |
+          mobsfscan --json -o mobsf-report.json --no-fail android lib
+          mobsfscan android lib || true
+
+      - name: Upload SARIF to GitHub Security Alerts
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: mobsf-results.sarif
+
+      - name: Upload MobSF JSON Report as Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobsf-security-report
+          path: mobsf-report.json
