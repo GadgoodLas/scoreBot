@@ -7,7 +7,7 @@ updates:
   - package-ecosystem: "pub"
     directory: "/"
     schedule:
-      interval: "daily" # Vérification quotidienne pour intégrer rapidement les correctifs
+      interval: "daily"
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore(deps)"
@@ -16,11 +16,21 @@ updates:
       - "flutter"
       - "security"
     groups:
-      # Regroupe les mises à jour mineures et correctives ensemble pour éviter trop de PRs
       minor-and-patch:
         update-types:
           - "patch"
           - "minor"
+    ignore:
+      # intl est strictement épinglé par le SDK Flutter (flutter_localizations)
+      - dependency-name: "intl"
+      # speech_to_text >= 7.5.0 requiert Dart SDK >= 3.12.0 (Flutter stable utilise Dart 3.11.x)
+      - dependency-name: "speech_to_text"
+        versions: ["7.5.0"]
+      # record 7.x et go_router 18.x comportent des breaking changes d'API
+      - dependency-name: "record"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "go_router"
+        update-types: ["version-update:semver-major"]
 
   # ─── Actions GitHub CI/CD ───
   - package-ecosystem: "github-actions"
@@ -47,3 +57,9 @@ updates:
     labels:
       - "dependencies"
       - "android"
+    ignore:
+      # AGP > 8.11.1 casse la compilation de certains plugins Flutter (ex: permission_handler_android)
+      - dependency-name: "com.android.application"
+        versions: ["> 8.11.1"]
+      - dependency-name: "org.jetbrains.kotlin.android"
+        update-types: ["version-update:semver-major"]
