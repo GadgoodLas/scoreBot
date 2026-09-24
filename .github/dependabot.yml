@@ -21,6 +21,9 @@ updates:
         update-types:
           - "patch"
           - "minor"
+    ignore:
+      # intl est strictement épinglé par le SDK Flutter (flutter_localizations)
+      - dependency-name: "intl"
 
   # ─── Actions GitHub CI/CD ───
   - package-ecosystem: "github-actions"
@@ -47,3 +50,10 @@ updates:
     labels:
       - "dependencies"
       - "android"
+    ignore:
+      # Gradle 9+ et AGP 9+ ne sont pas compatibles avec le plugin Flutter Gradle actuel
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.jetbrains.kotlin.android"
+        update-types: ["version-update:semver-major"]
+
