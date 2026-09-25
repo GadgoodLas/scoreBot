@@ -102,6 +102,14 @@
   "continuePlaying": "Continuer à jouer",
   "announceLineups": "Annoncer les compositions",
   "announceLineupsShort": "Annoncer compos",
-  "stopAnnouncement": "Arrêter l''annonce"
+  "stopAnnouncement": "Arrêter l''annonce",
+  "dictateLineup": "Dicter la composition",
+  "dictateLineupHint": "Annoncez les numéros et noms (ex: \"numéro 10 Messi, numéro 7 Mbappé...\")",
+  "playerNumber": "N°",
+  "playerName": "Nom",
+  "addPlayer": "Ajouter",
+  "lineup": "Composition",
+  "validateLineup": "Valider les joueurs",
+  "listeningLineup": "Parlez maintenant..."
 }
 

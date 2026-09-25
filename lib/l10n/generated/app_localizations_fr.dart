@@ -314,4 +314,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get stopAnnouncement => 'Arrêter l\'annonce';
+
+  @override
+  String get dictateLineup => 'Dicter la composition';
+
+  @override
+  String get dictateLineupHint =>
+      'Annoncez les numéros et noms (ex: \"numéro 10 Messi, numéro 7 Mbappé...\")';
+
+  @override
+  String get playerNumber => 'N°';
+
+  @override
+  String get playerName => 'Nom';
+
+  @override
+  String get addPlayer => 'Ajouter';
+
+  @override
+  String get lineup => 'Composition';
+
+  @override
+  String get validateLineup => 'Valider les joueurs';
+
+  @override
+  String get listeningLineup => 'Parlez maintenant...';
 }
