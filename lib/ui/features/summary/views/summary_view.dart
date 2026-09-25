@@ -139,41 +139,53 @@ class SummaryViewModel extends ChangeNotifier {
         if (e.scorerName != null && e.scorerName!.trim().isNotEmpty) {
           final raw = e.scorerName!.trim();
           // Si le buteur correspond à un numéro enregistré dans l'équipe, on associe au joueur
-          final matchingPlayer = team?.players.where(
-            (p) =>
-                p.name.toLowerCase() == raw.toLowerCase() ||
-                (p.number != null && raw == '#${p.number}'),
-          ).firstOrNull;
+          final matchingPlayer =
+              team?.players
+                  .where(
+                    (p) =>
+                        p.name.toLowerCase() == raw.toLowerCase() ||
+                        (p.number != null && raw == '#${p.number}'),
+                  )
+                  .firstOrNull;
           knownPlayerNames.add(matchingPlayer?.name ?? raw);
         }
         if (e.assistName != null && e.assistName!.trim().isNotEmpty) {
           final raw = e.assistName!.trim();
-          final matchingPlayer = team?.players.where(
-            (p) =>
-                p.name.toLowerCase() == raw.toLowerCase() ||
-                (p.number != null && raw == '#${p.number}'),
-          ).firstOrNull;
+          final matchingPlayer =
+              team?.players
+                  .where(
+                    (p) =>
+                        p.name.toLowerCase() == raw.toLowerCase() ||
+                        (p.number != null && raw == '#${p.number}'),
+                  )
+                  .firstOrNull;
           knownPlayerNames.add(matchingPlayer?.name ?? raw);
         }
       } else if (e is CardEvent &&
           e.playerName != null &&
           e.playerName!.trim().isNotEmpty) {
         final raw = e.playerName!.trim();
-        final matchingPlayer = team?.players.where(
-          (p) =>
-              p.name.toLowerCase() == raw.toLowerCase() ||
-              (p.number != null && raw == '#${p.number}'),
-        ).firstOrNull;
+        final matchingPlayer =
+            team?.players
+                .where(
+                  (p) =>
+                      p.name.toLowerCase() == raw.toLowerCase() ||
+                      (p.number != null && raw == '#${p.number}'),
+                )
+                .firstOrNull;
         knownPlayerNames.add(matchingPlayer?.name ?? raw);
       } else if (e is FoulEvent &&
           e.playerName != null &&
           e.playerName!.trim().isNotEmpty) {
         final raw = e.playerName!.trim();
-        final matchingPlayer = team?.players.where(
-          (p) =>
-              p.name.toLowerCase() == raw.toLowerCase() ||
-              (p.number != null && raw == '#${p.number}'),
-        ).firstOrNull;
+        final matchingPlayer =
+            team?.players
+                .where(
+                  (p) =>
+                      p.name.toLowerCase() == raw.toLowerCase() ||
+                      (p.number != null && raw == '#${p.number}'),
+                )
+                .firstOrNull;
         knownPlayerNames.add(matchingPlayer?.name ?? raw);
       }
     }
@@ -190,16 +202,22 @@ class SummaryViewModel extends ChangeNotifier {
       for (final e in _events.where((e) => e.teamId == teamId)) {
         if (e is GoalEvent) {
           final scorer = e.scorerName?.toLowerCase();
-          if (scorer == norm || (pNumber != null && (scorer == '#$pNumber' || scorer == '$pNumber'))) {
+          if (scorer == norm ||
+              (pNumber != null &&
+                  (scorer == '#$pNumber' || scorer == '$pNumber'))) {
             goals += e.points;
           }
           final assister = e.assistName?.toLowerCase();
-          if (assister == norm || (pNumber != null && (assister == '#$pNumber' || assister == '$pNumber'))) {
+          if (assister == norm ||
+              (pNumber != null &&
+                  (assister == '#$pNumber' || assister == '$pNumber'))) {
             assists += 1;
           }
         } else if (e is CardEvent) {
           final player = e.playerName?.toLowerCase();
-          if (player == norm || (pNumber != null && (player == '#$pNumber' || player == '$pNumber'))) {
+          if (player == norm ||
+              (pNumber != null &&
+                  (player == '#$pNumber' || player == '$pNumber'))) {
             if (e.type == GameEventType.yellowCard) yellows++;
             if (e.type == GameEventType.redCard) reds++;
           }

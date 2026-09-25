@@ -257,7 +257,11 @@ class _LineupDictationSheetState extends State<LineupDictationSheet>
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white54,
+                    size: 20,
+                  ),
                   onPressed: () {
                     _stopListeningSilently();
                     Navigator.of(context).pop();
@@ -305,7 +309,9 @@ class _LineupDictationSheetState extends State<LineupDictationSheet>
                                         ? widget.color
                                         : Colors.white12,
                                 foregroundColor:
-                                    _isListening ? Colors.black : Colors.white70,
+                                    _isListening
+                                        ? Colors.black
+                                        : Colors.white70,
                                 padding: const EdgeInsets.all(14),
                               ),
                             ),

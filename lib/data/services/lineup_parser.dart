@@ -28,15 +28,16 @@ class LineupParser {
 
     // Nettoyage préalable : supprimer mots de remplissage initiaux comme
     // "voici la composition", "les joueurs sont", etc.
-    final clean = text
-        .replaceAll(
-          RegExp(
-            r'^(?:voici\s+(?:la\s+)?composition|les\s+joueurs\s+sont|composition\s*:?)\s*',
-            caseSensitive: false,
-          ),
-          '',
-        )
-        .trim();
+    final clean =
+        text
+            .replaceAll(
+              RegExp(
+                r'^(?:voici\s+(?:la\s+)?composition|les\s+joueurs\s+sont|composition\s*:?)\s*',
+                caseSensitive: false,
+              ),
+              '',
+            )
+            .trim();
 
     // 1. Essai d'extraction séquentielle avec regex pour les motifs avec numéro :
     // (dossard|gardien|numéro|numero|n°|#|le)? <chiffre> <nom>
@@ -63,11 +64,7 @@ class LineupParser {
               if (number != null) existingNumbers.add(number);
 
               players.add(
-                Player(
-                  id: _uuid.v4(),
-                  name: cleanName,
-                  number: number,
-                ),
+                Player(id: _uuid.v4(), name: cleanName, number: number),
               );
             }
           }
@@ -100,30 +97,27 @@ class LineupParser {
             leadingNum.group(2)!.trim().isNotEmpty) {
           final numVal = int.tryParse(leadingNum.group(1)!);
           final nameVal = _cleanPlayerName(leadingNum.group(2)!);
-          if (nameVal.isNotEmpty && !existingNames.contains(nameVal.toLowerCase())) {
+          if (nameVal.isNotEmpty &&
+              !existingNames.contains(nameVal.toLowerCase())) {
             existingNames.add(nameVal.toLowerCase());
-            players.add(
-              Player(id: _uuid.v4(), name: nameVal, number: numVal),
-            );
+            players.add(Player(id: _uuid.v4(), name: nameVal, number: numVal));
           }
         } else if (trailingNum != null &&
             trailingNum.group(1) != null &&
             trailingNum.group(1)!.trim().isNotEmpty) {
           final numVal = int.tryParse(trailingNum.group(2)!);
           final nameVal = _cleanPlayerName(trailingNum.group(1)!);
-          if (nameVal.isNotEmpty && !existingNames.contains(nameVal.toLowerCase())) {
+          if (nameVal.isNotEmpty &&
+              !existingNames.contains(nameVal.toLowerCase())) {
             existingNames.add(nameVal.toLowerCase());
-            players.add(
-              Player(id: _uuid.v4(), name: nameVal, number: numVal),
-            );
+            players.add(Player(id: _uuid.v4(), name: nameVal, number: numVal));
           }
         } else {
           final cleanName = _cleanPlayerName(segment);
-          if (cleanName.isNotEmpty && !existingNames.contains(cleanName.toLowerCase())) {
+          if (cleanName.isNotEmpty &&
+              !existingNames.contains(cleanName.toLowerCase())) {
             existingNames.add(cleanName.toLowerCase());
-            players.add(
-              Player(id: _uuid.v4(), name: cleanName),
-            );
+            players.add(Player(id: _uuid.v4(), name: cleanName));
           }
         }
       }
@@ -138,7 +132,10 @@ class LineupParser {
 
     // Enlever d'éventuels préfixes ou suffixes résiduels
     str = str.replaceAll(
-      RegExp(r'^(?:et\s+|and\s+|le\s+|la\s+|dossard\s+|num[eé]ro\s+)', caseSensitive: false),
+      RegExp(
+        r'^(?:et\s+|and\s+|le\s+|la\s+|dossard\s+|num[eé]ro\s+)',
+        caseSensitive: false,
+      ),
       '',
     );
     str = str.replaceAll(
@@ -150,9 +147,12 @@ class LineupParser {
     if (str.isEmpty) return '';
 
     // Capitaliser chaque mot (ex: "kylian mbappé" -> "Kylian Mbappé")
-    return str.split(RegExp(r'\s+')).map((w) {
-      if (w.isEmpty) return '';
-      return w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : '');
-    }).join(' ');
+    return str
+        .split(RegExp(r'\s+'))
+        .map((w) {
+          if (w.isEmpty) return '';
+          return w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : '');
+        })
+        .join(' ');
   }
 }

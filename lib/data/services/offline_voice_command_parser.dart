@@ -236,7 +236,9 @@ class OfflineVoiceCommandParser {
     );
     final assistMatch = assistRegex.firstMatch(norm);
     final mainNorm =
-        assistMatch != null ? norm.substring(0, assistMatch.start).trim() : norm;
+        assistMatch != null
+            ? norm.substring(0, assistMatch.start).trim()
+            : norm;
 
     // N'extraire un candidat générique que si un mot clé de but est présent
     final (team, scorer) = _resolveTeamAndPlayer(
@@ -290,8 +292,9 @@ class OfflineVoiceCommandParser {
       final assistPart = matchRegex.group(1)?.trim();
       if (assistPart != null && assistPart.isNotEmpty) {
         // 1. Détection de numéro de maillot pour la passe décisive
-        final numberMatch =
-            RegExp(r'(?:numero|number|num|n°|#)?\s*(\d+)').firstMatch(assistPart);
+        final numberMatch = RegExp(
+          r'(?:numero|number|num|n°|#)?\s*(\d+)',
+        ).firstMatch(assistPart);
         if (numberMatch != null) {
           final numVal = int.tryParse(numberMatch.group(1)!);
           if (numVal != null) {
@@ -319,10 +322,13 @@ class OfflineVoiceCommandParser {
         }
 
         // 3. Extraction d'un mot candidat
-        final cleanedCandidate =
-            assistPart.replaceFirst(RegExp(r'^(?:de|du|par|by)\s+'), '');
-        final rawCandidate =
-            RegExp(r'^([a-z0-9à-ÿ]+)').firstMatch(cleanedCandidate)?.group(1);
+        final cleanedCandidate = assistPart.replaceFirst(
+          RegExp(r'^(?:de|du|par|by)\s+'),
+          '',
+        );
+        final rawCandidate = RegExp(
+          r'^([a-z0-9à-ÿ]+)',
+        ).firstMatch(cleanedCandidate)?.group(1);
         if (rawCandidate != null && rawCandidate.isNotEmpty) {
           return rawCandidate[0].toUpperCase() + rawCandidate.substring(1);
         }
@@ -403,26 +409,26 @@ class OfflineVoiceCommandParser {
       if (numVal != null) {
         if (matchedTeam == match.teamA.name) {
           final p = match.teamA.players.cast<Player?>().firstWhere(
-                (p) => p?.number == numVal,
-                orElse: () => null,
-              );
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
           matchedPlayer = p?.name ?? '#$numVal';
         } else if (matchedTeam == match.teamB.name) {
           final p = match.teamB.players.cast<Player?>().firstWhere(
-                (p) => p?.number == numVal,
-                orElse: () => null,
-              );
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
           matchedPlayer = p?.name ?? '#$numVal';
         } else {
           // Équipe non explicite, on cherche dans les deux équipes
           final pA = match.teamA.players.cast<Player?>().firstWhere(
-                (p) => p?.number == numVal,
-                orElse: () => null,
-              );
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
           final pB = match.teamB.players.cast<Player?>().firstWhere(
-                (p) => p?.number == numVal,
-                orElse: () => null,
-              );
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
 
           if (pA != null) {
             matchedPlayer = pA.name;

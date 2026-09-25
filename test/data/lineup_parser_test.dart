@@ -42,16 +42,19 @@ void main() {
       expect(players[2].name, 'Ramos');
     });
 
-    test('parses colloquial french dictation ("le 10 Karim et le 7 Cristiano")', () {
-      const input = 'le 10 Karim et le 7 Cristiano';
-      final players = LineupParser.parse(input);
+    test(
+      'parses colloquial french dictation ("le 10 Karim et le 7 Cristiano")',
+      () {
+        const input = 'le 10 Karim et le 7 Cristiano';
+        final players = LineupParser.parse(input);
 
-      expect(players.length, 2);
-      expect(players[0].number, 10);
-      expect(players[0].name, 'Karim');
-      expect(players[1].number, 7);
-      expect(players[1].name, 'Cristiano');
-    });
+        expect(players.length, 2);
+        expect(players[0].number, 10);
+        expect(players[0].name, 'Karim');
+        expect(players[1].number, 7);
+        expect(players[1].name, 'Cristiano');
+      },
+    );
 
     test('parses names without numbers', () {
       const input = 'Kylian, Achraf, Marquinhos';

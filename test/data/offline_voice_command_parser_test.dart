@@ -337,62 +337,73 @@ void main() {
     });
   });
 
-  group('OfflineVoiceCommandParser - Numéros de maillots & Compositions (User Request)', () {
-    test('parses "but équipe A numéro 5 assit numéro 3" (unregistered numbers fallback to #N)', () {
-      final result = parser.parse(
-        rawText: 'but équipe A numéro 5 assit numéro 3',
-        match: testMatch,
+  group(
+    'OfflineVoiceCommandParser - Numéros de maillots & Compositions (User Request)',
+    () {
+      test(
+        'parses "but équipe A numéro 5 assit numéro 3" (unregistered numbers fallback to #N)',
+        () {
+          final result = parser.parse(
+            rawText: 'but équipe A numéro 5 assit numéro 3',
+            match: testMatch,
+          );
+          expect(result.type, GameEventType.goal);
+          expect(result.teamName, 'Équipe A');
+          expect(result.playerName, '#5');
+          expect(result.secondaryPlayerName, '#3');
+          expect(result.points, 1);
+        },
       );
-      expect(result.type, GameEventType.goal);
-      expect(result.teamName, 'Équipe A');
-      expect(result.playerName, '#5');
-      expect(result.secondaryPlayerName, '#3');
-      expect(result.points, 1);
-    });
 
-    test('parses goal with registered numbers and resolves player names', () {
-      // Stéphane is #9 and Nabil is #10 in Team A
-      final result = parser.parse(
-        rawText: 'but équipe A numéro 9 assist numéro 10',
-        match: testMatch,
-      );
-      expect(result.type, GameEventType.goal);
-      expect(result.teamName, 'Équipe A');
-      expect(result.playerName, 'Stéphane');
-      expect(result.secondaryPlayerName, 'Nabil');
-    });
+      test('parses goal with registered numbers and resolves player names', () {
+        // Stéphane is #9 and Nabil is #10 in Team A
+        final result = parser.parse(
+          rawText: 'but équipe A numéro 9 assist numéro 10',
+          match: testMatch,
+        );
+        expect(result.type, GameEventType.goal);
+        expect(result.teamName, 'Équipe A');
+        expect(result.playerName, 'Stéphane');
+        expect(result.secondaryPlayerName, 'Nabil');
+      });
 
-    test('parses goal with registered number without explicit team ("but numéro 7")', () {
-      // Cedric is #7 in Team B
-      final result = parser.parse(
-        rawText: 'but numéro 7',
-        match: testMatch,
+      test(
+        'parses goal with registered number without explicit team ("but numéro 7")',
+        () {
+          // Cedric is #7 in Team B
+          final result = parser.parse(
+            rawText: 'but numéro 7',
+            match: testMatch,
+          );
+          expect(result.type, GameEventType.goal);
+          expect(result.teamName, 'Équipe B');
+          expect(result.playerName, 'Cedric');
+        },
       );
-      expect(result.type, GameEventType.goal);
-      expect(result.teamName, 'Équipe B');
-      expect(result.playerName, 'Cedric');
-    });
 
-    test('parses yellow card by jersey number ("carton jaune équipe A numéro 9")', () {
-      final result = parser.parse(
-        rawText: 'carton jaune équipe A numéro 9',
-        match: testMatch,
+      test(
+        'parses yellow card by jersey number ("carton jaune équipe A numéro 9")',
+        () {
+          final result = parser.parse(
+            rawText: 'carton jaune équipe A numéro 9',
+            match: testMatch,
+          );
+          expect(result.type, GameEventType.yellowCard);
+          expect(result.teamName, 'Équipe A');
+          expect(result.playerName, 'Stéphane');
+        },
       );
-      expect(result.type, GameEventType.yellowCard);
-      expect(result.teamName, 'Équipe A');
-      expect(result.playerName, 'Stéphane');
-    });
 
-    test('parses foul by jersey number ("faute équipe B numéro 11")', () {
-      // Karim is #11 in Team B
-      final result = parser.parse(
-        rawText: 'faute équipe B numéro 11',
-        match: testMatch,
-      );
-      expect(result.type, GameEventType.foul);
-      expect(result.teamName, 'Équipe B');
-      expect(result.playerName, 'Karim');
-    });
-  });
+      test('parses foul by jersey number ("faute équipe B numéro 11")', () {
+        // Karim is #11 in Team B
+        final result = parser.parse(
+          rawText: 'faute équipe B numéro 11',
+          match: testMatch,
+        );
+        expect(result.type, GameEventType.foul);
+        expect(result.teamName, 'Équipe B');
+        expect(result.playerName, 'Karim');
+      });
+    },
+  );
 }
-
