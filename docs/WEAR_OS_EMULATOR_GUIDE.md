@@ -111,6 +111,35 @@ Pour tester la dictée vocale des compositions d'équipe et les commandes en mat
 | Action | Commande |
 | :--- | :--- |
 | **Compiler l'APK Watch en Debug** | `flutter build apk --flavor watch --debug` |
-| **Installer manuellement l'APK sur l'émulateur** | `adb install build/app/outputs/flutter-apk/app-watch-debug.apk` |
+| **Installer manuellement l'APK sur l'émulateur** | `adb install -r build/app/outputs/flutter-apk/app-watch-debug.apk` |
+| **Lancer directement l'application sur la montre** | `adb shell monkey -p com.scorebot.score_bot -c android.intent.category.LAUNCHER 1` |
 | **Voir les logs de l'application en direct** | `adb logcat \| grep -i flutter` |
 | **Redémarrer le serveur ADB si non détecté** | `adb kill-server; adb start-server` |
+
+---
+
+## ⚠️ Résolution de l'erreur Gradle `* What went wrong: 25.0.3`
+
+Si vous rencontrez l'erreur suivante lors de la compilation :
+```text
+* What went wrong:
+25.0.3
+```
+
+### Cause :
+Android Studio installe par défaut son propre runtime interne JetBrains (`jbr` version **25.0.3**). Le compilateur Kotlin et l'Android Gradle Plugin (AGP 8.11+) ne reconnaissent pas encore la version expérimentale Java 25 et échouent (`IllegalArgumentException: 25.0.3`). AGP supporte officiellement **Java 17** ou **Java 21**.
+
+### Solution permanente déjà appliquée :
+1. **OpenJDK 17 LTS (Eclipse Temurin)** est installé dans `C:\Users\moham\.jdks\temurin-17`.
+2. `android/gradle.properties` pointe explicitement sur ce JDK stable :
+   ```properties
+   org.gradle.java.home=C:\\Users\\moham\\.jdks\\temurin-17
+   ```
+3. Flutter est configuré pour cibler ce JDK via :
+   ```powershell
+   flutter config --jdk-dir "C:\Users\moham\.jdks\temurin-17"
+   ```
+4. Dans Android Studio (si vous compilez directement depuis l'IDE) :
+   - Allez dans **Settings** (ou **File** > **Settings**) > **Build, Execution, Deployment** > **Build Tools** > **Gradle**.
+   - Dans le champ **Gradle JDK**, sélectionnez **temurin-17** (situé dans `.jdks\temurin-17`) au lieu du runtime par défaut `jbr-25`.
+
