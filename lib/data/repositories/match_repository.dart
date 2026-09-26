@@ -398,7 +398,7 @@ class MatchRepository {
         }
 
         final parsed = _offlineParser.parse(rawText: text, match: match);
-        return _processParsedCommand(
+        return await _processParsedCommand(
           parsed: parsed,
           match: match,
           fallbackTranscription: text,
@@ -423,7 +423,7 @@ class MatchRepository {
         match: match,
       );
 
-      return _processParsedCommand(
+      return await _processParsedCommand(
         parsed: parsed,
         match: match,
         fallbackTranscription: 'Commande vocale',
@@ -458,7 +458,7 @@ class MatchRepository {
     // Mode Gemini avec fallback automatique vers parseur hors-ligne si réseau/quota indisponible
     try {
       final parsed = await _gemini.parseTextCommand(text: text, match: match);
-      return _processParsedCommand(
+      return await _processParsedCommand(
         parsed: parsed,
         match: match,
         fallbackTranscription: text,
@@ -467,7 +467,7 @@ class MatchRepository {
       final fallbackParsed = _offlineParser.parse(rawText: text, match: match);
       if (fallbackParsed.type != GameEventType.unknown ||
           fallbackParsed.matchControl != null) {
-        return _processParsedCommand(
+        return await _processParsedCommand(
           parsed: fallbackParsed,
           match: match,
           fallbackTranscription: text,
