@@ -143,8 +143,10 @@ flutter run
    ```
 4. **Run on Watch**:
    ```powershell
-   flutter run -d "Pixel Watch"
+   flutter run --flavor watch -d "Pixel Watch"
    ```
+
+> 💡 **Testing on Android Studio Emulator**: Follow our step-by-step guide in [docs/WEAR_OS_EMULATOR_GUIDE.md](docs/WEAR_OS_EMULATOR_GUIDE.md) to launch and test with `Wear_OS_Small_Round`.
 
 ---
 

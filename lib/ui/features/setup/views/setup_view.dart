@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:score_bot/main.dart';
 import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
+import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 import 'package:score_bot/ui/features/setup/widgets/ai_config_dialog.dart';
+import 'package:score_bot/ui/features/setup/widgets/lineup_dictation_sheet.dart';
 
 /// Écran de configuration du match avant son démarrage.
 class SetupView extends StatefulWidget {
@@ -226,6 +228,9 @@ class _SetupViewState extends State<SetupView> {
                   players: widget.viewModel.teamAPlayers,
                   onAddPlayer: widget.viewModel.addPlayerToTeamA,
                   onRemovePlayer: widget.viewModel.removePlayerFromTeamA,
+                  onSetPlayers: widget.viewModel.setTeamAPlayers,
+                  startDictation: widget.viewModel.startLineupDictation,
+                  stopDictation: widget.viewModel.stopLineupDictation,
                 ),
                 const SizedBox(height: 20),
                 _TeamInput(
@@ -241,6 +246,9 @@ class _SetupViewState extends State<SetupView> {
                   players: widget.viewModel.teamBPlayers,
                   onAddPlayer: widget.viewModel.addPlayerToTeamB,
                   onRemovePlayer: widget.viewModel.removePlayerFromTeamB,
+                  onSetPlayers: widget.viewModel.setTeamBPlayers,
+                  startDictation: widget.viewModel.startLineupDictation,
+                  stopDictation: widget.viewModel.stopLineupDictation,
                 ),
                 const SizedBox(height: 12),
                 _LineupAnnouncementButton(
@@ -601,13 +609,22 @@ class _PlayersSection extends StatefulWidget {
     required this.players,
     required this.onAddPlayer,
     required this.onRemovePlayer,
+    required this.onSetPlayers,
+    required this.startDictation,
+    required this.stopDictation,
   });
 
   final String teamName;
   final Color color;
-  final List<String> players;
+  final List<Player> players;
   final void Function(String) onAddPlayer;
   final void Function(int) onRemovePlayer;
+  final void Function(List<Player>) onSetPlayers;
+  final Future<void> Function({
+    required void Function(String text, bool isFinal) onResult,
+  })
+  startDictation;
+  final Future<void> Function() stopDictation;
 
   @override
   State<_PlayersSection> createState() => _PlayersSectionState();
@@ -622,6 +639,18 @@ class _PlayersSectionState extends State<_PlayersSection> {
       widget.onAddPlayer(text);
       _controller.clear();
     }
+  }
+
+  void _openDictation(BuildContext context) {
+    LineupDictationSheet.show(
+      context,
+      teamName: widget.teamName,
+      color: widget.color,
+      initialPlayers: widget.players,
+      startDictation: widget.startDictation,
+      stopDictation: widget.stopDictation,
+      onSavePlayers: widget.onSetPlayers,
+    );
   }
 
   @override
@@ -654,7 +683,7 @@ class _PlayersSectionState extends State<_PlayersSection> {
                     fontSize: 13,
                   ),
                   decoration: InputDecoration(
-                    hintText: l10n.addPlayerHint,
+                    hintText: '${l10n.addPlayerHint} (ex: 10 Messi)',
                     hintStyle: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 12,
@@ -671,11 +700,21 @@ class _PlayersSectionState extends State<_PlayersSection> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               IconButton(
                 icon: Icon(Icons.person_add, color: widget.color, size: 20),
                 onPressed: _submit,
                 tooltip: l10n.addPlayerHint,
+              ),
+              const SizedBox(width: 4),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.mic, size: 20),
+                onPressed: () => _openDictation(context),
+                tooltip: l10n.dictateLineup,
+                style: IconButton.styleFrom(
+                  backgroundColor: widget.color.withValues(alpha: 0.2),
+                  foregroundColor: widget.color,
+                ),
               ),
             ],
           ),
@@ -687,8 +726,23 @@ class _PlayersSectionState extends State<_PlayersSection> {
               children: List.generate(widget.players.length, (index) {
                 final player = widget.players[index];
                 return InputChip(
+                  avatar:
+                      player.number != null
+                          ? CircleAvatar(
+                            backgroundColor: widget.color,
+                            radius: 10,
+                            child: Text(
+                              '${player.number}',
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                          : null,
                   label: Text(
-                    player,
+                    player.name,
                     style: const TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 12,

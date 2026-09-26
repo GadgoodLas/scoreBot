@@ -13,7 +13,7 @@ dependencies:
 
   # State management & DI
   provider: ^6.1.2
-  get_it: ^9.3.0
+  get_it: ^8.0.3
 
   # Navigation
   go_router: ^14.6.2
@@ -29,7 +29,7 @@ dependencies:
   path: ^1.9.0
 
   # Permissions
-  permission_handler: ^13.0.2
+  permission_handler: ^11.3.1
 
   # HTTP & API
   http: ^1.2.2
@@ -37,7 +37,7 @@ dependencies:
   # Utilities
   intl: ^0.20.0
   uuid: ^4.5.1
-  equatable: ^3.0.0
+  equatable: ^2.0.7
   flutter_localizations:
     sdk: flutter
 
@@ -47,14 +47,14 @@ dependencies:
   gap: ^3.0.1
 
   # Environnement variables
-  flutter_dotenv: ^6.0.1
+  flutter_dotenv: ^5.2.1
   share_plus: ^13.3.0
   flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   default-flavor: phone

@@ -673,6 +673,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop announcement'**
   String get stopAnnouncement;
+
+  /// No description provided for @dictateLineup.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate lineup'**
+  String get dictateLineup;
+
+  /// No description provided for @dictateLineupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Announce numbers and names (e.g. \"number 10 Messi, number 7 Mbappé...\")'**
+  String get dictateLineupHint;
+
+  /// No description provided for @playerNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'No.'**
+  String get playerNumber;
+
+  /// No description provided for @playerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get playerName;
+
+  /// No description provided for @addPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addPlayer;
+
+  /// No description provided for @lineup.
+  ///
+  /// In en, this message translates to:
+  /// **'Lineup'**
+  String get lineup;
+
+  /// No description provided for @validateLineup.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply players'**
+  String get validateLineup;
+
+  /// No description provided for @listeningLineup.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak now...'**
+  String get listeningLineup;
 }
 
 class _AppLocalizationsDelegate

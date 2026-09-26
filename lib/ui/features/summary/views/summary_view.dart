@@ -121,38 +121,79 @@ class SummaryViewModel extends ChangeNotifier {
   List<PlayerMatchStats> playerStatsForTeam(String teamId) {
     final team = _match.teamById(teamId);
     final knownPlayerNames = <String>{};
+    final playerNumberMap = <String, int?>{};
 
     if (team != null) {
       for (final p in team.players) {
         if (p.name.trim().isNotEmpty) {
-          knownPlayerNames.add(p.name.trim());
+          final clean = p.name.trim();
+          knownPlayerNames.add(clean);
+          playerNumberMap[clean.toLowerCase()] = p.number;
         }
       }
     }
 
-    // Ajoute les joueurs mentionnés lors des événements pour cette équipe
+    // Ajoute les joueurs mentionnés lors des événements pour cette équipe s'ils ne sont pas déjà dans l'effectif
     for (final e in _events.where((e) => e.teamId == teamId)) {
       if (e is GoalEvent) {
         if (e.scorerName != null && e.scorerName!.trim().isNotEmpty) {
-          knownPlayerNames.add(e.scorerName!.trim());
+          final raw = e.scorerName!.trim();
+          // Si le buteur correspond à un numéro enregistré dans l'équipe, on associe au joueur
+          final matchingPlayer =
+              team?.players
+                  .where(
+                    (p) =>
+                        p.name.toLowerCase() == raw.toLowerCase() ||
+                        (p.number != null && raw == '#${p.number}'),
+                  )
+                  .firstOrNull;
+          knownPlayerNames.add(matchingPlayer?.name ?? raw);
         }
         if (e.assistName != null && e.assistName!.trim().isNotEmpty) {
-          knownPlayerNames.add(e.assistName!.trim());
+          final raw = e.assistName!.trim();
+          final matchingPlayer =
+              team?.players
+                  .where(
+                    (p) =>
+                        p.name.toLowerCase() == raw.toLowerCase() ||
+                        (p.number != null && raw == '#${p.number}'),
+                  )
+                  .firstOrNull;
+          knownPlayerNames.add(matchingPlayer?.name ?? raw);
         }
       } else if (e is CardEvent &&
           e.playerName != null &&
           e.playerName!.trim().isNotEmpty) {
-        knownPlayerNames.add(e.playerName!.trim());
+        final raw = e.playerName!.trim();
+        final matchingPlayer =
+            team?.players
+                .where(
+                  (p) =>
+                      p.name.toLowerCase() == raw.toLowerCase() ||
+                      (p.number != null && raw == '#${p.number}'),
+                )
+                .firstOrNull;
+        knownPlayerNames.add(matchingPlayer?.name ?? raw);
       } else if (e is FoulEvent &&
           e.playerName != null &&
           e.playerName!.trim().isNotEmpty) {
-        knownPlayerNames.add(e.playerName!.trim());
+        final raw = e.playerName!.trim();
+        final matchingPlayer =
+            team?.players
+                .where(
+                  (p) =>
+                      p.name.toLowerCase() == raw.toLowerCase() ||
+                      (p.number != null && raw == '#${p.number}'),
+                )
+                .firstOrNull;
+        knownPlayerNames.add(matchingPlayer?.name ?? raw);
       }
     }
 
     final stats = <PlayerMatchStats>[];
     for (final name in knownPlayerNames) {
       final norm = name.toLowerCase();
+      final pNumber = playerNumberMap[norm];
       int goals = 0;
       int assists = 0;
       int yellows = 0;
@@ -160,14 +201,23 @@ class SummaryViewModel extends ChangeNotifier {
 
       for (final e in _events.where((e) => e.teamId == teamId)) {
         if (e is GoalEvent) {
-          if (e.scorerName?.toLowerCase() == norm) {
+          final scorer = e.scorerName?.toLowerCase();
+          if (scorer == norm ||
+              (pNumber != null &&
+                  (scorer == '#$pNumber' || scorer == '$pNumber'))) {
             goals += e.points;
           }
-          if (e.assistName?.toLowerCase() == norm) {
+          final assister = e.assistName?.toLowerCase();
+          if (assister == norm ||
+              (pNumber != null &&
+                  (assister == '#$pNumber' || assister == '$pNumber'))) {
             assists += 1;
           }
         } else if (e is CardEvent) {
-          if (e.playerName?.toLowerCase() == norm) {
+          final player = e.playerName?.toLowerCase();
+          if (player == norm ||
+              (pNumber != null &&
+                  (player == '#$pNumber' || player == '$pNumber'))) {
             if (e.type == GameEventType.yellowCard) yellows++;
             if (e.type == GameEventType.redCard) reds++;
           }
@@ -177,6 +227,7 @@ class SummaryViewModel extends ChangeNotifier {
       stats.add(
         PlayerMatchStats(
           playerName: name,
+          playerNumber: pNumber,
           teamId: teamId,
           goals: goals,
           assists: assists,
@@ -317,6 +368,7 @@ class PlayerMatchStats {
   const PlayerMatchStats({
     required this.playerName,
     required this.teamId,
+    this.playerNumber,
     this.goals = 0,
     this.assists = 0,
     this.yellowCards = 0,
@@ -325,6 +377,7 @@ class PlayerMatchStats {
 
   final String playerName;
   final String teamId;
+  final int? playerNumber;
   final int goals;
   final int assists;
   final int yellowCards;
@@ -1143,12 +1196,37 @@ class _TeamPlayersStatsCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.person,
-                      size: 16,
-                      color: AppTheme.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
+                    if (p.playerNumber != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        margin: const EdgeInsets.only(right: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Text(
+                          '#${p.playerNumber}',
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      )
+                    else ...[
+                      const Icon(
+                        Icons.person,
+                        size: 16,
+                        color: AppTheme.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     Expanded(
                       child: Text(
                         p.playerName,

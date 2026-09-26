@@ -4,6 +4,7 @@ import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/data/repositories/match_repository.dart';
 import 'package:score_bot/data/services/tts_service.dart';
+import 'package:score_bot/data/services/lineup_parser.dart';
 
 /// ViewModel de l'écran de configuration du match.
 class SetupViewModel extends ChangeNotifier {
@@ -41,11 +42,11 @@ class SetupViewModel extends ChangeNotifier {
   String _teamBColor = 'bleu';
   String get teamBColor => _teamBColor;
 
-  final List<String> _teamAPlayers = [];
-  List<String> get teamAPlayers => List.unmodifiable(_teamAPlayers);
+  final List<Player> _teamAPlayers = [];
+  List<Player> get teamAPlayers => List.unmodifiable(_teamAPlayers);
 
-  final List<String> _teamBPlayers = [];
-  List<String> get teamBPlayers => List.unmodifiable(_teamBPlayers);
+  final List<Player> _teamBPlayers = [];
+  List<Player> get teamBPlayers => List.unmodifiable(_teamBPlayers);
 
   int _durationMinutes = 90;
   int get durationMinutes => _durationMinutes;
@@ -148,14 +149,26 @@ class SetupViewModel extends ChangeNotifier {
   }
 
   void addPlayerToTeamA(String input) {
-    final names = input.split(RegExp(r'[,;\n]'));
-    for (var name in names) {
-      name = name.trim();
-      if (name.isNotEmpty && !_teamAPlayers.contains(name)) {
-        _teamAPlayers.add(name);
+    final parsed = LineupParser.parse(input);
+    for (final p in parsed) {
+      if (!_teamAPlayers.any(
+        (existing) => existing.name.toLowerCase() == p.name.toLowerCase(),
+      )) {
+        _teamAPlayers.add(p);
       }
     }
     notifyListeners();
+  }
+
+  void addCustomPlayerToTeamA({required String name, int? number}) {
+    final clean = name.trim();
+    if (clean.isEmpty) return;
+    if (!_teamAPlayers.any(
+      (existing) => existing.name.toLowerCase() == clean.toLowerCase(),
+    )) {
+      _teamAPlayers.add(Player(id: _uuid.v4(), name: clean, number: number));
+      notifyListeners();
+    }
   }
 
   void removePlayerFromTeamA(int index) {
@@ -165,15 +178,38 @@ class SetupViewModel extends ChangeNotifier {
     }
   }
 
+  void clearTeamAPlayers() {
+    _teamAPlayers.clear();
+    notifyListeners();
+  }
+
+  void setTeamAPlayers(List<Player> players) {
+    _teamAPlayers.clear();
+    _teamAPlayers.addAll(players);
+    notifyListeners();
+  }
+
   void addPlayerToTeamB(String input) {
-    final names = input.split(RegExp(r'[,;\n]'));
-    for (var name in names) {
-      name = name.trim();
-      if (name.isNotEmpty && !_teamBPlayers.contains(name)) {
-        _teamBPlayers.add(name);
+    final parsed = LineupParser.parse(input);
+    for (final p in parsed) {
+      if (!_teamBPlayers.any(
+        (existing) => existing.name.toLowerCase() == p.name.toLowerCase(),
+      )) {
+        _teamBPlayers.add(p);
       }
     }
     notifyListeners();
+  }
+
+  void addCustomPlayerToTeamB({required String name, int? number}) {
+    final clean = name.trim();
+    if (clean.isEmpty) return;
+    if (!_teamBPlayers.any(
+      (existing) => existing.name.toLowerCase() == clean.toLowerCase(),
+    )) {
+      _teamBPlayers.add(Player(id: _uuid.v4(), name: clean, number: number));
+      notifyListeners();
+    }
   }
 
   void removePlayerFromTeamB(int index) {
@@ -181,6 +217,29 @@ class SetupViewModel extends ChangeNotifier {
       _teamBPlayers.removeAt(index);
       notifyListeners();
     }
+  }
+
+  void clearTeamBPlayers() {
+    _teamBPlayers.clear();
+    notifyListeners();
+  }
+
+  void setTeamBPlayers(List<Player> players) {
+    _teamBPlayers.clear();
+    _teamBPlayers.addAll(players);
+    notifyListeners();
+  }
+
+  /// Démarre l'écoute vocale pour la dictée de composition d'équipe.
+  Future<void> startLineupDictation({
+    required void Function(String text, bool isFinal) onResult,
+  }) async {
+    await _repository.startLineupDictation(onResult: onResult);
+  }
+
+  /// Arrête l'écoute vocale de composition.
+  Future<void> stopLineupDictation() async {
+    await _repository.stopLineupDictation();
   }
 
   void setDuration(int minutes) {
@@ -227,10 +286,12 @@ class SetupViewModel extends ChangeNotifier {
       final buffer = StringBuffer('Match de $sportLabel. ');
       buffer.write('$nameA contre $nameB. ');
       if (_teamAPlayers.isNotEmpty) {
-        buffer.write('Composition de $nameA : ${_teamAPlayers.join(", ")}. ');
+        final lineupA = _teamAPlayers.map((p) => p.shortLabel).join(', ');
+        buffer.write('Composition de $nameA : $lineupA. ');
       }
       if (_teamBPlayers.isNotEmpty) {
-        buffer.write('Composition de $nameB : ${_teamBPlayers.join(", ")}. ');
+        final lineupB = _teamBPlayers.map((p) => p.shortLabel).join(', ');
+        buffer.write('Composition de $nameB : $lineupB. ');
       }
       buffer.write('Bon match à tous !');
       return buffer.toString();
@@ -238,10 +299,12 @@ class SetupViewModel extends ChangeNotifier {
       final buffer = StringBuffer('$sportLabel match. ');
       buffer.write('$nameA versus $nameB. ');
       if (_teamAPlayers.isNotEmpty) {
-        buffer.write('Team $nameA lineup: ${_teamAPlayers.join(", ")}. ');
+        final lineupA = _teamAPlayers.map((p) => p.shortLabel).join(', ');
+        buffer.write('Team $nameA lineup: $lineupA. ');
       }
       if (_teamBPlayers.isNotEmpty) {
-        buffer.write('Team $nameB lineup: ${_teamBPlayers.join(", ")}. ');
+        final lineupB = _teamBPlayers.map((p) => p.shortLabel).join(', ');
+        buffer.write('Team $nameB lineup: $lineupB. ');
       }
       buffer.write('Good luck everyone!');
       return buffer.toString();
@@ -299,19 +362,13 @@ class SetupViewModel extends ChangeNotifier {
         id: _uuid.v4(),
         name: _teamAName.trim(),
         color: _teamAColor.trim(),
-        players:
-            _teamAPlayers
-                .map((name) => Player(id: _uuid.v4(), name: name))
-                .toList(),
+        players: _teamAPlayers,
       );
       final teamB = Team(
         id: _uuid.v4(),
         name: _teamBName.trim(),
         color: _teamBColor.trim(),
-        players:
-            _teamBPlayers
-                .map((name) => Player(id: _uuid.v4(), name: name))
-                .toList(),
+        players: _teamBPlayers,
       );
 
       final match = await _repository.createMatch(

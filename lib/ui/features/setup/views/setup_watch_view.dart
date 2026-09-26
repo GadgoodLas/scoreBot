@@ -5,6 +5,7 @@ import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 import 'package:score_bot/ui/features/setup/widgets/watch_config_view.dart';
 import 'package:score_bot/ui/features/setup/widgets/watch_duration_view.dart';
+import 'package:score_bot/ui/features/setup/widgets/lineup_dictation_sheet.dart';
 
 /// Vue d'accueil / configuration du match optimisée pour Wear OS (Pixel Watch).
 /// Utilise un PageView vertical en 3 étapes. Chaque page utilise un
@@ -59,6 +60,28 @@ class _SetupWatchViewState extends State<SetupWatchView> {
     if (match != null && mounted) {
       navigator.pushReplacementNamed('/live', arguments: match);
     }
+  }
+
+  void _openLineupDictation(BuildContext context, bool isTeamA) {
+    LineupDictationSheet.show(
+      context,
+      teamName:
+          isTeamA ? widget.viewModel.teamAName : widget.viewModel.teamBName,
+      color: isTeamA ? Colors.redAccent : Colors.blueAccent,
+      initialPlayers:
+          isTeamA
+              ? widget.viewModel.teamAPlayers
+              : widget.viewModel.teamBPlayers,
+      startDictation: widget.viewModel.startLineupDictation,
+      stopDictation: widget.viewModel.stopLineupDictation,
+      onSavePlayers: (players) {
+        if (isTeamA) {
+          widget.viewModel.setTeamAPlayers(players);
+        } else {
+          widget.viewModel.setTeamBPlayers(players);
+        }
+      },
+    );
   }
 
   @override
@@ -147,6 +170,85 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                     hint: l10n.teamB,
                     color: Colors.blueAccent,
                     onChanged: widget.viewModel.setTeamBName,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(6),
+                        onTap: () => _openLineupDictation(context, true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.redAccent.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.mic,
+                                size: 10,
+                                color: Colors.redAccent,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                'A (${widget.viewModel.teamAPlayers.length})',
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(6),
+                        onTap: () => _openLineupDictation(context, false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.blueAccent.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.mic,
+                                size: 10,
+                                color: Colors.blueAccent,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                'B (${widget.viewModel.teamBPlayers.length})',
+                                style: const TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Row(

@@ -361,6 +361,24 @@ class MatchRepository {
     }
   }
 
+  /// Démarre la dictée vocale continue pour la saisie de composition d'équipe.
+  Future<void> startLineupDictation({
+    required void Function(String recognizedWords, bool isFinal) onResult,
+  }) async {
+    final locale = languageCode == 'fr' ? 'fr_FR' : 'en_US';
+    await _localSpeech.startListening(
+      localeId: locale,
+      onResult: onResult,
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 4),
+    );
+  }
+
+  /// Arrête la dictée vocale de composition.
+  Future<void> stopLineupDictation() async {
+    await _localSpeech.stopListening();
+  }
+
   /// Arrête l'écoute/enregistrement, parse la commande (via moteur local ou Gemini)
   /// et crée l'événement de match.
   Future<VoiceCommandResult> stopAndProcessVoiceCommand(GameMatch match) async {
@@ -380,7 +398,7 @@ class MatchRepository {
         }
 
         final parsed = _offlineParser.parse(rawText: text, match: match);
-        return _processParsedCommand(
+        return await _processParsedCommand(
           parsed: parsed,
           match: match,
           fallbackTranscription: text,
@@ -405,7 +423,7 @@ class MatchRepository {
         match: match,
       );
 
-      return _processParsedCommand(
+      return await _processParsedCommand(
         parsed: parsed,
         match: match,
         fallbackTranscription: 'Commande vocale',
@@ -440,7 +458,7 @@ class MatchRepository {
     // Mode Gemini avec fallback automatique vers parseur hors-ligne si réseau/quota indisponible
     try {
       final parsed = await _gemini.parseTextCommand(text: text, match: match);
-      return _processParsedCommand(
+      return await _processParsedCommand(
         parsed: parsed,
         match: match,
         fallbackTranscription: text,
@@ -449,7 +467,7 @@ class MatchRepository {
       final fallbackParsed = _offlineParser.parse(rawText: text, match: match);
       if (fallbackParsed.type != GameEventType.unknown ||
           fallbackParsed.matchControl != null) {
-        return _processParsedCommand(
+        return await _processParsedCommand(
           parsed: fallbackParsed,
           match: match,
           fallbackTranscription: text,
@@ -790,9 +808,21 @@ class MatchRepository {
     if (name == null || name.trim().isEmpty) return null;
     final clean = name.trim().toLowerCase();
 
+    // 1. Recherche par numéro si présent (ex: "numéro 5", "#5", "5")
+    final numMatch = RegExp(
+      r'(?:(?:dossard|gardien|num[eé]ro|numero|number|n°|n)\s*|#\s*)?(\d{1,2})\b',
+      caseSensitive: false,
+    ).firstMatch(clean);
+    final numVal = numMatch != null ? int.tryParse(numMatch.group(1)!) : null;
+
     // Recherche d'abord dans l'équipe concernée
     final team = match.teamById(teamId);
     if (team != null) {
+      if (numVal != null) {
+        for (final p in team.players) {
+          if (p.number == numVal) return p.name;
+        }
+      }
       for (final p in team.players) {
         if (p.name.toLowerCase() == clean ||
             p.name.toLowerCase().contains(clean) ||
@@ -804,6 +834,11 @@ class MatchRepository {
 
     // Recherche dans l'autre équipe
     final otherTeam = teamId == match.teamA.id ? match.teamB : match.teamA;
+    if (numVal != null) {
+      for (final p in otherTeam.players) {
+        if (p.number == numVal) return p.name;
+      }
+    }
     for (final p in otherTeam.players) {
       if (p.name.toLowerCase() == clean ||
           p.name.toLowerCase().contains(clean) ||

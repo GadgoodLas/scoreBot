@@ -230,13 +230,28 @@ class OfflineVoiceCommandParser {
         norm.contains('deux un') ||
         norm.contains('2-1');
 
-    // N'extraire un candidat générique ("par X" ou "de X" ou "by X") que si un mot clé de but est présent
+    // Si la phrase contient une mention d'assist, séparer pour ne pas confondre le joueur qui marque et le passeur
+    final assistRegex = RegExp(
+      r'\b(?:assisted by|assiste par|assist by|assist|assit|pass from|passe de|passeur)\b',
+    );
+    final assistMatch = assistRegex.firstMatch(norm);
+    final mainNorm =
+        assistMatch != null
+            ? norm.substring(0, assistMatch.start).trim()
+            : norm;
+
+    // N'extraire un candidat générique que si un mot clé de but est présent
     final (team, scorer) = _resolveTeamAndPlayer(
-      norm,
+      mainNorm,
       match,
       allowGenericCandidate: isGoalKeyword,
     );
-    final assist = _detectAssist(norm, match, excludePlayer: scorer);
+    final assist = _detectAssist(
+      norm,
+      match,
+      excludePlayer: scorer,
+      preferredTeam: team,
+    );
     final points = _detectPoints(norm);
 
     // Si un buteur ou un mot-clé de but/point est présent
@@ -261,24 +276,62 @@ class OfflineVoiceCommandParser {
 
   // ─────────────── EXTRACTION PASSEUR ───────────────
 
-  String? _detectAssist(String norm, GameMatch match, {String? excludePlayer}) {
-    // Patterns : "assist [nom]", "assisted by [nom]", "pass from [nom]", "passe de [nom]", "passe [nom]"
+  String? _detectAssist(
+    String norm,
+    GameMatch match, {
+    String? excludePlayer,
+    String? preferredTeam,
+  }) {
+    // Patterns : "assist [nom/numéro]", "assisted by ...", "assit ...", "passe de ...", etc.
     final assistRegex = RegExp(
-      r'(?:assisted by|assiste par|assist by|assist|pass from|passe de|passeur|passe)\s+([a-z0-9à-ÿ]+)',
+      r'(?:assisted by|assiste par|assist by|assist|assit|pass from|passe de|passeur|passe)\s+(.+)$',
     );
     final matchRegex = assistRegex.firstMatch(norm);
 
     if (matchRegex != null) {
-      final rawCandidate = matchRegex.group(1);
-      if (rawCandidate != null) {
-        // Chercher parmi les joueurs enregistrés
+      final assistPart = matchRegex.group(1)?.trim();
+      if (assistPart != null && assistPart.isNotEmpty) {
+        // 1. Détection de numéro de maillot pour la passe décisive
+        final numberMatch = RegExp(
+          r'(?:numero|number|num|n°|#)?\s*(\d+)',
+        ).firstMatch(assistPart);
+        if (numberMatch != null) {
+          final numVal = int.tryParse(numberMatch.group(1)!);
+          if (numVal != null) {
+            final playersPool = [
+              if (preferredTeam == match.teamA.name) ...match.teamA.players,
+              if (preferredTeam == match.teamB.name) ...match.teamB.players,
+              ...match.teamA.players,
+              ...match.teamB.players,
+            ];
+            for (final p in playersPool) {
+              if (p.number == numVal) {
+                if (p.name != excludePlayer) return p.name;
+              }
+            }
+            return '#$numVal';
+          }
+        }
+
+        // 2. Chercher parmi les joueurs enregistrés par nom
         for (final p in [...match.teamA.players, ...match.teamB.players]) {
-          if (_normalize(p.name) == rawCandidate ||
-              _normalize(p.name).contains(rawCandidate)) {
+          final pNorm = _normalize(p.name);
+          if (pNorm.isNotEmpty && _containsWord(assistPart, pNorm)) {
             if (p.name != excludePlayer) return p.name;
           }
         }
-        return rawCandidate;
+
+        // 3. Extraction d'un mot candidat
+        final cleanedCandidate = assistPart.replaceFirst(
+          RegExp(r'^(?:de|du|par|by)\s+'),
+          '',
+        );
+        final rawCandidate = RegExp(
+          r'^([a-z0-9à-ÿ]+)',
+        ).firstMatch(cleanedCandidate)?.group(1);
+        if (rawCandidate != null && rawCandidate.isNotEmpty) {
+          return rawCandidate[0].toUpperCase() + rawCandidate.substring(1);
+        }
       }
     }
 
@@ -312,73 +365,113 @@ class OfflineVoiceCommandParser {
     String? matchedTeam;
     String? matchedPlayer;
 
-    // 1. Chercher un joueur enregistré dans Team A
-    for (final p in match.teamA.players) {
-      final pNorm = _normalize(p.name);
-      if (pNorm.isNotEmpty && _containsWord(norm, pNorm)) {
-        matchedPlayer = p.name;
+    // 1. Détection d'équipe explicite
+    final teamANorm = _normalize(match.teamA.name);
+    final teamBNorm = _normalize(match.teamB.name);
+
+    final isExplicitTeamA =
+        _containsWord(norm, 'equipe a') ||
+        _containsWord(norm, 'team a') ||
+        _containsWord(norm, 'equipe 1') ||
+        _containsWord(norm, 'team 1') ||
+        (teamANorm.isNotEmpty && _containsWord(norm, teamANorm));
+
+    final isExplicitTeamB =
+        _containsWord(norm, 'equipe b') ||
+        _containsWord(norm, 'team b') ||
+        _containsWord(norm, 'equipe 2') ||
+        _containsWord(norm, 'team 2') ||
+        (teamBNorm.isNotEmpty && _containsWord(norm, teamBNorm));
+
+    if (isExplicitTeamA && !isExplicitTeamB) {
+      matchedTeam = match.teamA.name;
+    } else if (isExplicitTeamB && !isExplicitTeamA) {
+      matchedTeam = match.teamB.name;
+    } else if (!ignoreColors) {
+      final colorANorm = _normalize(match.teamA.color ?? '');
+      final colorBNorm = _normalize(match.teamB.color ?? '');
+
+      final isColorA = _containsColor(norm, colorANorm);
+      final isColorB = _containsColor(norm, colorBNorm);
+
+      if (isColorA && !isColorB) {
         matchedTeam = match.teamA.name;
-        break;
+      } else if (isColorB && !isColorA) {
+        matchedTeam = match.teamB.name;
       }
     }
 
-    // 2. Chercher un joueur enregistré dans Team B
+    // 2. Détection par numéro de maillot ("numéro 5", "numero 9", "#7", "n° 10", etc.)
+    final numberRegex = RegExp(r'(?:numero|number|num|n°|#)\s*(\d+)');
+    final numberMatch = numberRegex.firstMatch(norm);
+    if (numberMatch != null) {
+      final numVal = int.tryParse(numberMatch.group(1)!);
+      if (numVal != null) {
+        if (matchedTeam == match.teamA.name) {
+          final p = match.teamA.players.cast<Player?>().firstWhere(
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
+          matchedPlayer = p?.name ?? '#$numVal';
+        } else if (matchedTeam == match.teamB.name) {
+          final p = match.teamB.players.cast<Player?>().firstWhere(
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
+          matchedPlayer = p?.name ?? '#$numVal';
+        } else {
+          // Équipe non explicite, on cherche dans les deux équipes
+          final pA = match.teamA.players.cast<Player?>().firstWhere(
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
+          final pB = match.teamB.players.cast<Player?>().firstWhere(
+            (p) => p?.number == numVal,
+            orElse: () => null,
+          );
+
+          if (pA != null) {
+            matchedPlayer = pA.name;
+            matchedTeam = match.teamA.name;
+          } else if (pB != null) {
+            matchedPlayer = pB.name;
+            matchedTeam = match.teamB.name;
+          } else {
+            matchedPlayer = '#$numVal';
+          }
+        }
+      }
+    }
+
+    // 3. Si aucun joueur par numéro, chercher un joueur enregistré par son nom
     if (matchedPlayer == null) {
-      for (final p in match.teamB.players) {
+      for (final p in match.teamA.players) {
         final pNorm = _normalize(p.name);
         if (pNorm.isNotEmpty && _containsWord(norm, pNorm)) {
           matchedPlayer = p.name;
-          matchedTeam = match.teamB.name;
+          matchedTeam ??= match.teamA.name;
           break;
         }
       }
     }
 
-    // 3. Détection d'équipe explicite si non déjà déduite
-    if (matchedTeam == null) {
-      final teamANorm = _normalize(match.teamA.name);
-      final teamBNorm = _normalize(match.teamB.name);
-
-      final isExplicitTeamA =
-          _containsWord(norm, 'equipe a') ||
-          _containsWord(norm, 'team a') ||
-          _containsWord(norm, 'equipe 1') ||
-          _containsWord(norm, 'team 1') ||
-          (teamANorm.isNotEmpty && _containsWord(norm, teamANorm));
-
-      final isExplicitTeamB =
-          _containsWord(norm, 'equipe b') ||
-          _containsWord(norm, 'team b') ||
-          _containsWord(norm, 'equipe 2') ||
-          _containsWord(norm, 'team 2') ||
-          (teamBNorm.isNotEmpty && _containsWord(norm, teamBNorm));
-
-      if (isExplicitTeamA && !isExplicitTeamB) {
-        matchedTeam = match.teamA.name;
-      } else if (isExplicitTeamB && !isExplicitTeamA) {
-        matchedTeam = match.teamB.name;
-      } else if (!ignoreColors) {
-        final colorANorm = _normalize(match.teamA.color ?? '');
-        final colorBNorm = _normalize(match.teamB.color ?? '');
-
-        final isColorA = _containsColor(norm, colorANorm);
-        final isColorB = _containsColor(norm, colorBNorm);
-
-        if (isColorA && !isColorB) {
-          matchedTeam = match.teamA.name;
-        } else if (isColorB && !isColorA) {
-          matchedTeam = match.teamB.name;
+    if (matchedPlayer == null) {
+      for (final p in match.teamB.players) {
+        final pNorm = _normalize(p.name);
+        if (pNorm.isNotEmpty && _containsWord(norm, pNorm)) {
+          matchedPlayer = p.name;
+          matchedTeam ??= match.teamB.name;
+          break;
         }
       }
     }
 
-    // 4. Si pas de joueur de l'effectif trouvé, chercher un nom générique après "par", "de", "by", "from", "for"
+    // 4. Si pas de joueur de l'effectif trouvé, chercher un nom générique après "par", "de", "pour", "by", "from", "for"
     if (matchedPlayer == null && allowGenericCandidate) {
       final byRegex = RegExp(r'(?:par|de|pour|by|from|for)\s+([a-zà-ÿ]+)');
       final byMatch = byRegex.firstMatch(norm);
       if (byMatch != null) {
         final candidate = byMatch.group(1);
-        // Ne pas prendre les mots de liaison / stopwords
         const stopWords = [
           'equipe',
           'team',
