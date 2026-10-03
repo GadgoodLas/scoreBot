@@ -34,9 +34,19 @@ class LiveWatchView extends StatelessWidget {
 
           final isVoiceActive = viewModel.voiceState != VoiceState.idle;
 
+          // ─── Mode Ambiant (OLED Éco) ───
+          if (viewModel.isAmbientMode && !isVoiceActive) {
+            return GestureDetector(
+              onTap: () => viewModel.exitAmbientMode(),
+              behavior: HitTestBehavior.opaque,
+              child: _WatchAmbientView(viewModel: viewModel),
+            );
+          }
+
           return GestureDetector(
-            // Tap n'importe où pour démarrer / arrêter la dictée vocale
+            // Tap pour démarrer / arrêter la dictée vocale, appui long pour mode ambiant
             onTap: () => viewModel.toggleListening(),
+            onLongPress: () => viewModel.toggleAmbientMode(),
             behavior: HitTestBehavior.opaque,
             child: Stack(
               children: [
@@ -69,16 +79,43 @@ class LiveWatchView extends StatelessWidget {
                                 const SizedBox(height: 2),
                               ],
 
-                              // Chronomètre
-                              Text(
-                                viewModel.elapsedFormatted,
-                                style: const TextStyle(
-                                  color: AppTheme.primary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 2,
-                                  fontFeatures: [FontFeature.tabularFigures()],
-                                ),
+                              // Chronomètre & bouton mode ambiant
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    viewModel.elapsedFormatted,
+                                    style: const TextStyle(
+                                      color: AppTheme.primary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 2,
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () => viewModel.toggleAmbientMode(),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white10,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white24,
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.nightlight_outlined,
+                                        size: 10,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 2),
 
@@ -670,6 +707,151 @@ class _WatchAlertBadge extends StatelessWidget {
             child: const Icon(Icons.close, size: 10, color: Colors.white60),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Vue Ambiante (Always-On Display) pour Wear OS.
+/// Conçue pour maximiser l'autonomie de batterie sur écran OLED (fond 100% noir pur)
+/// tout en gardant le chrono et le score immédiatement lisibles d'un coup d'œil par l'arbitre.
+class _WatchAmbientView extends StatelessWidget {
+  const _WatchAmbientView({required this.viewModel});
+
+  final LiveViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Indicateur Éco
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.nightlight_round,
+                    size: 9,
+                    color: Colors.white38,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.ambientMode.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+
+              // Chronomètre épuré
+              Text(
+                viewModel.elapsedFormatted,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 2,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 1),
+
+              // Score géant monochrome à fort contraste
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${viewModel.scoreA}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 46,
+                      fontWeight: FontWeight.w900,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      ':',
+                      style: TextStyle(
+                        color: Colors.white30,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w200,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${viewModel.scoreB}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 46,
+                      fontWeight: FontWeight.w900,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Noms d'équipe discrets
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      viewModel.match.teamA.name,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      'vs',
+                      style: TextStyle(color: Colors.white24, fontSize: 8),
+                    ),
+                  ),
+                  Flexible(
+                    child: Text(
+                      viewModel.match.teamB.name,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.left,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Indication de réveil
+              Text(
+                l10n.ambientModeHint,
+                style: const TextStyle(color: Colors.white38, fontSize: 7.5),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:score_bot/domain/models/match.dart';
 import 'package:score_bot/domain/models/game_event.dart';
 import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/data/repositories/match_repository.dart';
 import 'package:score_bot/data/services/audio_service.dart';
+import 'package:score_bot/data/services/haptic_service.dart';
 import 'package:score_bot/data/services/tts_service.dart';
 
 /// États de la reconnaissance vocale sur l'écran live.
@@ -20,15 +20,18 @@ class LiveViewModel extends ChangeNotifier {
     required MatchRepository matchRepository,
     required GameMatch initialMatch,
     TtsService? ttsService,
+    HapticService? hapticService,
   }) : _repository = matchRepository,
        _match = initialMatch,
-       _tts = ttsService ?? TtsService() {
+       _tts = ttsService ?? TtsService(),
+       _haptic = hapticService ?? HapticService() {
     _loadEvents();
     _startChronometer();
   }
 
   final MatchRepository _repository;
   final TtsService _tts;
+  final HapticService _haptic;
   GameMatch _match;
   GameMatch get match => _match;
 
@@ -37,6 +40,31 @@ class LiveViewModel extends ChangeNotifier {
 
   bool _breakNotified = false;
   bool _endNotified = false;
+
+  // ─────────────── Mode Ambiant (OLED Éco Wear OS) ───────────────
+
+  bool _isAmbientMode = false;
+
+  /// Indique si l'écran est en mode ambiant minimaliste basse consommation OLED.
+  bool get isAmbientMode => _isAmbientMode;
+
+  /// Bascule ou définit explicitement le mode ambiant.
+  void toggleAmbientMode({bool? value}) {
+    final next = value ?? !_isAmbientMode;
+    if (_isAmbientMode != next) {
+      _isAmbientMode = next;
+      _haptic.recordingStart();
+      notifyListeners();
+    }
+  }
+
+  /// Sort du mode ambiant si actif.
+  void exitAmbientMode() {
+    if (_isAmbientMode) {
+      _isAmbientMode = false;
+      notifyListeners();
+    }
+  }
 
   // ─────────────── Chronomètre ───────────────
 
@@ -75,7 +103,7 @@ class LiveViewModel extends ChangeNotifier {
       if (_elapsed.inSeconds >= breakMin * 60) {
         _breakNotified = true;
         _pendingAlert = LiveAlertType.breakSuggested;
-        HapticFeedback.heavyImpact();
+        _haptic.periodEnd();
         _tts.speak(
           _repository.languageCode == 'fr'
               ? "C'est l'heure de la pause ! Prenez une pause."
@@ -89,7 +117,7 @@ class LiveViewModel extends ChangeNotifier {
       if (_elapsed.inSeconds >= _match.durationMinutes * 60) {
         _endNotified = true;
         _pendingAlert = LiveAlertType.matchEndReached;
-        HapticFeedback.heavyImpact();
+        _haptic.periodEnd();
         _tts.speak(
           _repository.languageCode == 'fr'
               ? "Fin du match ! Le temps réglementaire est écoulé."
@@ -194,7 +222,7 @@ class LiveViewModel extends ChangeNotifier {
     if (!_repository.isVoiceReady) {
       _voiceState = VoiceState.error;
       _lastError = 'Mode vocal non configuré';
-      HapticFeedback.vibrate();
+      _haptic.error();
       notifyListeners();
       Timer(const Duration(seconds: 4), () {
         if (_voiceState == VoiceState.error) {
@@ -211,10 +239,11 @@ class LiveViewModel extends ChangeNotifier {
     _lastError = null;
     _lastTranscription = null;
     _recordingSeconds = 0;
+    exitAmbientMode();
     notifyListeners();
 
     // Retour haptique immédiat au tap
-    HapticFeedback.selectionClick();
+    _haptic.recordingStart();
 
     try {
       await _repository.startVoiceCommand();
@@ -225,13 +254,14 @@ class LiveViewModel extends ChangeNotifier {
         notifyListeners();
       });
       // Vibration distincte confirmant que le micro est ouvert
-      HapticFeedback.heavyImpact();
+      _haptic.recordingStart();
     } catch (e) {
       _isTransitioning = false;
       _recordingTimer?.cancel();
       _recordingTimer = null;
       _voiceState = VoiceState.error;
       _lastError = e is AudioException ? e.message : 'Erreur micro : $e';
+      _haptic.error();
       notifyListeners();
       Timer(const Duration(seconds: 4), () {
         if (_voiceState == VoiceState.error) {
@@ -264,7 +294,7 @@ class LiveViewModel extends ChangeNotifier {
     notifyListeners();
 
     // Vibration haptique sur fin enregistrement
-    HapticFeedback.mediumImpact();
+    _haptic.recordingStop();
 
     try {
       final result = await _repository.stopAndProcessVoiceCommand(_match);
@@ -277,20 +307,33 @@ class LiveViewModel extends ChangeNotifier {
 
         if (result.matchControl != null) {
           await _handleMatchControl(result.matchControl!);
+          _haptic.matchControl();
         } else if (result.event != null) {
           _lastEvent = result.event!;
           if (result.event is CorrectionEvent) {
             await _handleCorrection(result.event as CorrectionEvent);
+            _haptic.correction();
           } else {
             _events.add(result.event!);
             if (result.event is GoalEvent) {
               _match = await _repository.recalculateScore(_match);
+              _haptic.goal();
+            } else if (result.event is CardEvent) {
+              final card = result.event as CardEvent;
+              if (card.type == GameEventType.redCard) {
+                _haptic.redCard();
+              } else {
+                _haptic.yellowCard();
+              }
+            } else if (result.event is FoulEvent) {
+              _haptic.foul();
+            } else {
+              _haptic.matchControl();
             }
           }
+        } else {
+          _haptic.matchControl();
         }
-
-        // Vibration succès
-        HapticFeedback.heavyImpact();
 
         // Retour à idle après 3 secondes
         Timer(const Duration(seconds: 3), () {
@@ -303,6 +346,7 @@ class LiveViewModel extends ChangeNotifier {
       } else {
         _lastError = result.errorMessage;
         _voiceState = VoiceState.error;
+        _haptic.error();
 
         Timer(const Duration(seconds: 4), () {
           if (_voiceState == VoiceState.error) {
@@ -315,6 +359,7 @@ class LiveViewModel extends ChangeNotifier {
     } catch (e) {
       _lastError = 'Erreur : $e';
       _voiceState = VoiceState.error;
+      _haptic.error();
       Timer(const Duration(seconds: 4), () {
         if (_voiceState == VoiceState.error) {
           _voiceState = VoiceState.idle;
@@ -434,16 +479,19 @@ class LiveViewModel extends ChangeNotifier {
   // ─────────────── Match Controls ───────────────
 
   Future<void> togglePause() async {
+    _haptic.matchControl();
     _match = await _repository.togglePause(_match);
     notifyListeners();
   }
 
   Future<void> startHalftime() async {
+    _haptic.matchControl();
     _match = await _repository.startHalftime(_match);
     notifyListeners();
   }
 
   Future<void> endMatch() async {
+    _haptic.periodEnd();
     _match = await _repository.endMatch(_match);
     _chronoTimer?.cancel();
     notifyListeners();
@@ -457,7 +505,7 @@ class LiveViewModel extends ChangeNotifier {
   /// Incrémente le score de l'équipe A (+1 au tap).
   Future<void> incrementScoreA() async {
     if (_match.status == GameMatchStatus.finished) return;
-    HapticFeedback.lightImpact();
+    _haptic.goal();
     _match = await _repository.addPoint(_match, _match.teamA.id);
     _loadEvents();
     notifyListeners();
@@ -466,7 +514,7 @@ class LiveViewModel extends ChangeNotifier {
   /// Décrémente le score de l'équipe A (-1 au double tap).
   Future<void> decrementScoreA() async {
     if (_match.status == GameMatchStatus.finished || _match.scoreA <= 0) return;
-    HapticFeedback.mediumImpact();
+    _haptic.correction();
     _match = await _repository.removePoint(_match, _match.teamA.id);
     _loadEvents();
     notifyListeners();
@@ -475,7 +523,7 @@ class LiveViewModel extends ChangeNotifier {
   /// Incrémente le score de l'équipe B (+1 au tap).
   Future<void> incrementScoreB() async {
     if (_match.status == GameMatchStatus.finished) return;
-    HapticFeedback.lightImpact();
+    _haptic.goal();
     _match = await _repository.addPoint(_match, _match.teamB.id);
     _loadEvents();
     notifyListeners();
@@ -484,7 +532,7 @@ class LiveViewModel extends ChangeNotifier {
   /// Décrémente le score de l'équipe B (-1 au double tap).
   Future<void> decrementScoreB() async {
     if (_match.status == GameMatchStatus.finished || _match.scoreB <= 0) return;
-    HapticFeedback.mediumImpact();
+    _haptic.correction();
     _match = await _repository.removePoint(_match, _match.teamB.id);
     _loadEvents();
     notifyListeners();

@@ -4,9 +4,12 @@ import 'package:get_it/get_it.dart';
 import 'package:score_bot/data/repositories/match_repository.dart';
 import 'package:score_bot/data/services/audio_service.dart';
 import 'package:score_bot/data/services/gemini_service.dart';
+import 'package:score_bot/data/services/haptic_service.dart';
 import 'package:score_bot/data/services/storage_service.dart';
 import 'package:score_bot/data/services/tts_service.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
+import 'package:score_bot/ui/features/history/view_models/history_view_model.dart';
+import 'package:score_bot/ui/features/history/views/history_view.dart';
 import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
 import 'package:score_bot/ui/features/live/views/live_view.dart';
 import 'package:score_bot/ui/features/live/views/live_watch_view.dart';
@@ -37,6 +40,7 @@ Future<void> main() async {
   // Injection de dépendances
   sl.registerSingleton<StorageService>(storageService);
   sl.registerSingleton<AudioService>(AudioService());
+  sl.registerSingleton<HapticService>(HapticService());
   sl.registerSingleton<GeminiService>(
     GeminiService(storageService: sl<StorageService>()),
   );
@@ -118,6 +122,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
             matchRepository: sl<MatchRepository>(),
             initialMatch: match,
             ttsService: sl<TtsService>(),
+            hapticService: sl<HapticService>(),
           );
           // Détecte si on tourne sur une montre (petite fenêtre)
           return _WatchOrPhoneView(viewModel: vm);
@@ -132,6 +137,14 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
           );
           return _WatchOrPhoneSummaryView(viewModel: vm);
         },
+      ),
+      '/history' => MaterialPageRoute(
+        builder:
+            (_) => HistoryView(
+              viewModel: HistoryViewModel(
+                matchRepository: sl<MatchRepository>(),
+              ),
+            ),
       ),
       _ => MaterialPageRoute(builder: (_) => const _NotFoundView()),
     };

@@ -110,6 +110,17 @@
   "addPlayer": "Ajouter",
   "lineup": "Composition",
   "validateLineup": "Valider les joueurs",
-  "listeningLineup": "Parlez maintenant..."
+  "listeningLineup": "Parlez maintenant...",
+  "ambientMode": "Mode Ambiant",
+  "ambientModeHint": "Écran éco OLED actif — Tap pour réveiller",
+  "toggleAmbientMode": "Mode éco batterie",
+  "matchHistory": "Historique des matchs",
+  "noMatchesRecorded": "Aucun match enregistré",
+  "noMatchesRecordedSubtitle": "Terminez un match pour voir son résumé ici.",
+  "deleteMatch": "Supprimer le match",
+  "deleteMatchConfirm": "Voulez-vous supprimer ce match de l''historique ?",
+  "shareWhatsApp": "Feuille de match WhatsApp",
+  "matchDeleted": "Match supprimé",
+  "viewReport": "Voir le résumé"
 }
 

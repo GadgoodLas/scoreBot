@@ -398,7 +398,7 @@ class MatchRepository {
         }
 
         final parsed = _offlineParser.parse(rawText: text, match: match);
-        return await _processParsedCommand(
+        return _processParsedCommand(
           parsed: parsed,
           match: match,
           fallbackTranscription: text,
@@ -423,7 +423,7 @@ class MatchRepository {
         match: match,
       );
 
-      return await _processParsedCommand(
+      return _processParsedCommand(
         parsed: parsed,
         match: match,
         fallbackTranscription: 'Commande vocale',
@@ -458,7 +458,7 @@ class MatchRepository {
     // Mode Gemini avec fallback automatique vers parseur hors-ligne si réseau/quota indisponible
     try {
       final parsed = await _gemini.parseTextCommand(text: text, match: match);
-      return await _processParsedCommand(
+      return _processParsedCommand(
         parsed: parsed,
         match: match,
         fallbackTranscription: text,
@@ -467,7 +467,7 @@ class MatchRepository {
       final fallbackParsed = _offlineParser.parse(rawText: text, match: match);
       if (fallbackParsed.type != GameEventType.unknown ||
           fallbackParsed.matchControl != null) {
-        return await _processParsedCommand(
+        return _processParsedCommand(
           parsed: fallbackParsed,
           match: match,
           fallbackTranscription: text,
@@ -620,6 +620,9 @@ class MatchRepository {
 
   /// Liste tous les matchs sauvegardés.
   List<GameMatch> listMatches() => _storage.listMatches();
+
+  /// Supprime un match sauvegardé et ses événements associés.
+  Future<void> deleteMatch(String matchId) => _storage.deleteMatch(matchId);
 
   /// Résout l'équipe à partir d'un nom partiel, d'une couleur, d'un mot-clé ou d'un joueur.
   Team? _resolveTeam(

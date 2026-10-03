@@ -188,6 +188,12 @@ class _SetupViewState extends State<SetupView> {
             tooltip: l10n.voiceModeConfigTitle,
             onPressed: () => _openAiSettings(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.history, color: AppTheme.textPrimary),
+            tooltip: l10n.matchHistory,
+            onPressed: () => Navigator.pushNamed(context, '/history'),
+          ),
+          const SizedBox(width: 4),
           const SizedBox(width: 8),
         ],
       ),

@@ -244,6 +244,20 @@ class SummaryWatchView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             IconButton.filledTonal(
+                              onPressed: () => _shareOnWhatsAppWatch(context),
+                              icon: const Icon(Icons.chat, size: 16),
+                              tooltip: l10n.shareWhatsApp,
+                              style: IconButton.styleFrom(
+                                backgroundColor: const Color(
+                                  0xFF25D366,
+                                ).withValues(alpha: 0.2),
+                                foregroundColor: const Color(0xFF25D366),
+                                padding: const EdgeInsets.all(8),
+                                minimumSize: const Size(36, 36),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            IconButton.filledTonal(
                               onPressed: () => _shareOnWatch(context),
                               icon: const Icon(Icons.share, size: 16),
                               tooltip: l10n.shareReport,
@@ -335,6 +349,33 @@ class SummaryWatchView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _shareOnWhatsAppWatch(BuildContext context) async {
+    final text = viewModel.generateWhatsAppReport();
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject:
+              '🏆 Feuille de match : ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        Clipboard.setData(ClipboardData(text: text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.reportCopied,
+              style: const TextStyle(fontSize: 10),
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppTheme.surface,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _shareOnWatch(BuildContext context) async {
