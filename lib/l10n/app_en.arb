@@ -151,6 +151,17 @@
   "addPlayer": "Add",
   "lineup": "Lineup",
   "validateLineup": "Apply players",
-  "listeningLineup": "Speak now..."
+  "listeningLineup": "Speak now...",
+  "ambientMode": "Ambient Mode",
+  "ambientModeHint": "OLED eco screen active — Tap to wake",
+  "toggleAmbientMode": "Battery saver mode",
+  "matchHistory": "Match History",
+  "noMatchesRecorded": "No matches recorded",
+  "noMatchesRecordedSubtitle": "Complete a match to view its summary here.",
+  "deleteMatch": "Delete match",
+  "deleteMatchConfirm": "Are you sure you want to delete this match from history?",
+  "shareWhatsApp": "WhatsApp Match Sheet",
+  "matchDeleted": "Match deleted",
+  "viewReport": "View Summary"
 }
 

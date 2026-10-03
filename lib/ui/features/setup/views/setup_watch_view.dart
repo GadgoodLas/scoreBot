@@ -130,6 +130,22 @@ class _SetupWatchViewState extends State<SetupWatchView> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/history'),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.history,
+                            size: 11,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),

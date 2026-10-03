@@ -621,6 +621,9 @@ class MatchRepository {
   /// Liste tous les matchs sauvegardés.
   List<GameMatch> listMatches() => _storage.listMatches();
 
+  /// Supprime un match sauvegardé et ses événements associés.
+  Future<void> deleteMatch(String matchId) => _storage.deleteMatch(matchId);
+
   /// Résout l'équipe à partir d'un nom partiel, d'une couleur, d'un mot-clé ou d'un joueur.
   Team? _resolveTeam(
     String teamName,

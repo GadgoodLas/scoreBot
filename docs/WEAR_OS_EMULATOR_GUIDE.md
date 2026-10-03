@@ -1,145 +1,152 @@
-# ⌚ Guide de Test sur Émulateur Wear OS (Android Studio)
+# Wear OS Emulator Guide for ScoreBot
 
-Ce guide détaille les étapes simples pour exécuter et tester **ScoreBot** sur un émulateur de montre connectée **Wear OS** depuis **Android Studio** ou directement en ligne de commande.
-
----
-
-## 📋 Prérequis
-
-1. **Android Studio** installé avec le **SDK Android** et les composants d'émulation.
-2. Un émulateur Wear OS configuré (un émulateur `Wear_OS_Small_Round` est déjà configuré sur votre machine).
-3. Flutter SDK opérationnel.
+This document walks you through testing **ScoreBot** on a Wear OS emulator using Android Studio and Flutter.
 
 ---
 
-## 🚀 Étape 1 : Démarrer l'émulateur Wear OS
+## Prerequisites
 
-### Option A — En ligne de commande (Le plus rapide)
-Ouvrez un terminal PowerShell à la racine du projet et exécutez :
+1. **Android Studio** (latest stable) with the **Android SDK** installed.
+2. **Flutter SDK** (already set up in the project).
+3. **Wear OS system image** for the desired API level (e.g., API 33 – Wear OS 4).
+4. The **watch flavor** of the app (`watch`) must be defined in `android/app/build.gradle.kts` (already present).
+5. Sufficient disk space on the emulator (at least 200 MiB free). The debug APK can be > 1 GB; we recommend using the **release** build to keep the size ~20 MiB.
+
+---
+
+## 1. Create a Wear OS AVD
+
+1. Open **Android Studio** → **Tools** → **AVD Manager**.
+2. Click **Create Virtual Device**.
+3. In the **Category** list, select **Wear OS**.
+4. Choose a device (e.g., **Wear OS Small Round**) and click **Next**.
+5. On the **System Image** screen, select a **Wear OS** system image (preferably API 33, release‑candidate). Click **Download** if not already available, then **Next**.
+6. Give the AVD a name, e.g., `Wear_OS_Small_Round`, and leave the default **Graphics** option (Automatic). Click **Finish**.
+
+---
+
+## 2. Launch the Emulator
+
 ```powershell
-flutter emulators --launch Wear_OS_Small_Round
+# From the project root folder
+cd C:\Users\moham\.gemini\antigravity\scratch\score_bot
+
+# Start the AVD (replace the name if you used a different one)
+"%ANDROID_SDK_ROOT%\emulator\emulator.exe" -avd Wear_OS_Small_Round
 ```
-> L'émulateur de la montre ronde démarre alors sur votre bureau.
 
-### Option B — Depuis Android Studio
-1. Ouvrez Android Studio.
-2. Allez dans le menu : **Tools** > **Device Manager** (ou cliquez sur l'icône de téléphone/montre dans la barre d'outils droite).
-3. Dans l'onglet **Virtual**, repérez la montre **Wear OS Small Round**.
-4. Cliquez sur le bouton **Play (▶️)** pour la lancer.
-
-*(Si vous n'avez pas encore d'émulateur Wear OS : cliquez sur **Create Device** > catégorie **Wear OS** > choisissez **Wear OS Small Round** ou **Pixel Watch** > téléchargez l'image système Wear OS 4 ou 5 > Terminer).*
+The emulator will boot. It may take a minute on first launch.
 
 ---
 
-## 🔍 Étape 2 : Vérifier la détection de la montre
+## 3. Verify the Emulator is Recognised by Flutter
 
-Une fois l'émulateur allumé et arrivé sur l'écran d'accueil de la montre, tapez dans le terminal :
 ```powershell
 flutter devices
 ```
-Vous devez voir apparaître l'émulateur dans la liste, par exemple :
-```text
-Wear OS Small Round (mobile) • emulator-5554 • android-x86 • Android ... (Wear OS)
+You should see an entry similar to:
 ```
-
----
-
-## 🏃 Étape 3 : Lancer ScoreBot sur la montre
-
-Le projet ScoreBot dispose d'une flavor dédiée aux montres : `watch`.
-
-### En ligne de commande :
+1️⃣  sdk gwear x86 64   • emulator-5554 • android-x64   • Android 17 (API 37) (emulator)
+```
+If the device does **not** appear, run:
 ```powershell
-flutter run --flavor watch -d emulator-5554
+adb devices
+adb wait-for-device
 ```
-*(Remplacez `emulator-5554` par l'ID affiché lors de l'étape 2 ou par `Wear_OS_Small_Round`).*
-
-### Depuis l'interface Android Studio :
-1. Dans la liste déroulante des appareils (en haut d'Android Studio), sélectionnez **Wear OS Small Round**.
-2. Dans le menu de configuration d'exécution :
-   - Cliquez sur **Edit Configurations...** (à côté du bouton vert Run).
-   - Dans le champ **Additional run args**, ajoutez :
-     ```text
-     --flavor watch
-     ```
-3. Cliquez sur le bouton vert **Run (Shift+F10)** ou **Debug (Shift+F9)**.
+and ensure the emulator is listed as `emulator-5554`.
 
 ---
 
-## 🎙️ Étape 4 : Activer le Microphone de l'ordinateur pour les tests vocaux
+## 4. Build a Lightweight Release APK
 
-Pour tester la dictée vocale des compositions d'équipe et les commandes en match :
-1. Dans la barre latérale de l'émulateur Wear OS, cliquez sur les trois petits points `...` (**Extended Controls**).
-2. Allez dans l'onglet **Microphone**.
-3. Assurez-vous que l'option **"Virtual microphone uses host audio input"** est activée.
-4. Autorisez l'accès au microphone sur la montre lorsque l'application vous le demande au premier clic sur le micro.
+The debug APK contains un‑stripped native libraries and can be > 1 GB, which exceeds the emulator's storage. Build the **release** APK for the watch flavor:
 
----
-
-## 🧪 Parcours de test recommandé
-
-### 1. Écran de Configuration (`SetupWatchView`)
-- L'interface s'adapte automatiquement à la forme circulaire de l'écran.
-- **Sélection du sport** : Football, Futsal, Basket, etc.
-- **Durée & Mi-temps** : Ajustez le temps de jeu et de pause.
-- **Compositions d'équipe & Numéros** :
-  - Cliquez sur une équipe pour ouvrir le panneau de dictée `LineupDictationSheet`.
-  - Dictez ou saisissez des joueurs avec numéro : *"numéro 10 Messi numéro 7 Mbappé"*.
-  - Vérifiez la présence des pastilles de numéros `#N`.
-- Cliquez sur **Démarrer le match**.
-
-### 2. Écran de Match en Direct (`LiveWatchView`)
-- **Score tactile grand format** :
-  - **1 tap** sur le score d'une équipe = **+1 point**.
-  - **Double-tap rapide** sur le score = **-1 point**.
-- **Commandes vocales (Bouton Micro)** :
-  - *"but équipe A numéro 5 assit numéro 3"* $\rightarrow$ attribue le but au #5 et la passe décisive au #3.
-  - *"carton jaune équipe A numéro 9"*.
-  - *"pause"* / *"reprends"*.
-- **Gestion du temps** :
-  - Le chronomètre tourne et alerte à la mi-temps et à la fin du temps réglementaire.
-  - Bouton **Pause/Play** et bouton **Drapeau 🏁** pour terminer le match.
-
-### 3. Écran Résumé & Statistiques (`SummaryWatchView`)
-- Défilement optimisé pour l'écran de montre.
-- Tableau récapitulatif avec les statistiques de chaque joueur par numéro : **Buts (B)**, **Passes décisives (PD)**, **Cartons jaunes (CJ)**, **Cartons rouges (CR)** et **Fautes (F)**.
+```powershell
+# From the project root
+flutter build apk --flavor watch --target-platform android-x64 --release
+```
+The output will be located at:
+```
+build/app/outputs/flutter-apk/app-watch-release.apk
+```
+Typical size: **≈ 20 MiB**.
 
 ---
 
-## 🛠️ Commandes utiles de dépannage
+## 5. Install the APK on the Emulator
 
-| Action | Commande |
-| :--- | :--- |
-| **Compiler l'APK Watch en Debug** | `flutter build apk --flavor watch --debug` |
-| **Installer manuellement l'APK sur l'émulateur** | `adb install -r build/app/outputs/flutter-apk/app-watch-debug.apk` |
-| **Lancer directement l'application sur la montre** | `adb shell monkey -p com.scorebot.score_bot -c android.intent.category.LAUNCHER 1` |
-| **Voir les logs de l'application en direct** | `adb logcat \| grep -i flutter` |
-| **Redémarrer le serveur ADB si non détecté** | `adb kill-server; adb start-server` |
+```powershell
+adb -s emulator-5554 install -r build\app\outputs\flutter-apk\app-watch-release.apk
+```
+You should see `Success`. If you encounter *insufficient space* errors, free space with:
+```powershell
+adb -s emulator-5554 shell "rm -rf /data/local/tmp/*"
+adb -s emulator-5554 uninstall com.scorebot.score_bot   # optional, removes any previous version
+```
+Then retry the install command.
 
 ---
 
-## ⚠️ Résolution de l'erreur Gradle `* What went wrong: 25.0.3`
+## 6. Launch the App
 
-Si vous rencontrez l'erreur suivante lors de la compilation :
-```text
-* What went wrong:
-25.0.3
+```powershell
+adb -s emulator-5554 shell am start -n com.scorebot.score_bot/.MainActivity
+```
+The app’s UI should appear on the Wear OS emulator.
+
+### Handling Runtime Permissions
+
+ScoreBot requests the microphone for voice commands. When the permission dialog appears on the emulator, click **Allow**. To automate this step you can use:
+```powershell
+# Approximate coordinates – adjust if needed
+adb -s emulator-5554 shell input tap 540 960   # taps the "Allow" button
 ```
 
-### Cause :
-Android Studio installe par défaut son propre runtime interne JetBrains (`jbr` version **25.0.3**). Le compilateur Kotlin et l'Android Gradle Plugin (AGP 8.11+) ne reconnaissent pas encore la version expérimentale Java 25 et échouent (`IllegalArgumentException: 25.0.3`). AGP supporte officiellement **Java 17** ou **Java 21**.
+---
 
-### Solution permanente déjà appliquée :
-1. **OpenJDK 17 LTS (Eclipse Temurin)** est installé dans `C:\Users\moham\.jdks\temurin-17`.
-2. `android/gradle.properties` pointe explicitement sur ce JDK stable :
-   ```properties
-   org.gradle.java.home=C:\\Users\\moham\\.jdks\\temurin-17
-   ```
-3. Flutter est configuré pour cibler ce JDK via :
-   ```powershell
-   flutter config --jdk-dir "C:\Users\moham\.jdks\temurin-17"
-   ```
-4. Dans Android Studio (si vous compilez directement depuis l'IDE) :
-   - Allez dans **Settings** (ou **File** > **Settings**) > **Build, Execution, Deployment** > **Build Tools** > **Gradle**.
-   - Dans le champ **Gradle JDK**, sélectionnez **temurin-17** (situé dans `.jdks\temurin-17`) au lieu du runtime par défaut `jbr-25`.
+## 7. Run the App Directly with Flutter (optional)
 
+If you prefer Flutter to handle the install & launch, use the release flag:
+```powershell
+flutter run --flavor watch -d emulator-5554 --release
+```
+*Do NOT use the plain `flutter run` command for the watch flavor, as it builds the large debug APK which fails to install.*
+
+---
+
+## 8. Common Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| **Emulator never boots** | Increase RAM/VM heap in AVD settings, or use a smaller device profile. |
+| **`flutter devices` shows no watch** | Ensure the emulator is running, then run `adb devices`. Restart ADB with `adb kill-server && adb start-server`. |
+| **`adb install` fails with `INSTALL_FAILED_INSUFFICIENT_STORAGE`** | Clean temporary files (`rm -rf /data/local/tmp/*`) and uninstall any previous build (`adb uninstall <package>`). |
+| **App launches but UI stays blank** | Check logcat: `adb -s emulator-5554 logcat | Select-String "ScoreBot"`. Look for crashes or missing resources. |
+| **Microphone permission dialog never appears** | Manually grant permission: `adb -s emulator-5554 shell pm grant com.scorebot.score_bot android.permission.RECORD_AUDIO`. |
+
+---
+
+## 9. Quick Recap of Commands
+
+```powershell
+# 1️⃣ Start emulator (run once per session)
+%ANDROID_SDK_ROOT%\emulator\emulator.exe -avd Wear_OS_Small_Round
+
+# 2️⃣ Verify device
+flutter devices
+
+# 3️⃣ Build lightweight release APK
+flutter build apk --flavor watch --target-platform android-x64 --release
+
+# 4️⃣ Install APK
+adb -s emulator-5554 install -r build\app\outputs\flutter-apk\app-watch-release.apk
+
+# 5️⃣ Launch app
+adb -s emulator-5554 shell am start -n com.scorebot.score_bot/.MainActivity
+```
+
+You can now interact with ScoreBot on the Wear OS emulator and test voice‑driven commands.
+
+---
+
+*Document maintained in the project repository under `docs/WEAR_OS_EMULATOR_GUIDE.md`.*

@@ -54,11 +54,6 @@ android {
         }
     }
 
-    packaging {
-        jniLibs {
-            keepDebugSymbols += "**/*.so"
-        }
-    }
 
     signingConfigs {
         create("release") {

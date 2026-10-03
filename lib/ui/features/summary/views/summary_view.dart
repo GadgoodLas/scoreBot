@@ -320,6 +320,116 @@ class SummaryViewModel extends ChangeNotifier {
     return buf.toString();
   }
 
+  /// Génère une feuille de match ultra-complète optimisée pour WhatsApp
+  /// avec mise en forme markdown (*gras*, _italique_), emojis et séparateurs.
+  String generateWhatsAppReport() {
+    final buf = StringBuffer();
+    buf.writeln('🏆 *SCOREBOT — FEUILLE DE MATCH*');
+    buf.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buf.writeln('${_match.sport.emoji} *Sport :* ${_match.sport.label}');
+    final d = _match.startTime;
+    final dateStr =
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    final timeStr =
+        '${d.hour.toString().padLeft(2, '0')}h${d.minute.toString().padLeft(2, '0')}';
+    buf.writeln('📅 *Date :* $dateStr à $timeStr');
+    if (_match.durationMinutes > 0) {
+      buf.writeln('⏱️ *Durée :* ${_match.durationMinutes} min');
+    }
+    buf.writeln('');
+    buf.writeln(
+      '🔴 *${_match.teamA.name}*  *$scoreA — $scoreB*  *${_match.teamB.name}* 🔵',
+    );
+    if (scoreA == scoreB) {
+      buf.writeln('🤝 *Résultat :* Match nul');
+    } else {
+      buf.writeln('🎉 *Vainqueur :* $winner');
+    }
+    buf.writeln('━━━━━━━━━━━━━━━━━━━━');
+
+    if (_events.isNotEmpty) {
+      buf.writeln('⏱️ *FIL DU MATCH :*');
+      for (final event in _events) {
+        final teamName =
+            event.teamId == _match.teamA.id
+                ? _match.teamA.name
+                : _match.teamB.name;
+
+        final desc = switch (event) {
+          GoalEvent(:final scorerName, :final assistName) =>
+            '${event.type.emoji} ${event.minute}\' *${scorerName ?? "But"}*${assistName != null ? " _(passe: $assistName)_" : ""} — $teamName',
+          CardEvent(:final playerName) =>
+            '${event.type.emoji} ${event.minute}\' *${playerName ?? "?"}* — $teamName',
+          _ =>
+            '${event.type.emoji} ${event.minute}\' *${event.type.label}* — $teamName',
+        };
+
+        buf.writeln(desc);
+      }
+      buf.writeln('━━━━━━━━━━━━━━━━━━━━');
+    }
+
+    final statsA = playerStatsForTeam(_match.teamA.id);
+    final statsB = playerStatsForTeam(_match.teamB.id);
+
+    if (statsA.isNotEmpty || statsB.isNotEmpty) {
+      buf.writeln('👥 *STATISTIQUES DES JOUEURS :*');
+      if (statsA.isNotEmpty) {
+        buf.writeln('\n🔴 *${_match.teamA.name} :*');
+        for (final p in statsA) {
+          final numStr = p.playerNumber != null ? '#${p.playerNumber} ' : '';
+          final details = [
+            if (p.goals > 0) '${p.goals} ⚽',
+            if (p.assists > 0) '${p.assists} 🅰️',
+            if (p.yellowCards > 0) '${p.yellowCards} 🟨',
+            if (p.redCards > 0) '${p.redCards} 🟥',
+          ];
+          buf.writeln(
+            '• $numStr*${p.playerName}*${details.isNotEmpty ? " : ${details.join(', ')}" : ""}',
+          );
+        }
+      }
+
+      if (statsB.isNotEmpty) {
+        buf.writeln('\n🔵 *${_match.teamB.name} :*');
+        for (final p in statsB) {
+          final numStr = p.playerNumber != null ? '#${p.playerNumber} ' : '';
+          final details = [
+            if (p.goals > 0) '${p.goals} ⚽',
+            if (p.assists > 0) '${p.assists} 🅰️',
+            if (p.yellowCards > 0) '${p.yellowCards} 🟨',
+            if (p.redCards > 0) '${p.redCards} 🟥',
+          ];
+          buf.writeln(
+            '• $numStr*${p.playerName}*${details.isNotEmpty ? " : ${details.join(', ')}" : ""}',
+          );
+        }
+      }
+      buf.writeln('━━━━━━━━━━━━━━━━━━━━');
+    }
+
+    if (topScorers.isNotEmpty) {
+      buf.writeln(
+        '🏅 *Meilleur buteur :* *${topScorers.first.key}* (${topScorers.first.value} but(s))',
+      );
+    }
+
+    buf.writeln('\n🤖 _Feuille de match officielle générée par ScoreBot_');
+    return buf.toString();
+  }
+
+  /// Partage directement la feuille de match formatée pour WhatsApp.
+  Future<void> shareOnWhatsApp() async {
+    final text = generateWhatsAppReport();
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject:
+            '🏆 Feuille de match : ${_match.teamA.name} vs ${_match.teamB.name}',
+      ),
+    );
+  }
+
   /// Enregistre le rapport sous forme de fichier texte (.txt) et retourne le fichier créé.
   Future<File> saveReportToFile() async {
     final text = generatedReport ?? generateShareText();
@@ -407,6 +517,11 @@ class SummaryView extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+            onPressed: () => _shareOnWhatsApp(context),
+            tooltip: l10n.shareWhatsApp,
+          ),
+          IconButton(
             icon: const Icon(Icons.download, color: AppTheme.primary),
             onPressed: () => _downloadReport(context),
             tooltip: l10n.downloadReport,
@@ -434,6 +549,7 @@ class SummaryView extends StatelessWidget {
                 _MatchReportCard(
                   viewModel: viewModel,
                   onShare: () => _shareResult(context),
+                  onWhatsAppShare: () => _shareOnWhatsApp(context),
                   onDownload: () => _downloadReport(context),
                 ),
                 const SizedBox(height: 16),
@@ -520,6 +636,29 @@ class SummaryView extends StatelessWidget {
           text: text,
           subject:
               'ScoreBot — ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        Clipboard.setData(ClipboardData(text: text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.reportCopied),
+            backgroundColor: AppTheme.surface,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareOnWhatsApp(BuildContext context) async {
+    final text = viewModel.generateWhatsAppReport();
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject:
+              '🏆 Feuille de match : ${viewModel.match.teamA.name} vs ${viewModel.match.teamB.name}',
         ),
       );
     } catch (_) {
@@ -670,11 +809,13 @@ class _MatchReportCard extends StatelessWidget {
   const _MatchReportCard({
     required this.viewModel,
     required this.onShare,
+    required this.onWhatsAppShare,
     required this.onDownload,
   });
 
   final SummaryViewModel viewModel;
   final VoidCallback onShare;
+  final VoidCallback onWhatsAppShare;
   final VoidCallback onDownload;
 
   @override
@@ -831,6 +972,20 @@ class _MatchReportCard extends StatelessWidget {
                       color: Colors.tealAccent.withValues(alpha: 0.4),
                     ),
                     textStyle: const TextStyle(fontSize: 12),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: onWhatsAppShare,
+                  icon: const Icon(Icons.chat, size: 15),
+                  label: Text(l10n.shareWhatsApp),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),

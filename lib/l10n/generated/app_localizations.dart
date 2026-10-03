@@ -721,6 +721,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speak now...'**
   String get listeningLineup;
+
+  /// No description provided for @ambientMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambient Mode'**
+  String get ambientMode;
+
+  /// No description provided for @ambientModeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'OLED eco screen active — Tap to wake'**
+  String get ambientModeHint;
+
+  /// No description provided for @toggleAmbientMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery saver mode'**
+  String get toggleAmbientMode;
+
+  /// No description provided for @matchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Match History'**
+  String get matchHistory;
+
+  /// No description provided for @noMatchesRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches recorded'**
+  String get noMatchesRecorded;
+
+  /// No description provided for @noMatchesRecordedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete a match to view its summary here.'**
+  String get noMatchesRecordedSubtitle;
+
+  /// No description provided for @deleteMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete match'**
+  String get deleteMatch;
+
+  /// No description provided for @deleteMatchConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this match from history?'**
+  String get deleteMatchConfirm;
+
+  /// No description provided for @shareWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp Match Sheet'**
+  String get shareWhatsApp;
+
+  /// No description provided for @matchDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Match deleted'**
+  String get matchDeleted;
+
+  /// No description provided for @viewReport.
+  ///
+  /// In en, this message translates to:
+  /// **'View Summary'**
+  String get viewReport;
 }
 
 class _AppLocalizationsDelegate

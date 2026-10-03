@@ -339,4 +339,39 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get listeningLineup => 'Parlez maintenant...';
+
+  @override
+  String get ambientMode => 'Mode Ambiant';
+
+  @override
+  String get ambientModeHint => 'Écran éco OLED actif — Tap pour réveiller';
+
+  @override
+  String get toggleAmbientMode => 'Mode éco batterie';
+
+  @override
+  String get matchHistory => 'Historique des matchs';
+
+  @override
+  String get noMatchesRecorded => 'Aucun match enregistré';
+
+  @override
+  String get noMatchesRecordedSubtitle =>
+      'Terminez un match pour voir son résumé ici.';
+
+  @override
+  String get deleteMatch => 'Supprimer le match';
+
+  @override
+  String get deleteMatchConfirm =>
+      'Voulez-vous supprimer ce match de l\'historique ?';
+
+  @override
+  String get shareWhatsApp => 'Feuille de match WhatsApp';
+
+  @override
+  String get matchDeleted => 'Match supprimé';
+
+  @override
+  String get viewReport => 'Voir le résumé';
 }
