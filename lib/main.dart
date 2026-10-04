@@ -7,6 +7,7 @@ import 'package:score_bot/data/services/gemini_service.dart';
 import 'package:score_bot/data/services/haptic_service.dart';
 import 'package:score_bot/data/services/storage_service.dart';
 import 'package:score_bot/data/services/tts_service.dart';
+import 'package:score_bot/data/services/watch_connectivity_service.dart';
 import 'package:score_bot/ui/core/theme/app_theme.dart';
 import 'package:score_bot/ui/features/history/view_models/history_view_model.dart';
 import 'package:score_bot/ui/features/history/views/history_view.dart';
@@ -22,6 +23,7 @@ import 'package:score_bot/l10n/generated/app_localizations.dart';
 import 'package:score_bot/domain/models/match.dart';
 
 final GetIt sl = GetIt.instance;
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,10 +39,14 @@ Future<void> main() async {
   final storageService = StorageService();
   await storageService.init();
 
+  // Initialisation de la connectivité Montre ↔ Téléphone (Wearable Data Layer)
+  final connectivity = WatchConnectivityService();
+
   // Injection de dépendances
   sl.registerSingleton<StorageService>(storageService);
   sl.registerSingleton<AudioService>(AudioService());
   sl.registerSingleton<HapticService>(HapticService());
+  sl.registerSingleton<WatchConnectivityService>(connectivity);
   sl.registerSingleton<GeminiService>(
     GeminiService(storageService: sl<StorageService>()),
   );
@@ -55,6 +61,19 @@ Future<void> main() async {
   final ttsService = TtsService();
   await ttsService.init(languageCode: storageService.getLanguageCode());
   sl.registerSingleton<TtsService>(ttsService);
+
+  // Écoute globale d'une session de match arrivant depuis l'autre appareil
+  // (ex: l'utilisateur lance le match sur le téléphone -> la montre ouvre le live automatiquement)
+  connectivity.onMatchStateReceived.listen((incomingMatch) {
+    final navState = appNavigatorKey.currentState;
+    if (navState != null) {
+      navState.pushNamedAndRemoveUntil(
+        '/live',
+        (route) => route.isFirst,
+        arguments: incomingMatch,
+      );
+    }
+  });
 
   runApp(const ScoreBotApp());
 }
@@ -93,6 +112,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'ScoreBot',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
@@ -123,6 +143,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
             initialMatch: match,
             ttsService: sl<TtsService>(),
             hapticService: sl<HapticService>(),
+            watchConnectivityService: sl<WatchConnectivityService>(),
           );
           // Détecte si on tourne sur une montre (petite fenêtre)
           return _WatchOrPhoneView(viewModel: vm);

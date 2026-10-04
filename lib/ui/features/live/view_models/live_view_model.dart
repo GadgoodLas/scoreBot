@@ -7,6 +7,7 @@ import 'package:score_bot/data/repositories/match_repository.dart';
 import 'package:score_bot/data/services/audio_service.dart';
 import 'package:score_bot/data/services/haptic_service.dart';
 import 'package:score_bot/data/services/tts_service.dart';
+import 'package:score_bot/data/services/watch_connectivity_service.dart';
 
 /// États de la reconnaissance vocale sur l'écran live.
 enum VoiceState { idle, recording, processing, success, error }
@@ -21,17 +22,21 @@ class LiveViewModel extends ChangeNotifier {
     required GameMatch initialMatch,
     TtsService? ttsService,
     HapticService? hapticService,
+    WatchConnectivityService? watchConnectivityService,
   }) : _repository = matchRepository,
        _match = initialMatch,
        _tts = ttsService ?? TtsService(),
-       _haptic = hapticService ?? HapticService() {
+       _haptic = hapticService ?? HapticService(),
+       _connectivity = watchConnectivityService {
     _loadEvents();
     _startChronometer();
+    _initConnectivityListeners();
   }
 
   final MatchRepository _repository;
   final TtsService _tts;
   final HapticService _haptic;
+  final WatchConnectivityService? _connectivity;
   GameMatch _match;
   GameMatch get match => _match;
 
@@ -40,6 +45,71 @@ class LiveViewModel extends ChangeNotifier {
 
   bool _breakNotified = false;
   bool _endNotified = false;
+
+  StreamSubscription<Map<String, dynamic>>? _scoreSub;
+  StreamSubscription<GameEvent>? _eventSub;
+  StreamSubscription<String>? _controlSub;
+  StreamSubscription<GameMatch>? _matchStateSub;
+
+  /// Indique si un appareil compagnon (téléphone ou montre) est actuellement appairé.
+  bool get hasConnectedCompanion => _connectivity?.hasConnectedNodes ?? false;
+
+  void _initConnectivityListeners() {
+    if (_connectivity == null) return;
+
+    // Diffuser l'état initial à l'ouverture du match
+    _connectivity.sendMatchState(_match);
+    _connectivity.checkConnectedNodes().then((_) => notifyListeners());
+
+    // Écouter les mises à jour de score venant de l'autre appareil
+    _scoreSub = _connectivity.onScoreUpdateReceived.listen((data) {
+      if (data['matchId'] == _match.id) {
+        final newA = data['scoreA'] as int?;
+        final newB = data['scoreB'] as int?;
+        if (newA != null &&
+            newB != null &&
+            (newA != _match.scoreA || newB != _match.scoreB)) {
+          _match = _match.copyWith(scoreA: newA, scoreB: newB);
+          _haptic.goal();
+          _loadEvents();
+          notifyListeners();
+        }
+      }
+    });
+
+    // Écouter les nouveaux événements (but, carton, faute)
+    _eventSub = _connectivity.onEventReceived.listen((event) async {
+      if (event.id.isNotEmpty && !_events.any((e) => e.id == event.id)) {
+        _events.add(event);
+        if (event is GoalEvent) {
+          _match = await _repository.recalculateScore(_match);
+          _haptic.goal();
+        } else if (event is CardEvent) {
+          if (event.type == GameEventType.redCard) {
+            _haptic.redCard();
+          } else {
+            _haptic.yellowCard();
+          }
+        }
+        notifyListeners();
+      }
+    });
+
+    // Écouter les commandes de contrôle (pause, reprise, mi-temps, fin)
+    _controlSub = _connectivity.onMatchControlReceived.listen((action) async {
+      await _handleMatchControl(action);
+      notifyListeners();
+    });
+
+    // Écouter un nouvel état complet de match
+    _matchStateSub = _connectivity.onMatchStateReceived.listen((newMatch) {
+      if (newMatch.id == _match.id) {
+        _match = newMatch;
+        _loadEvents();
+        notifyListeners();
+      }
+    });
+  }
 
   // ─────────────── Mode Ambiant (OLED Éco Wear OS) ───────────────
 
@@ -481,12 +551,17 @@ class LiveViewModel extends ChangeNotifier {
   Future<void> togglePause() async {
     _haptic.matchControl();
     _match = await _repository.togglePause(_match);
+    _connectivity?.sendMatchControl(
+      matchId: _match.id,
+      action: _match.status == GameMatchStatus.paused ? 'pause' : 'resume',
+    );
     notifyListeners();
   }
 
   Future<void> startHalftime() async {
     _haptic.matchControl();
     _match = await _repository.startHalftime(_match);
+    _connectivity?.sendMatchControl(matchId: _match.id, action: 'halftime');
     notifyListeners();
   }
 
@@ -494,6 +569,7 @@ class LiveViewModel extends ChangeNotifier {
     _haptic.periodEnd();
     _match = await _repository.endMatch(_match);
     _chronoTimer?.cancel();
+    _connectivity?.sendMatchControl(matchId: _match.id, action: 'end_match');
     notifyListeners();
   }
 
@@ -508,6 +584,11 @@ class LiveViewModel extends ChangeNotifier {
     _haptic.goal();
     _match = await _repository.addPoint(_match, _match.teamA.id);
     _loadEvents();
+    _connectivity?.sendScoreUpdate(
+      matchId: _match.id,
+      scoreA: _match.scoreA,
+      scoreB: _match.scoreB,
+    );
     notifyListeners();
   }
 
@@ -517,6 +598,11 @@ class LiveViewModel extends ChangeNotifier {
     _haptic.correction();
     _match = await _repository.removePoint(_match, _match.teamA.id);
     _loadEvents();
+    _connectivity?.sendScoreUpdate(
+      matchId: _match.id,
+      scoreA: _match.scoreA,
+      scoreB: _match.scoreB,
+    );
     notifyListeners();
   }
 
@@ -526,6 +612,11 @@ class LiveViewModel extends ChangeNotifier {
     _haptic.goal();
     _match = await _repository.addPoint(_match, _match.teamB.id);
     _loadEvents();
+    _connectivity?.sendScoreUpdate(
+      matchId: _match.id,
+      scoreA: _match.scoreA,
+      scoreB: _match.scoreB,
+    );
     notifyListeners();
   }
 
@@ -535,6 +626,11 @@ class LiveViewModel extends ChangeNotifier {
     _haptic.correction();
     _match = await _repository.removePoint(_match, _match.teamB.id);
     _loadEvents();
+    _connectivity?.sendScoreUpdate(
+      matchId: _match.id,
+      scoreA: _match.scoreA,
+      scoreB: _match.scoreB,
+    );
     notifyListeners();
   }
 
@@ -559,6 +655,10 @@ class LiveViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _scoreSub?.cancel();
+    _eventSub?.cancel();
+    _controlSub?.cancel();
+    _matchStateSub?.cancel();
     _chronoTimer?.cancel();
     super.dispose();
   }

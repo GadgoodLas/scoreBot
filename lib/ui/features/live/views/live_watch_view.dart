@@ -96,6 +96,21 @@ class LiveWatchView extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 6),
+                                  if (viewModel.hasConnectedCompanion)
+                                    Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white10,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.smartphone,
+                                        size: 10,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  if (viewModel.hasConnectedCompanion)
+                                    const SizedBox(width: 4),
                                   GestureDetector(
                                     onTap: () => viewModel.toggleAmbientMode(),
                                     child: Container(

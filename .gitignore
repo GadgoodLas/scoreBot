@@ -59,3 +59,4 @@ mobsf*.json
 mobsf*.sarif
 
 /release_bundles/
+/apk_downloads/
