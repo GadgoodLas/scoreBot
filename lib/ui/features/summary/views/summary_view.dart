@@ -517,16 +517,6 @@ class SummaryView extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
-            onPressed: () => _shareOnWhatsApp(context),
-            tooltip: l10n.shareWhatsApp,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download, color: AppTheme.primary),
-            onPressed: () => _downloadReport(context),
-            tooltip: l10n.downloadReport,
-          ),
-          IconButton(
             icon: const Icon(Icons.share, color: AppTheme.primary),
             onPressed: () => _shareResult(context),
             tooltip: l10n.shareReport,
