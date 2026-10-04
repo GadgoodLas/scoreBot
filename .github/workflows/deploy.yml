@@ -77,9 +77,8 @@ jobs:
 
       - name: Build Android App Bundles (Phone & Watch)
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew bundlePhoneRelease bundleWatchRelease
+          flutter build appbundle --flavor phone --release
+          flutter build appbundle --flavor watch --release
 
       - name: Upload Phone Bundle as Artifact
         uses: actions/upload-artifact@v7
