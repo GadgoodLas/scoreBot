@@ -133,6 +133,27 @@ class _MatchHeader extends StatelessWidget {
         alignment: Alignment.topCenter,
         children: [
           Positioned(
+            left: 0,
+            top: 0,
+            child: Tooltip(
+              message:
+                  viewModel.hasConnectedCompanion
+                      ? 'Montre connectée (Session synchronisée)'
+                      : 'Montre non détectée (Mode autonome)',
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(
+                  Icons.watch,
+                  size: 20,
+                  color:
+                      viewModel.hasConnectedCompanion
+                          ? AppTheme.primary
+                          : AppTheme.textSecondary.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
             right: 0,
             top: 0,
             child: IconButton(
