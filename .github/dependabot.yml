@@ -63,3 +63,6 @@ updates:
         versions: ["> 8.11.1"]
       - dependency-name: "org.jetbrains.kotlin.android"
         update-types: ["version-update:semver-major"]
+      # Gradle 9.x supprime des APIs internes requises par AGP 8.x
+      - dependency-name: "gradle-wrapper"
+        update-types: ["version-update:semver-major"]
