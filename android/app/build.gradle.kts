@@ -42,33 +42,47 @@ android {
         versionName = flutter.versionName
     }
 
+    // Le Play Store exige un versionCode unique et croissant pour chaque envoi.
+    // On le dérive du numéro de build de pubspec.yaml (version: x.y.z+N) :
+    //   téléphone = N * 100 + 1, montre = N * 100 + 2
+    // → il suffit d'incrémenter "+N" dans pubspec.yaml avant chaque publication.
+    val baseVersionCode = flutter.versionCode
     flavorDimensions += "device"
     productFlavors {
         create("phone") {
             dimension = "device"
-            versionCode = 101
+            versionCode = baseVersionCode * 100 + 1
         }
         create("watch") {
             dimension = "device"
-            versionCode = 102
+            versionCode = baseVersionCode * 100 + 2
         }
     }
 
+    val releaseStoreFile = keystoreProperties.getProperty("storeFile")
+        ?.let { file(it) }
+        ?.takeIf { it.exists() }
+    val isReleaseTaskRequested = gradle.startParameter.taskNames
+        .any { it.contains("Release", ignoreCase = true) }
+
+    // Un bundle signé avec la clé debug est systématiquement refusé par le Play Store :
+    // on échoue explicitement plutôt que de produire un .aab inutilisable.
+    if (releaseStoreFile == null && isReleaseTaskRequested) {
+        throw GradleException(
+            "Keystore de release introuvable. Vérifiez android/key.properties " +
+                "(storeFile=${keystoreProperties.getProperty("storeFile")})."
+        )
+    }
 
     signingConfigs {
         create("release") {
-            val keyAliasVal = keystoreProperties.getProperty("keyAlias")
-            val keyPasswordVal = keystoreProperties.getProperty("keyPassword")
-            val storeFileVal = keystoreProperties.getProperty("storeFile")
-            val storePasswordVal = keystoreProperties.getProperty("storePassword")
-
-            if (storeFileVal != null && file(storeFileVal).exists()) {
-                keyAlias = keyAliasVal
-                keyPassword = keyPasswordVal
-                storeFile = file(storeFileVal)
-                storePassword = storePasswordVal
+            if (releaseStoreFile != null) {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = releaseStoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
             } else {
-                // Fallback debug si le keystore release n'est pas encore généré
+                // Builds debug/profile uniquement : la clé debug suffit.
                 val debugSigning = signingConfigs.getByName("debug")
                 keyAlias = debugSigning.keyAlias
                 keyPassword = debugSigning.keyPassword

@@ -57,3 +57,5 @@ app.*.map.json
 # MobSF security scan reports
 mobsf*.json
 mobsf*.sarif
+
+/release_bundles/
