@@ -66,7 +66,9 @@ class LiveViewModel extends ChangeNotifier {
       if (data['matchId'] == _match.id) {
         final newA = data['scoreA'] as int?;
         final newB = data['scoreB'] as int?;
-        if (newA != null && newB != null && (newA != _match.scoreA || newB != _match.scoreB)) {
+        if (newA != null &&
+            newB != null &&
+            (newA != _match.scoreA || newB != _match.scoreB)) {
           _match = _match.copyWith(scoreA: newA, scoreB: newB);
           _haptic.goal();
           _loadEvents();

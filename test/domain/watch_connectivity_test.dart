@@ -55,17 +55,20 @@ void main() {
     expect(service.hasConnectedNodes, isTrue);
   });
 
-  test('sendMatchState serializes match and invokes native sendMessage', () async {
-    final sent = await service.sendMatchState(sampleMatch);
-    expect(sent, isTrue);
-    expect(log.length, 1);
-    expect(log.first.method, 'sendMessage');
+  test(
+    'sendMatchState serializes match and invokes native sendMessage',
+    () async {
+      final sent = await service.sendMatchState(sampleMatch);
+      expect(sent, isTrue);
+      expect(log.length, 1);
+      expect(log.first.method, 'sendMessage');
 
-    final args = log.first.arguments as Map;
-    expect(args['path'], '/match/sync');
-    expect(args['data'], contains('match-123'));
-    expect(args['data'], contains('FC Barcelone'));
-  });
+      final args = log.first.arguments as Map;
+      expect(args['path'], '/match/sync');
+      expect(args['data'], contains('match-123'));
+      expect(args['data'], contains('FC Barcelone'));
+    },
+  );
 
   test('sendScoreUpdate sends concise score update payload', () async {
     final sent = await service.sendScoreUpdate(
@@ -93,30 +96,33 @@ void main() {
     expect(args['data'], contains('"action":"pause"'));
   });
 
-  test('incoming onMessageReceived parses matchState and emits to stream', () async {
-    GameMatch? receivedMatch;
-    service.onMatchStateReceived.listen((m) {
-      receivedMatch = m;
-    });
+  test(
+    'incoming onMessageReceived parses matchState and emits to stream',
+    () async {
+      GameMatch? receivedMatch;
+      service.onMatchStateReceived.listen((m) {
+        receivedMatch = m;
+      });
 
-    // Format JSON standard
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(
-          'com.scorebot.score_bot/wearable',
-          const StandardMethodCodec().encodeMethodCall(
-            MethodCall('onMessageReceived', {
-              'path': '/match/sync',
-              'data':
-                  '{"type":"matchState","match":{"id":"match-123","sport":"football","teamA":{"id":"team-a","name":"Equipe A","players":[]},"teamB":{"id":"team-b","name":"Equipe B","players":[]},"status":"live","scoreA":3,"scoreB":2,"startTime":"2026-10-04T18:00:00.000","durationMinutes":90}}',
-            }),
-          ),
-          (_) {},
-        );
+      // Format JSON standard
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage(
+            'com.scorebot.score_bot/wearable',
+            const StandardMethodCodec().encodeMethodCall(
+              MethodCall('onMessageReceived', {
+                'path': '/match/sync',
+                'data':
+                    '{"type":"matchState","match":{"id":"match-123","sport":"football","teamA":{"id":"team-a","name":"Equipe A","players":[]},"teamB":{"id":"team-b","name":"Equipe B","players":[]},"status":"live","scoreA":3,"scoreB":2,"startTime":"2026-10-04T18:00:00.000","durationMinutes":90}}',
+              }),
+            ),
+            (_) {},
+          );
 
-    await Future.delayed(const Duration(milliseconds: 50));
-    expect(receivedMatch, isNotNull);
-    expect(receivedMatch?.id, 'match-123');
-    expect(receivedMatch?.scoreA, 3);
-    expect(receivedMatch?.scoreB, 2);
-  });
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(receivedMatch, isNotNull);
+      expect(receivedMatch?.id, 'match-123');
+      expect(receivedMatch?.scoreA, 3);
+      expect(receivedMatch?.scoreB, 2);
+    },
+  );
 }
