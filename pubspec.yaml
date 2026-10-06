@@ -48,7 +48,7 @@ dependencies:
 
   # Environnement variables
   flutter_dotenv: ^5.2.1
-  share_plus: ^13.3.0
+  share_plus: ^13.3.1
   flutter_tts: ^4.2.5
 
 dev_dependencies:
