@@ -183,14 +183,19 @@ class _MatchHeader extends StatelessWidget {
           Column(
             children: [
               // Chronomètre
-              Text(
-                viewModel.elapsedFormatted,
-                style: const TextStyle(
-                  color: AppTheme.primary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w300,
-                  letterSpacing: 4,
-                  fontFeatures: [FontFeature.tabularFigures()],
+              SizedBox(
+                width: 140,
+                child: Center(
+                  child: Text(
+                    viewModel.elapsedFormatted,
+                    style: const TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: 4,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 4),

@@ -7,6 +7,7 @@ import 'package:score_bot/domain/models/sport_type.dart';
 import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 import 'package:score_bot/ui/features/setup/widgets/ai_config_dialog.dart';
 import 'package:score_bot/ui/features/setup/widgets/lineup_dictation_sheet.dart';
+import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
 
 /// Écran de configuration du match avant son démarrage.
 class SetupView extends StatefulWidget {
@@ -331,7 +332,10 @@ class _SetupViewState extends State<SetupView> {
     FocusScope.of(context).unfocus();
     final match = await widget.viewModel.startMatch();
     if (match != null && mounted) {
-      navigator.pushReplacementNamed('/live', arguments: match);
+      navigator.pushReplacementNamed(
+        '/live',
+        arguments: LiveRouteArgs(match: match, isInitiator: true),
+      );
     }
   }
 }

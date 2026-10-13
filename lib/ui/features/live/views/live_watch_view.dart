@@ -83,16 +83,21 @@ class LiveWatchView extends StatelessWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    viewModel.elapsedFormatted,
-                                    style: const TextStyle(
-                                      color: AppTheme.primary,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 2,
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
+                                  SizedBox(
+                                    width: 76,
+                                    child: Center(
+                                      child: Text(
+                                        viewModel.elapsedFormatted,
+                                        style: const TextStyle(
+                                          color: AppTheme.primary,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 1.5,
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),

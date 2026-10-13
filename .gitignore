@@ -40,6 +40,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/releases/
+watch_screen*.png
 
 # Symbolication related
 app.*.symbols
