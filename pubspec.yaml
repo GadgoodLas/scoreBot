@@ -42,13 +42,13 @@ dependencies:
     sdk: flutter
 
   # UI
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   flutter_svg: ^2.0.10+1
   gap: ^3.0.1
 
   # Environnement variables
   flutter_dotenv: ^5.2.1
-  share_plus: ^13.3.0
+  share_plus: ^13.3.1
   flutter_tts: ^4.2.5
 
 dev_dependencies:
