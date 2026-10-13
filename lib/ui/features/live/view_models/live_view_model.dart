@@ -15,6 +15,14 @@ enum VoiceState { idle, recording, processing, success, error }
 /// Types d'alertes automatiques en cours de match (pause, fin de temps réglementaire).
 enum LiveAlertType { breakSuggested, matchEndReached }
 
+/// Arguments de navigation pour l'écran /live.
+class LiveRouteArgs {
+  const LiveRouteArgs({required this.match, this.isInitiator = true});
+
+  final GameMatch match;
+  final bool isInitiator;
+}
+
 /// ViewModel de l'écran de match en direct.
 class LiveViewModel extends ChangeNotifier {
   LiveViewModel({
@@ -23,11 +31,13 @@ class LiveViewModel extends ChangeNotifier {
     TtsService? ttsService,
     HapticService? hapticService,
     WatchConnectivityService? watchConnectivityService,
+    bool isInitiator = false,
   }) : _repository = matchRepository,
        _match = initialMatch,
        _tts = ttsService ?? TtsService(),
        _haptic = hapticService ?? HapticService(),
-       _connectivity = watchConnectivityService {
+       _connectivity = watchConnectivityService,
+       _isInitiator = isInitiator {
     _loadEvents();
     _startChronometer();
     _initConnectivityListeners();
@@ -37,6 +47,7 @@ class LiveViewModel extends ChangeNotifier {
   final TtsService _tts;
   final HapticService _haptic;
   final WatchConnectivityService? _connectivity;
+  final bool _isInitiator;
   GameMatch _match;
   GameMatch get match => _match;
 
@@ -57,8 +68,10 @@ class LiveViewModel extends ChangeNotifier {
   void _initConnectivityListeners() {
     if (_connectivity == null) return;
 
-    // Diffuser l'état initial à l'ouverture du match
-    _connectivity.sendMatchState(_match);
+    // Diffuser l'état initial à l'ouverture du match UNIQUEMENT si cet appareil a créé le match
+    if (_isInitiator) {
+      _connectivity.sendMatchState(_match);
+    }
     _connectivity.checkConnectedNodes().then((_) => notifyListeners());
 
     // Écouter les mises à jour de score venant de l'autre appareil

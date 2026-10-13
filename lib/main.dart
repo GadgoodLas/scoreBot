@@ -25,6 +25,9 @@ import 'package:score_bot/domain/models/match.dart';
 final GetIt sl = GetIt.instance;
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Identifiant du match actuellement affiché en direct pour éviter les boucles de re-navigation
+String? activeLiveMatchId;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -65,12 +68,17 @@ Future<void> main() async {
   // Écoute globale d'une session de match arrivant depuis l'autre appareil
   // (ex: l'utilisateur lance le match sur le téléphone -> la montre ouvre le live automatiquement)
   connectivity.onMatchStateReceived.listen((incomingMatch) {
+    if (activeLiveMatchId == incomingMatch.id) {
+      // Déjà sur l'écran live pour ce match : le LiveViewModel met à jour l'état en direct sans recharger l'écran
+      return;
+    }
+    activeLiveMatchId = incomingMatch.id;
     final navState = appNavigatorKey.currentState;
     if (navState != null) {
       navState.pushNamedAndRemoveUntil(
         '/live',
         (route) => route.isFirst,
-        arguments: incomingMatch,
+        arguments: LiveRouteArgs(match: incomingMatch, isInitiator: false),
       );
     }
   });
@@ -127,23 +135,34 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
   Route<dynamic>? _generateRoute(RouteSettings settings) {
     return switch (settings.name) {
       '/' => MaterialPageRoute(
-        builder:
-            (_) => _WatchOrPhoneSetupView(
-              viewModel: SetupViewModel(
-                matchRepository: sl<MatchRepository>(),
-                ttsService: sl<TtsService>(),
-              ),
+        builder: (_) {
+          activeLiveMatchId = null;
+          return _WatchOrPhoneSetupView(
+            viewModel: SetupViewModel(
+              matchRepository: sl<MatchRepository>(),
+              ttsService: sl<TtsService>(),
             ),
+          );
+        },
       ),
       '/live' => MaterialPageRoute(
         builder: (_) {
-          final match = settings.arguments as GameMatch;
+          final (match, isInitiator) = switch (settings.arguments) {
+            LiveRouteArgs args => (args.match, args.isInitiator),
+            GameMatch m => (m, true),
+            _ =>
+              throw ArgumentError(
+                'Arguments invalides pour /live: ${settings.arguments}',
+              ),
+          };
+          activeLiveMatchId = match.id;
           final vm = LiveViewModel(
             matchRepository: sl<MatchRepository>(),
             initialMatch: match,
             ttsService: sl<TtsService>(),
             hapticService: sl<HapticService>(),
             watchConnectivityService: sl<WatchConnectivityService>(),
+            isInitiator: isInitiator,
           );
           // Détecte si on tourne sur une montre (petite fenêtre)
           return _WatchOrPhoneView(viewModel: vm);
@@ -151,6 +170,7 @@ class _ScoreBotAppState extends State<ScoreBotApp> {
       ),
       '/summary' => MaterialPageRoute(
         builder: (_) {
+          activeLiveMatchId = null;
           final match = settings.arguments as GameMatch;
           final vm = SummaryViewModel(
             matchRepository: sl<MatchRepository>(),

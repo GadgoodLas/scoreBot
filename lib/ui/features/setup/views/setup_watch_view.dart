@@ -6,6 +6,7 @@ import 'package:score_bot/ui/features/setup/view_models/setup_view_model.dart';
 import 'package:score_bot/ui/features/setup/widgets/watch_config_view.dart';
 import 'package:score_bot/ui/features/setup/widgets/watch_duration_view.dart';
 import 'package:score_bot/ui/features/setup/widgets/lineup_dictation_sheet.dart';
+import 'package:score_bot/ui/features/live/view_models/live_view_model.dart';
 
 /// Vue d'accueil / configuration du match optimisée pour Wear OS (Pixel Watch).
 /// Utilise un PageView vertical en 3 étapes. Chaque page utilise un
@@ -58,7 +59,10 @@ class _SetupWatchViewState extends State<SetupWatchView> {
     FocusScope.of(context).unfocus();
     final match = await widget.viewModel.startMatch();
     if (match != null && mounted) {
-      navigator.pushReplacementNamed('/live', arguments: match);
+      navigator.pushReplacementNamed(
+        '/live',
+        arguments: LiveRouteArgs(match: match, isInitiator: true),
+      );
     }
   }
 
