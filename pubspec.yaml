@@ -43,7 +43,7 @@ dependencies:
 
   # UI
   cupertino_icons: ^2.0.0
-  flutter_svg: ^2.0.10+1
+  flutter_svg: ^2.3.2
   gap: ^3.0.1
 
   # Environnement variables
